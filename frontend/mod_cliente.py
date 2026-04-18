@@ -44,9 +44,6 @@ def mostrar(df, casos, cfg):
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── RESUMEN ANALÍTICO DEL CLIENTE (IA) ──────────────────────────────
-    st.markdown('<div class="section-title">Resumen Analítico del Cliente <span class="section-badge">IA</span></div>', unsafe_allow_html=True)
-
     datos_cliente = df[df["Cliente"] == cliente]
 
     # Calcular métricas para el prompt

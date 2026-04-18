@@ -131,7 +131,7 @@ def build_document(output_path: Path):
     doc.add_paragraph()
     meta = doc.add_paragraph()
     meta.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    meta.add_run(f"Versión 2.5  ·  {date.today().strftime('%d de %B de %Y')}").font.size = Pt(10)
+    meta.add_run(f"Versión 3.0  ·  {date.today().strftime('%d de %B de %Y')}").font.size = Pt(10)
 
     author_p = doc.add_paragraph()
     author_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -398,7 +398,7 @@ def build_document(output_path: Path):
     doc.add_paragraph()
     footer_p = doc.add_paragraph()
     footer_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_f = footer_p.add_run(f"AML Intelligence Platform v2.0  ·  Generado el {date.today().strftime('%d/%m/%Y')}")
+    run_f = footer_p.add_run(f"AML Intelligence Platform v3.0  ·  Generado el {date.today().strftime('%d/%m/%Y')}")
     run_f.font.size = Pt(9)
     run_f.font.color.rgb = RGBColor(0x88, 0x88, 0x88)
 

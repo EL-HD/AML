@@ -2,7 +2,7 @@ import streamlit as st
 import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout
 
-def mostrar(df, casos, matriz_alertas):
+def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
     st.markdown("""<div class="info-box"><strong>RESUMEN EJECUTIVO</strong> — Análisis de alto nivel IMPERATOR Intelligence. Muestra indicadores críticos y distribución de riesgo detectada. Optimizado para supervisión operativa mediante capas tonales.</div>""", unsafe_allow_html=True)
 
     # KPIs
@@ -291,3 +291,70 @@ def mostrar(df, casos, matriz_alertas):
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+    # ── SECCIÓN PEP / CPE ─────────────────────────────────────────────────
+    clientes_pep = casos[casos["EsPEP"] == True] if "EsPEP" in casos.columns else None
+    clientes_cpe = casos[casos["EsCPE"] == True] if "EsCPE" in casos.columns else None
+
+    tiene_pep = clientes_pep is not None and not clientes_pep.empty
+    tiene_cpe = clientes_cpe is not None and not clientes_cpe.empty
+
+    if tiene_pep or tiene_cpe:
+        st.markdown("---")
+        st.markdown('<div class="section-title">Asociados PEP / CPE Detectados</div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div class="info-box" style="border-left-color: #ef4444;">
+            <strong>GAFI — Personas Expuestas Políticamente (PEP) y Contratista o Proveedor del Estado (CPE).</strong>
+            Estos clientes requieren Debida Diligencia Ampliada (EDD) según las recomendaciones 12 y 22 del GAFI.
+            Su presencia eleva automáticamente el score contextual (S_C) del modelo IMPERATOR.
+        </div>
+        """, unsafe_allow_html=True)
+
+        col_pep, col_cpe = st.columns(2)
+
+        with col_pep:
+            st.markdown("""
+            <div style="background:#171c23; border:1px solid #ef4444; border-top:3px solid #ef4444; padding:16px; margin-bottom:8px;">
+                <div style="color:#ef4444; font-size:11px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:8px;">
+                    ⚠ Personas Expuestas Políticamente (PEP)
+                </div>
+            """, unsafe_allow_html=True)
+
+            if tiene_pep:
+                cols_mostrar = ["Cliente", "Score_Max", "Nivel_Riesgo", "Total_Mensual"]
+                cols_existentes = [c for c in cols_mostrar if c in clientes_pep.columns]
+                df_pep_show = clientes_pep[cols_existentes].copy()
+                if "Total_Mensual" in df_pep_show.columns:
+                    df_pep_show["Total_Mensual"] = df_pep_show["Total_Mensual"].apply(lambda x: f"Q{x:,.2f}")
+                if "Score_Max" in df_pep_show.columns:
+                    df_pep_show["Score_Max"] = df_pep_show["Score_Max"].apply(lambda x: f"{x:.2f}")
+                df_pep_show.columns = [c.replace("_", " ") for c in df_pep_show.columns]
+                st.dataframe(df_pep_show, use_container_width=True, hide_index=True)
+            else:
+                st.markdown('<div style="color:#6e7681; font-size:13px; padding:8px 0;">No se detectaron clientes PEP en el período analizado.</div>', unsafe_allow_html=True)
+
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        with col_cpe:
+            st.markdown("""
+            <div style="background:#171c23; border:1px solid #f97316; border-top:3px solid #f97316; padding:16px; margin-bottom:8px;">
+                <div style="color:#f97316; font-size:11px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:8px;">
+                    ⚠ Contratista o Proveedor del Estado (CPE)
+                </div>
+            """, unsafe_allow_html=True)
+
+            if tiene_cpe:
+                cols_mostrar = ["Cliente", "Score_Max", "Nivel_Riesgo", "Total_Mensual"]
+                cols_existentes = [c for c in cols_mostrar if c in clientes_cpe.columns]
+                df_cpe_show = clientes_cpe[cols_existentes].copy()
+                if "Total_Mensual" in df_cpe_show.columns:
+                    df_cpe_show["Total_Mensual"] = df_cpe_show["Total_Mensual"].apply(lambda x: f"Q{x:,.2f}")
+                if "Score_Max" in df_cpe_show.columns:
+                    df_cpe_show["Score_Max"] = df_cpe_show["Score_Max"].apply(lambda x: f"{x:.2f}")
+                df_cpe_show.columns = [c.replace("_", " ") for c in df_cpe_show.columns]
+                st.dataframe(df_cpe_show, use_container_width=True, hide_index=True)
+            else:
+                st.markdown('<div style="color:#6e7681; font-size:13px; padding:8px 0;">No se detectaron clientes CPE en el período analizado.</div>', unsafe_allow_html=True)
+
+            st.markdown("</div>", unsafe_allow_html=True)
+

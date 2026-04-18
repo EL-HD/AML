@@ -18,7 +18,8 @@ def mostrar(df):
         <div class="glossary-item"><span class="glossary-key">Alerta_Frecuencia</span><span>Densidad operativa superior a límite de vigilancia.</span></div>
         <div class="glossary-item"><span class="glossary-key">Smurfing</span><span>Fragmentación coordinada identificada por fecha calendario.</span></div>
         <div class="glossary-item"><span class="glossary-key">Pico</span><span>Ruptura de distribución estadística (Anomalía +2 Std).</span></div>
-        <div class="glossary-item"><span class="glossary-key">Score</span><span>Magnitud de riesgo acumulado (Métrica IMPERATOR).</span></div>
+        <div class="glossary-item"><span class="glossary-key">_ST / _SC / _SB / _SN</span><span>Componentes del score: Transaccional (T), Contextual (C), Conductual (B) y de Red (N).</span></div>
+        <div class="glossary-item"><span class="glossary-key">Score</span><span>Magnitud de riesgo acumulado (Escala 0-10).</span></div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -42,11 +43,13 @@ def mostrar(df):
         if c in df_view.columns:
             df_view[c] = df_view[c].apply(lambda x: "Si" if x else "--")
 
+    pilares_cols = ["_ST", "_SC", "_SB", "_SN"]
+    
     columnas_mostrar = ["Cliente", "Fecha", "Monto", "Perfil"]
     if "TipoOperacion" in df_view.columns:
         columnas_mostrar.append("TipoOperacion")
     
-    columnas_mostrar += bool_cols + ["Score"]
+    columnas_mostrar += bool_cols + pilares_cols + ["Score"]
 
     st.markdown(f"""
     <div class="warning-box" style="margin-top:10px;">
@@ -61,7 +64,11 @@ def mostrar(df):
         column_config={
             "Monto": st.column_config.NumberColumn("Monto (Q)", format="Q%.2f"),
             "Perfil": st.column_config.NumberColumn("Perfil (Q)", format="Q%.2f"),
-            "Score": st.column_config.NumberColumn("Score", format="%d pts"),
+            "Score": st.column_config.NumberColumn("Score", format="%.2f pts"),
+            "_ST": st.column_config.NumberColumn("S_T", format="%.4f"),
+            "_SC": st.column_config.NumberColumn("S_C", format="%.4f"),
+            "_SB": st.column_config.NumberColumn("S_B", format="%.4f"),
+            "_SN": st.column_config.NumberColumn("S_N", format="%.4f"),
             "Fecha": st.column_config.DateColumn("Fecha"),
         }
     )

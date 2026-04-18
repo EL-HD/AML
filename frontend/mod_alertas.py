@@ -18,6 +18,10 @@ def mostrar(casos):
         <div class="glossary-item"><span class="glossary-key">Transacciones</span><span>Número de operaciones consideradas dentro del período cargado.</span></div>
         <div class="glossary-item"><span class="glossary-key">EsPEP / EsCPE / Ubicacion_Riesgo</span><span>Indican si el caso presenta marca positiva en el archivo fuente o en la gestión interna configurada.</span></div>
         <div class="glossary-item"><span class="glossary-key">Nivel_Riesgo</span><span>Clasificación táctica final según los umbrales institucionales configurados en el motor.</span></div>
+        <div class="glossary-item"><span class="glossary-key">ST_Max</span><span>Score Transaccional: Riesgo derivado de montos, frecuencias y alertas técnicas.</span></div>
+        <div class="glossary-item"><span class="glossary-key">SC_Max</span><span>Score Contextual: Riesgo derivado de la naturaleza del cliente (PEP, CPE, Geo).</span></div>
+        <div class="glossary-item"><span class="glossary-key">SB_Max</span><span>Score Conductual: Riesgo por desviación estadística del perfil esperado.</span></div>
+        <div class="glossary-item"><span class="glossary-key">SN_Max</span><span>Score de Red: Riesgo por nivel de interconexión y volumen en la red.</span></div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -56,7 +60,11 @@ def mostrar(casos):
         column_config={
             "Cliente": st.column_config.TextColumn("Cliente"),
             "Total_Mensual": st.column_config.NumberColumn("Total Mensual (Q)", format="Q%.2f"),
-            "Score_Max": st.column_config.NumberColumn("Score de Riesgo", format="%d pts"),
+            "Score_Max": st.column_config.NumberColumn("Score de Riesgo", format="%.2f pts"),
+            "ST_Max": st.column_config.NumberColumn("S_T (Transaccional)", format="%.4f"),
+            "SC_Max": st.column_config.NumberColumn("S_C (Contextual)", format="%.4f"),
+            "SB_Max": st.column_config.NumberColumn("S_B (Conductual)", format="%.4f"),
+            "SN_Max": st.column_config.NumberColumn("S_N (Red)", format="%.4f"),
             "Transacciones": st.column_config.NumberColumn("N° Transacciones"),
             "EsPEP": st.column_config.TextColumn("EsPEP"),
             "EsCPE": st.column_config.TextColumn("EsCPE"),

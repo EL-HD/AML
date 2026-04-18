@@ -5,9 +5,9 @@ from frontend.mod_utils import apply_dark_style
 def mostrar(_DEFAULTS):
     st.markdown("""
     <div class="info-box">
-        <strong>CONFIGURACIÓN DE REGLAS IMPERATOR</strong> — Arquitectura de decisión soberana.
-        Administre los parámetros de detección, calibración de umbrales y ponderación de score.
-        Los ajustes se integran en tiempo real al motor analítico.
+        <strong>CONFIGURACIÓN DE REGLAS AML</strong> — Parámetros de detección y ponderación del motor de riesgo.
+        Administre umbrales, reglas de detección y clasificación de riesgo.
+        Los ajustes se integran en tiempo real al análisis.
     </div>
     """, unsafe_allow_html=True)
 
@@ -58,7 +58,7 @@ def mostrar(_DEFAULTS):
                     <span class="pulse-dot"></span> ESPECIFICACIÓN TÉCNICA
                 </div>
                 <div style="color:#dee2ed; font-size:13px; line-height:1.8; margin-bottom:15px;">
-                    Validación contra <strong style='color:#f59e0b;'>umbral absoluto soberano</strong>.
+                    Validación contra <strong style='color:#f59e0b;'>umbral absoluto configurado</strong>.
                     Regla de detección directa: activación inmediata si el monto individual excede el límite institucional.
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
@@ -105,7 +105,7 @@ def mostrar(_DEFAULTS):
                 </div>
                 <div style="color:#dee2ed; font-size:13px; line-height:1.8; margin-bottom:15px;">
                     Evaluación de <strong style='color:#f59e0b;'>volumen acumulado por ciclo</strong>.
-                    Identifica saturación de capital por encima del multiplicador soberano de perfil.
+                    Identifica acumulación de capital por encima del multiplicador de perfil configurado.
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                     <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
@@ -159,7 +159,7 @@ def mostrar(_DEFAULTS):
                 </div>
                 <div style="color:#dee2ed; font-size:13px; line-height:1.8; margin-bottom:15px;">
                     Detección de <strong style='color:#f59e0b;'>ruptura de perfil individual</strong>.
-                    Valida desviaciones porcentuales sobre el comportamiento histórico acreditado del soberano.
+                    Valida desviaciones porcentuales sobre el comportamiento histórico del cliente.
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                     <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
@@ -297,7 +297,7 @@ def mostrar(_DEFAULTS):
                 </div>
                 <div style="color:#dee2ed; font-size:13px; line-height:1.8; margin-bottom:15px;">
                     Detección de <strong style='color:#f59e0b;'>outliers estadísticos</strong>.
-                    Valida anomalías de comportamiento mediante desviación estándar (Sigma) sobre la media histórica del soberano.
+                    Valida anomalías de comportamiento mediante desviación estándar (Sigma) sobre la media histórica del cliente.
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                     <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
@@ -328,8 +328,8 @@ def mostrar(_DEFAULTS):
     with tab2:
         st.markdown("""
         <div class="info-box">
-            <strong>PONDERACIÓN IMPERATOR</strong> — Distribución de criticidad analítica.
-            El Score de Riesgo es el producto de la agregación de vectores activos.
+            <strong>PONDERACIÓN DE SCORE</strong> — Distribución de criticidad analítica.
+            El Score de Riesgo resulta de la agregación ponderada de vectores activos.
             Configure los pesos para priorizar las tipologías más relevantes según la política institucional.
         </div>""", unsafe_allow_html=True)
 
@@ -351,13 +351,36 @@ def mostrar(_DEFAULTS):
         col_p1, col_p2 = st.columns(2)
 
         with col_p1:
-            st.markdown("**Ajusta los pesos (0 = sin impacto, 10 = máximo)**")
-            c["peso_absoluto"]   = st.number_input("💰 Peso — Monto Alto Absoluto",   0, 10, int(c["peso_absoluto"]),   key="p1")
-            c["peso_acumulado"]  = st.number_input("📦 Peso — Acumulado Mensual",      0, 10, int(c["peso_acumulado"]),  key="p2")
-            c["peso_perfil"]     = st.number_input("📐 Peso — Exceso sobre Perfil",    0, 10, int(c["peso_perfil"]),     key="p3")
-            c["peso_frecuencia"] = st.number_input("🔄 Peso — Frecuencia Alta",        0, 10, int(c["peso_frecuencia"]), key="p4")
-            c["peso_smurfing"]   = st.number_input("🧩 Peso — Smurfing",               0, 10, int(c["peso_smurfing"]),   key="p5")
-            c["peso_pico"]       = st.number_input("📈 Peso — Pico Anómalo",           0, 10, int(c["peso_pico"]),       key="p6")
+            st.markdown("### 🏛️ Pilares Estratégicos (S_T, S_C, S_B, S_N)")
+            st.markdown("""
+            <div style="font-size:11px; color:#a08e7a; margin-bottom:12px;">
+                Defina la importancia relativa de cada pilar en el Score Total. La suma de estos pesos determinará el núcleo del motor.
+            </div>""", unsafe_allow_html=True)
+            
+            c["w_st"] = st.slider("w1 — Transaccional (S_T)", 0.0, 1.0, float(c["w_st"]), 0.05, help="Importancia de las reglas de detección de montos y frecuencias.")
+            c["w_sc"] = st.slider("w2 — Contextual (S_C)", 0.0, 1.0, float(c["w_sc"]), 0.05, help="Importancia de la naturaleza del cliente (PEP, CPE, Ubicación).")
+            c["w_sb"] = st.slider("w3 — Conductual (S_B)", 0.0, 1.0, float(c["w_sb"]), 0.05, help="Importancia de las desviaciones del perfil histórico.")
+            c["w_sn"] = st.slider("w4 — Red (S_N)", 0.0, 1.0, float(c["w_sn"]), 0.05, help="Importancia de la interconexión y flujos en la red.")
+            
+            suma_w = c["w_st"] + c["w_sc"] + c["w_sb"] + c["w_sn"]
+            if abs(suma_w - 1.0) > 0.001:
+                st.warning(f"⚠️ La suma de pesos es {suma_w:.2f}. Se recomienda que sea 1.00 para una escala de 0-10 estándar.")
+            else:
+                st.success("✅ Ponderación equilibrada (Suma = 1.00)")
+
+            st.markdown("---")
+            st.markdown("### 💰 Componentes Técnicos (S_T)")
+            st.markdown("""
+            <div style="font-size:11px; color:#a08e7a; margin-bottom:12px;">
+                Ajusta el peso individual de cada regla que alimenta al pilar Transaccional. (0 = off, 10 = max).
+            </div>""", unsafe_allow_html=True)
+            
+            c["peso_absoluto"]   = st.number_input("Peso — Monto Alto Absoluto",   0, 10, int(c["peso_absoluto"]),   key="p1")
+            c["peso_acumulado"]  = st.number_input("Peso — Acumulado Mensual",      0, 10, int(c["peso_acumulado"]),  key="p2")
+            c["peso_perfil"]     = st.number_input("Peso — Exceso sobre Perfil",    0, 10, int(c["peso_perfil"]),     key="p3")
+            c["peso_frecuencia"] = st.number_input("Peso — Frecuencia Alta",        0, 10, int(c["peso_frecuencia"]), key="p4")
+            c["peso_smurfing"]   = st.number_input("Peso — Smurfing",               0, 10, int(c["peso_smurfing"]),   key="p5")
+            c["peso_pico"]       = st.number_input("Peso — Pico Anómalo",           0, 10, int(c["peso_pico"]),       key="p6")
 
         with col_p2:
             score_max_teorico = (
@@ -401,7 +424,7 @@ def mostrar(_DEFAULTS):
     with tab3:
         st.markdown("""
         <div class="info-box">
-            <strong>TAXONOMÍA DE RIESGO</strong> — Calibración de niveles soberanos.
+            <strong>CLASIFICACIÓN DE RIESGO</strong> — Calibración de niveles de alerta.
             Determine los umbrales de score y volumen para la segmentación del universo transaccional.
             Los cambios afectan la distribución táctica de recursos de investigación.
         </div>""", unsafe_allow_html=True)
@@ -409,13 +432,13 @@ def mostrar(_DEFAULTS):
         st.markdown("""
         <div style="background:#171c23; border:1px solid #534434; border-radius:0px; padding:20px; margin-bottom:16px;">
             <div style="color:#f59e0b; font-size:11px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:12px;">
-                <span class="pulse-dot"></span> LOGICA DE SEGMENTACIÓN
+                <span class="pulse-dot"></span> LÓGICA DE SEGMENTACIÓN
             </div>
             <div style="font-size:12px; color:#a08e7a; line-height:2;">
-                <span style='color:#ef4444; font-weight:700;'>VECTOR CRÍTICO</span> — Clientes en zona de reporte regulatorio inmediato.<br>
-                <span style='color:#f97316; font-weight:700;'>VECTOR ALTO</span> — Objetivos de debida diligencia ampliada (EDD).<br>
-                <span style='color:#eab308; font-weight:700;'>VECTOR MEDIO</span> — Monitoreo preventivo y actualización de perfil.<br>
-                <span style='color:#10b981; font-weight:700;'>VECTOR BAJO</span> — Actividad dentro de parámetros soberanos normales.
+                <span style='color:#ef4444; font-weight:700;'>NIVEL CRÍTICO</span> — Clientes en zona de reporte regulatorio inmediato.<br>
+                <span style='color:#f97316; font-weight:700;'>NIVEL ALTO</span> — Objetivos de debida diligencia ampliada (EDD).<br>
+                <span style='color:#eab308; font-weight:700;'>NIVEL MEDIO</span> — Monitoreo preventivo y actualización de perfil.<br>
+                <span style='color:#10b981; font-weight:700;'>NIVEL BAJO</span> — Actividad dentro de parámetros normales establecidos.
             </div>
         </div>""", unsafe_allow_html=True)
 
@@ -475,7 +498,7 @@ def mostrar(_DEFAULTS):
                         CRITERIO: {cond_e}
                     </div>
                     <div style="color:#a08e7a; font-size:11px; margin-top:4px;">
-                        PROTOCOL IMPERATOR: {accion_e}
+                        PROTOCOLO DE ACCIÓN: {accion_e}
                     </div>
                 </div>""", unsafe_allow_html=True)
 
@@ -520,12 +543,12 @@ def mostrar(_DEFAULTS):
             st.markdown(f"""
             <div style="background:#171c23; border:1px solid #21262d; border-radius:0px; padding:16px;">
                 <div style="font-family:IBM Plex Mono,monospace; font-size:12px; color:#8b949e; line-height:2;">
-                    Monto Absoluto → <span style='color:#f59e0b;'>{c['peso_absoluto']} pts</span><br>
-                    Acumulado Mensual → <span style='color:#f59e0b;'>{c['peso_acumulado']} pts</span><br>
-                    Exceso Perfil → <span style='color:#f59e0b;'>{c['peso_perfil']} pts</span><br>
-                    Frecuencia Alta → <span style='color:#f59e0b;'>{c['peso_frecuencia']} pts</span><br>
-                    Smurfing → <span style='color:#f59e0b;'>{c['peso_smurfing']} pts</span><br>
-                    Pico Anómalo → <span style='color:#f59e0b;'>{c['peso_pico']} pts</span><br>
+                    <hr style='border-color:#21262d; margin:8px 0;'>
+                    <div style='color:#f0f6fc; font-weight:700; margin-bottom:5px;'>Ponderación de Pilares:</div>
+                    S_T (Transaccional) → <span style='color:#3b82f6;'>{c['w_st']:.2f}</span><br>
+                    S_C (Contextual) → <span style='color:#3b82f6;'>{c['w_sc']:.2f}</span><br>
+                    S_B (Conductual) → <span style='color:#3b82f6;'>{c['w_sb']:.2f}</span><br>
+                    S_N (Red) → <span style='color:#3b82f6;'>{c['w_sn']:.2f}</span>
                     <hr style='border-color:#21262d; margin:8px 0;'>
                     Score máx. teórico → <span style='color:#ef4444; font-weight:700;'>
                         {c['peso_absoluto']+c['peso_acumulado']+c['peso_perfil']+c['peso_frecuencia']+c['peso_smurfing']+c['peso_pico']} pts

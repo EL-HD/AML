@@ -8,9 +8,10 @@ import plotly.graph_objects as go
 # --- Importaciones Modulares ---
 from backend.procesador import validar_columnas, procesar_transacciones
 from frontend import (
-    mod_resumen, mod_alertas, mod_transacciones, 
-    mod_cliente, mod_matrices, mod_manual, 
-    mod_configuracion, mod_reportes, mod_ubicaciones
+    mod_resumen, mod_alertas, mod_transacciones,
+    mod_cliente, mod_matrices, mod_manual,
+    mod_configuracion, mod_reportes, mod_ubicaciones,
+    mod_mitigacion, mod_red_transaccional
 )
 
 # ============================================================
@@ -342,7 +343,7 @@ st.markdown("""
             <span style="width:10px; height:10px; border-radius:50%; background:radial-gradient(circle at 35% 35%, #86efac 0%, #22c55e 45%, #15803d 100%); box-shadow:0 0 0 3px rgba(34,197,94,0.15), 0 0 14px rgba(34,197,94,0.55); display:inline-block;"></span>
             <span>IMPERATOR ENGINE ACTIVE</span>
         </div>
-        <div style="color: #d8c3ad; font-family: 'IBM Plex Mono', monospace; font-size: 10px;">CORE VERSION v2.4.0</div>
+        <div style="color: #d8c3ad; font-family: 'IBM Plex Mono', monospace; font-size: 10px;">CORE VERSION v3.0.0</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -414,6 +415,8 @@ with st.sidebar:
         "Transacciones",
         "Análisis por Cliente",
         "Matrices de Riesgo",
+        "Red Transaccional",
+        "Acciones de Mitigación",
         "Gestión de Ubicaciones",
         "Informes y Reportes",
         "Configuración",
@@ -426,7 +429,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("""
     <div style='font-size:12px; color:#d8c3ad; font-family: IBM Plex Mono, monospace; line-height:1.8;'>
-    v2.0 · Sovereign AML<br>
+    v3.0 · Sovereign AML Intelligence<br>
     Ing. Hobéd Díaz Msc. M.A.F.I.
     </div>
     """, unsafe_allow_html=True)
@@ -443,6 +446,7 @@ _DEFAULTS = {
     "peso_frecuencia": 1, "peso_smurfing": 3, "peso_pico": 2, "regla_absoluto": True, "regla_acumulado": True,
     "regla_perfil": True, "regla_frecuencia": True, "regla_smurfing": True, "regla_pico": True,
     "regla_ubicacion": True, "peso_pep_cpe": 2, "peso_ubicacion": 2,
+    "w_st": 0.40, "w_sc": 0.25, "w_sb": 0.20, "w_sn": 0.15,
     "ubicaciones_manuales": ["Huehuetenango", "San Marcos", "Izabal", "Petén", "Escuintla"]
 }
 if "aml_config" not in st.session_state:
@@ -454,7 +458,7 @@ else:
 # ============================================================
 # CARGA DE ARCHIVO
 # ============================================================
-if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones"]:
+if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones", "Red Transaccional", "Acciones de Mitigación"]:
     data_ready = "data" in st.session_state
     
     if not data_ready or "archivo_nombre" not in st.session_state:
@@ -463,7 +467,7 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
         <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #c7d0db; margin-bottom: 20px; line-height: 1.8;">
             <span style="color:#f0f6fc; font-weight:600;">Formato requerido:</span> Excel (.xlsx) ·
             <span style="color:#f0f6fc; font-weight:600;">Columnas:</span>
-            <span style="color:#7cc7ff;">Fecha Cliente EsPEP EsCPE Monto Perfil Ubicacion UbicacionRiesgo TipoOperacion</span>
+            <span style="color:#7cc7ff;">Fecha Cliente EsPEP EsCPE Monto Perfil Ubicacion UbicacionRiesgo TipoOperacion Cliente_Destino</span>
         </div>
         """, unsafe_allow_html=True)
         
@@ -483,8 +487,9 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
             if not es_valido:
                 st.error(f"Faltan columnas: {', '.join(faltantes)}")
                 st.stop()
-            df, casos, matriz_alertas, _ = procesar_transacciones(df_raw, st.session_state["aml_config"])
+            df, casos, matriz_alertas, pep_cpe_info = procesar_transacciones(df_raw, st.session_state["aml_config"])
             st.session_state["data"] = (df, casos, matriz_alertas)
+            st.session_state["pep_cpe_info"] = pep_cpe_info
             st.session_state["archivo_nombre"] = archivo.name
             st.rerun()
     else:
@@ -499,7 +504,9 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
 data_ready = "data" in st.session_state
 
 if vista == "Resumen Ejecutivo":
-    if data_ready: mod_resumen.mostrar(*st.session_state["data"])
+    if data_ready:
+        pep_cpe_info_s = st.session_state.get("pep_cpe_info", {})
+        mod_resumen.mostrar(*st.session_state["data"], pep_cpe_info_s)
     else: st.info("Sube un archivo.")
 
 elif vista == "Casos de Alerta":
@@ -516,6 +523,14 @@ elif vista == "Análisis por Cliente":
 
 elif vista == "Matrices de Riesgo":
     if data_ready: mod_matrices.mostrar(st.session_state["data"][1], st.session_state["data"][2])
+    else: st.info("Sube un archivo.")
+
+elif vista == "Red Transaccional":
+    if data_ready: mod_red_transaccional.mostrar(st.session_state["data"][0], st.session_state["data"][1])
+    else: st.info("Sube un archivo.")
+
+elif vista == "Acciones de Mitigación":
+    if data_ready: mod_mitigacion.mostrar(st.session_state["data"][0], st.session_state["data"][1])
     else: st.info("Sube un archivo.")
 
 elif vista == "Gestión de Ubicaciones":
@@ -536,7 +551,7 @@ elif vista == "Manual de Usuario":
 # ============================================================
 st.markdown("""
 <div class="footer">
-    SOVEREIGN AML Intelligence Platform v2.0 &nbsp;·&nbsp;
+    SOVEREIGN AML Intelligence Platform v3.0 &nbsp;·&nbsp;
     Diseñado por el Ing. Hobéd Díaz Msc. M.A.F.I. &nbsp;·&nbsp;
     Sovereign Intelligence Framework
 </div>

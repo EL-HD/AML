@@ -6,7 +6,16 @@ def mostrar(casos, matriz_alertas):
     st.markdown("""<div class="info-box"><strong>MATRICES DE RIESGO</strong> — Arquitectura de decisión IMPERATOR. Clasificación técnica por perfiles de riesgo y tipologías de alerta analitica. Optimizado para calibración de umbrales y priorización táctica.</div>""", unsafe_allow_html=True)
 
     st.markdown('<div class="section-title">👥 Matriz de Riesgo por Cliente</div>', unsafe_allow_html=True)
-    st.markdown("""<div class="glossary"><div class="glossary-title">DICCIONARIO DE DATOS</div><div class="glossary-item"><span class="glossary-key">Cliente</span><span>Identificador soberano.</span></div><div class="glossary-item"><span class="glossary-key">Total_Mensual</span><span>Volumen económico en el ciclo.</span></div><div class="glossary-item"><span class="glossary-key">Score_Max</span><span>Magnitud de riesgo (IMPERATOR 0–12).</span></div><div class="glossary-item"><span class="glossary-key">Transacciones</span><span>Densidad operativa.</span></div><div class="glossary-item"><span class="glossary-key">Nivel_Riesgo</span><span>Clasificación táctica.</span></div></div>""", unsafe_allow_html=True)
+    st.markdown("""
+    <div class="glossary">
+        <div class="glossary-title">DICCIONARIO DE DATOS</div>
+        <div class="glossary-item"><span class="glossary-key">Cliente</span><span>Identificador soberano de la entidad analizada.</span></div>
+        <div class="glossary-item"><span class="glossary-key">Total_Mensual</span><span>Volumen económico acumulado en el ciclo.</span></div>
+        <div class="glossary-item"><span class="glossary-key">Score_Max</span><span>Magnitud de riesgo final (IMPERATOR 0–10).</span></div>
+        <div class="glossary-item"><span class="glossary-key">ST_Max / SC_Max</span><span>Riesgo Transaccional (Reglas) y Contextual (PEP, CPE, Geo).</span></div>
+        <div class="glossary-item"><span class="glossary-key">SB_Max / SN_Max</span><span>Riesgo Conductual (Estadística) y de Red (Conexiones).</span></div>
+        <div class="glossary-item"><span class="glossary-key">Nivel_Riesgo</span><span>Clasificación táctica final institucional.</span></div>
+    </div>""", unsafe_allow_html=True)
 
     casos_view = casos.copy()
     for col in ["EsPEP", "EsCPE", "Ubicacion_Riesgo"]:
@@ -19,7 +28,11 @@ def mostrar(casos, matriz_alertas):
         hide_index=True,
         column_config={
             "Total_Mensual": st.column_config.NumberColumn("Total Mensual (Q)", format="Q%.2f"),
-            "Score_Max": st.column_config.NumberColumn("Score Máx.", format="%d pts"),
+            "Score_Max": st.column_config.NumberColumn("Score Máx.", format="%.2f pts"),
+            "ST_Max": st.column_config.NumberColumn("S_T", format="%.4f"),
+            "SC_Max": st.column_config.NumberColumn("S_C", format="%.4f"),
+            "SB_Max": st.column_config.NumberColumn("S_B", format="%.4f"),
+            "SN_Max": st.column_config.NumberColumn("S_N", format="%.4f"),
             "EsPEP": st.column_config.TextColumn("EsPEP"),
             "EsCPE": st.column_config.TextColumn("EsCPE"),
             "Ubicacion_Riesgo": st.column_config.TextColumn("Ubicacion_Riesgo"),
