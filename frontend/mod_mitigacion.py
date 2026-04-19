@@ -16,12 +16,12 @@ _CATALOGO = {
         {"accion": "Limitación de montos",          "codigo": "P-03", "norma": "GAFI Rec. 1 / RBA"},
     ],
     "Correctivas": [
-        {"accion": "EDD — Enhanced Due Diligence",  "codigo": "C-01", "norma": "GAFI Rec. 10/12"},
+        {"accion": "DDA - Debida Diligencia Ampliada",  "codigo": "C-01", "norma": "GAFI Rec. 10/12"},
         {"accion": "Solicitud de documentación",    "codigo": "C-02", "norma": "ISO 31000 §8.5"},
         {"accion": "Revisión manual por analista",  "codigo": "C-03", "norma": "COSO ERM Pilar 4"},
     ],
     "Regulatorias": [
-        {"accion": "Generación de ROS/SAR",         "codigo": "R-01", "norma": "GAFI Rec. 20"},
+        {"accion": "Generación de RTS/RTI",         "codigo": "R-01", "norma": "GAFI Rec. 20"},
         {"accion": "Escalamiento a Cumplimiento",   "codigo": "R-02", "norma": "ISO 31000 §6.6"},
     ],
     "Estratégicas": [
@@ -62,17 +62,17 @@ def _determinar_acciones(row):
     # ── NIVEL CRÍTICO (score ≥ 8) ──────────────────────────────────────────
     if nivel == "Crítico":
         acciones += ["P-01", "P-02"]          # Bloqueo + Rechazo
-        acciones += ["C-01", "C-02"]          # EDD + Documentación
-        acciones += ["R-01", "R-02"]          # ROS/SAR + Escalamiento
+        acciones += ["C-01", "C-02"]          #DDA + Documentación
+        acciones += ["R-01", "R-02"]          # RTS/RTI + Escalamiento
         if es_pep or es_cpe:
             acciones += ["E-01", "E-02"]      # Ajuste perfil + Reclasificación
 
     # ── NIVEL ALTO (5–7.9) ─────────────────────────────────────────────────
     elif nivel == "Alto":
         acciones += ["P-03"]                  # Limitación montos
-        acciones += ["C-01", "C-02", "C-03"]  # EDD + Docs + Revisión manual
+        acciones += ["C-01", "C-02", "C-03"]  # DDA + Docs + Revisión manual
         if smurfing or pico:
-            acciones += ["R-01"]              # ROS si hay smurfing o pico
+            acciones += ["R-01"]              # RTS si hay smurfing o pico
         if es_pep or geo:
             acciones += ["R-02"]              # Escalamiento si PEP o geo riesgo
 
@@ -82,7 +82,7 @@ def _determinar_acciones(row):
         acciones += ["C-03"]                  # Revisión manual
         acciones += ["E-01"]                  # Ajuste perfil
         if es_pep or es_cpe:
-            acciones += ["C-01"]              # EDD adicional por PEP/CPE
+            acciones += ["C-01"]              # DDA adicional por PEP/CPE
 
     # ── NIVEL BAJO ─────────────────────────────────────────────────────────
     else:
@@ -190,7 +190,7 @@ def mostrar(df, casos):
     kpi_data = [
         (len(df_filtrado),                                                 "Clientes Evaluados",  "blue"),
         (len(df_acciones),                                                 "Acciones Generadas",  "amber"),
-        (len(df_acciones[df_acciones["Categoría"] == "Regulatorias"]),    "Regulatorias (ROS)",  "red"),
+        (len(df_acciones[df_acciones["Categoría"] == "Regulatorias"]),    "Regulatorias (RTS)",  "red"),
         (len(df_acciones[df_acciones["Categoría"] == "Preventivas"]),     "Preventivas",         "green"),
     ]
     for col, (val, lbl, color) in zip([col_k1, col_k2, col_k3, col_k4], kpi_data):
