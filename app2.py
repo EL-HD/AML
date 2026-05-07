@@ -1,9 +1,19 @@
 import streamlit as st
+st.set_page_config(
+    page_title="SOVEREIGN AML | Intelligence Platform",
+    layout="wide",
+    page_icon="🔍",
+    initial_sidebar_state="collapsed"
+)
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
 import plotly.graph_objects as go
+import streamlit.components.v1 as components
+import requests
+from datetime import date
+
 
 # --- Importaciones Modulares ---
 from backend.procesador import validar_columnas, procesar_transacciones
@@ -15,14 +25,235 @@ from frontend import (
 )
 
 # ============================================================
+# SISTEMA DE AUTENTICACIÓN Y LICENCIAS
+# ============================================================
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "access_token" not in st.session_state:
+    st.session_state.access_token = None
+if "user_data" not in st.session_state:
+    st.session_state.user_data = None
+
+def login_flow():
+    # --- CSS para Login Premium (Sovereign AML New Design) ---
+    st.markdown("""
+    <style>
+        /* Fondo de la App */
+        .stApp { background-color: #0f141b !important; }
+        
+        /* DESAPARECER SIDEBAR COMPLETAMENTE EN LOGIN */
+        [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"] {
+            display: none !important;
+            width: 0px !important;
+        }
+        
+        /* Ajustar contenedor principal al centro total */
+        [data-testid="stMain"] {
+            margin-left: 0px !important;
+            width: 100% !important;
+        }
+
+        /* Ocultar elementos innecesarios de Streamlit */
+        [data-testid="stWidgetLabel"] { display: none; }
+        [data-testid="stForm"] {
+            background-color: #1a1f26 !important;
+            border: none !important;
+            border-left: 2px solid #f59e0b !important;
+            padding: 3rem !important;
+            border-radius: 0px !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+        }
+        
+        /* Estilo de los Inputs */
+        .stTextInput input {
+            background-color: rgba(15, 20, 27, 0.8) !important;
+            border: none !important;
+            border-bottom: 1px solid #30353d !important;
+            color: #ffffff !important;
+            border-radius: 0px !important;
+            padding: 1rem 1rem !important;
+            font-family: 'IBM Plex Mono', monospace !important;
+        }
+        .stTextInput input:focus {
+            border-bottom: 1px solid #f59e0b !important;
+            box-shadow: none !important;
+        }
+        
+        /* Botón de Iniciar Sesión */
+        div.stButton > button {
+            background-color: #f59e0b !important;
+            color: #0f141b !important;
+            border-radius: 0px !important;
+            height: 3.5rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.1em !important;
+            text-transform: uppercase !important;
+            border: none !important;
+            transition: all 0.3s ease !important;
+            margin-top: 1rem !important;
+        }
+        div.stButton > button:hover {
+            background-color: #fbbf24 !important;
+            color: #0f141b !important;
+        }
+
+        .brand-title { 
+            color: #ffffff; 
+            font-size: 2.5rem; 
+            font-weight: 300; 
+            letter-spacing: -0.05em; 
+            text-align: center;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+        .brand-title span { font-weight: 900; color: #f59e0b; }
+        
+        .brand-subtitle { 
+            color: #8b949e; 
+            font-size: 0.6rem; 
+            letter-spacing: 0.4em; 
+            text-align: center; 
+            text-transform: uppercase;
+            margin-bottom: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .login-label {
+            color: #8b949e;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: 0.5rem;
+            margin-top: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .footer-notice {
+            margin-top: 4rem;
+            text-align: center;
+            color: rgba(139, 148, 158, 0.4);
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            line-height: 1.5;
+        }
+        .security-badge {
+            background-color: #171c23;
+            border: 1px solid rgba(160, 142, 122, 0.1);
+            padding: 0.6rem 1.25rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #8b949e;
+            font-size: 0.6rem;
+            letter-spacing: 0.25em;
+            margin-bottom: 1rem;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # --- Interfaz de Login ---
+    _, col, _ = st.columns([1.5, 1.2, 1.5])
+    
+    with col:
+        st.markdown("""
+            <div class="brand-title">SOVEREIGN <span>AML</span></div>
+            <div class="brand-subtitle">
+                ANALYTICAL INTELLIGENCE PLATFORM
+            </div>
+        """, unsafe_allow_html=True)
+        
+        with st.form("login_form", clear_on_submit=False):
+            st.markdown("""
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <img src="https://lh3.googleusercontent.com/aida/ADBb0ughVlAFHGAl_O43L89zUQKvmsVoyV3bgFQqWUkxDa5IPTuZe2k3v8PZSHGf-JNco6L8es0jlgaD2liO_FtD-Z-i1yyj84eEvRFbOFyIViYX3Fp7zNWRTB1cRW2gGAYnG3KeN0uiK9scAZhw3tplnZULHNRdhLD0j4pcF3TZnhIgD-10PwlCdAtD4lZFgR48PtxbbZ6X0UDT5ZgSCMa3SYujiPaIuieRjR_2pjj42pTyUq12TBcCrPP_whLO5ilkUnCQ4_3KxaHh9w" 
+                         style="height: 6rem; margin-bottom: 1.5rem; filter: brightness(1.1) drop-shadow(0 0 15px rgba(245, 158, 11, 0.3));">
+                    <div style="color: white; font-size: 1.5rem; font-weight: 600;">Acceso al Sistema</div>
+                    <div style="color: #8b949e; font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase;">SISTEMA IMPERATOR ENGINE</div>
+                </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown('<div class="login-label">Nombre de Usuario</div>', unsafe_allow_html=True)
+            user = st.text_input("USUARIO", placeholder="UserName", key="login_user")
+            
+            st.markdown('<div class="login-label">Contraseña</div>', unsafe_allow_html=True)
+            pwd = st.text_input("CONTRASEÑA", type="password", placeholder="••••••••", key="login_pwd")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            submit = st.form_submit_button("INICIAR SESIÓN →", use_container_width=True)
+            
+            if submit:
+                try:
+                    response = requests.post("http://localhost:8000/auth/validate", json={"username": user, "password": pwd})
+                    if response.status_code == 200:
+                        data = response.json()
+                        if data.get("exists") and data.get("is_active"):
+                            st.session_state.authenticated = True
+                            st.session_state.user_data = data.get("licencia")
+                            st.session_state.access_token = data.get("access_token")
+                            st.rerun()
+                        else:
+                            st.error(data.get("message", "Acceso denegado."))
+                    else:
+                        st.error("Error de conexión con la API.")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+            
+            st.markdown("""
+                <div style="text-align: center; margin-top: 2rem;">
+                    <a href="#" style="color: #8b949e; font-size: 0.7rem; text-decoration: none; text-transform: uppercase; letter-spacing: 0.1em;">
+                       ¿Olvidó su contraseña?
+                    </a>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("""
+            <div class="footer-notice">
+                <div class="security-badge">
+                    ACCESO RESTRINGIDO - NIVEL 4 CID
+                </div>
+                <div>EL ACCESO NO AUTORIZADO A ESTE SISTEMA DE INTELIGENCIA ESTÁ ESTRICTAMENTE PROHIBIDO POR LA NORMATIVA SOVEREIGN-V3.</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.stop()
+
+if not st.session_state.authenticated:
+    login_flow()
+
+# ============================================================
 # TEMA Y CONFIGURACIÓN VISUAL
 # ============================================================
-st.set_page_config(
-    page_title="SOVEREIGN AML | Intelligence Platform",
-    layout="wide",
-    page_icon="🔍",
-    initial_sidebar_state="expanded"
-)
+
+# --- Sidebar: Info de Licencia y Logout ---
+with st.sidebar:
+    st.markdown("---")
+    if st.session_state.authenticated and st.session_state.user_data:
+        lic = st.session_state.user_data
+        st.markdown(f"""
+        <div style='background: #171c23; padding: 15px; border-left: 3px solid #f59e0b; margin-bottom: 20px;'>
+            <p style='margin:0; font-size:10px; color:#8b949e; text-transform:uppercase;'>Licencia Activa</p>
+            <p style='margin:0; font-size:14px; font-weight:700; color:#ffffff;'>{lic['name']}</p>
+            <p style='margin:0; font-size:11px; color:#f59e0b;'>{lic['mail']}</p>
+            <p style='margin-top:10px; font-size:10px; color:#8b949e; text-transform:uppercase;'>Empresa</p>
+            <p style='margin:0; font-size:11px; color:#dee2ed;'>{lic['empresa']}</p>
+            <p style='margin-top:10px; font-size:10px; color:#8b949e; text-transform:uppercase;'>Expira</p>
+            <p style='margin:0; font-size:11px; color:#dee2ed;'>{lic['fecha_expiracion']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("CERRAR SESIÓN", use_container_width=True):
+            st.session_state.authenticated = False
+            st.session_state.user_data = None
+            st.session_state.access_token = None
+            st.rerun()
+    st.markdown("---")
 
 # CSS personalizado - SOVEREIGN INTELLIGENCE FRAMEWORK
 st.markdown("""

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Sovereign AML | Intelligence Hub Login</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Inter:wght@300;400;600;900&amp;family=Space+Grotesk:wght@300;500;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#adc6ff",
+                        "inverse-primary": "#855300",
+                        "inverse-surface": "#dee2ed",
+                        "background": "#0f141b",
+                        "surface-variant": "#30353d",
+                        "surface-container-highest": "#30353d",
+                        "on-secondary-fixed-variant": "#004395",
+                        "on-surface": "#dee2ed",
+                        "on-error": "#690005",
+                        "surface-container": "#1a1f26",
+                        "surface-dim": "#0f141b",
+                        "primary-fixed-dim": "#ffb95f",
+                        "on-primary": "#0f141b",
+                        "on-surface-variant": "#8b949e",
+                        "on-primary-container": "#613b00",
+                        "secondary-fixed": "#d8e2ff",
+                        "surface-bright": "#343942",
+                        "primary": "#f59e0b",
+                        "on-primary-fixed-variant": "#653e00",
+                        "surface-container-low": "#171c23",
+                        "error": "#ffb4ab",
+                        "on-background": "#dee2ed",
+                        "tertiary-fixed-dim": "#7fd0ff",
+                        "on-secondary": "#002e6a",
+                        "surface-tint": "#f59e0b",
+                        "secondary": "#adc6ff",
+                        "on-tertiary-container": "#004966",
+                        "on-tertiary": "#00344a",
+                        "error-container": "#93000a",
+                        "tertiary-fixed": "#c5e7ff",
+                        "outline-variant": "#534434",
+                        "primary-fixed": "#ffddb8",
+                        "secondary-container": "#0566d9",
+                        "surface": "#0f141b",
+                        "primary-container": "#f59e0b",
+                        "on-tertiary-fixed-variant": "#004c6a",
+                        "on-tertiary-fixed": "#001e2d",
+                        "tertiary": "#8fd5ff",
+                        "on-primary-fixed": "#2a1700",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-high": "#252a32",
+                        "on-secondary-fixed": "#001a42",
+                        "outline": "#a08e7a",
+                        "inverse-on-surface": "#2c3139",
+                        "tertiary-container": "#1abdff",
+                        "surface-container-lowest": "#090e16",
+                        "on-secondary-container": "#e6ecff",
+                        "state-green": "#10b981"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0rem",
+                        "lg": "0rem",
+                        "xl": "0rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["IBM Plex Sans", "sans-serif"],
+                        "display": ["Inter", "sans-serif"],
+                        "body": ["IBM Plex Sans", "sans-serif"],
+                        "label": ["IBM Plex Mono", "monospace"]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0f141b;
+            color: #dee2ed;
+            font-family: 'IBM Plex Sans', sans-serif;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f141b;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #171c23;
+        }
+
+        .login-card {
+            background-color: #1a1f26;
+        }
+    </style>
+</head>
+
+<body
+    class="flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden selection:bg-primary selection:text-on-primary">
+    <!-- Decorative Grid -->
+    <div class="fixed inset-0 z-0 overflow-hidden pointer-events-none opacity-[0.03]"
+        style="background-image: radial-gradient(circle at 2px 2px, #f59e0b 1px, transparent 0); background-size: 40px 40px;">
+    </div>
+    <main class="relative z-10 w-full max-w-lg">
+        <!-- New Identity Header (SOVEREIGN AML) -->
+        <div class="flex flex-col items-center mb-12 space-y-4 text-center">
+            <div class="flex flex-col items-center">
+                <div class="flex items-center space-x-2">
+                    <h1 class="text-4xl font-light tracking-tight text-white uppercase leading-none">
+                        SOVEREIGN <span class="font-black text-primary">AML</span>
+                    </h1>
+                </div>
+                <div class="mt-3 flex items-center space-x-2">
+                    <span class="w-2 h-2 rounded-full bg-state-green shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span>
+                    <p class="text-[10px] tracking-[0.4em] font-label text-on-surface-variant uppercase">ANALYTICAL
+                        INTELLIGENCE PLATFORM</p>
+                </div>
+            </div>
+        </div>
+        <!-- Streamlit-native styled Container -->
+        <div class="login-card p-10 shadow-2xl relative border-l-2 border-primary">
+            <div class="space-y-10">
+                <header class="">
+                    <div class="flex justify-center mb-6" style="background-color: #1a1f26;">
+                        <img alt="Imperator Engine Logo"
+                            class="h-24 w-auto object-contain brightness-110 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]"
+                            src="https://lh3.googleusercontent.com/aida/ADBb0ughVlAFHGAl_O43L89zUQKvmsVoyV3bgFQqWUkxDa5IPTuZe2k3v8PZSHGf-JNco6L8es0jlgaD2liO_FtD-Z-i1yyj84eEvRFbOFyIViYX3Fp7zNWRTB1cRW2gGAYnG3KeN0uiK9scAZhw3tplnZULHNRdhLD0j4pcF3TZnhIgD-10PwlCdAtD4lZFgR48PtxbbZ6X0UDT5ZgSCMa3SYujiPaIuieRjR_2pjj42pTyUq12TBcCrPP_whLO5ilkUnCQ4_3KxaHh9w" />
+                    </div>
+                    <h2 class="text-2xl font-semibold text-white tracking-tight mt-2">Acceso al Sistema</h2>
+                    <p class="text-[11px] font-label text-on-surface-variant uppercase tracking-[0.15em]">SISTEMA
+                        IMPERATOR ENGINE</p>
+                </header>
+                <form id="loginForm" class="space-y-8">
+                    <!-- Username Field -->
+                    <div class="space-y-3">
+                        <label
+                            class="text-[11px] font-label font-bold text-on-surface-variant uppercase tracking-widest flex items-center"
+                            for="username">
+                            <span class="material-symbols-outlined text-[16px] mr-2" data-icon="person">person</span>
+                            Nombre de Usuario
+                        </label>
+                        <input
+                            class="w-full bg-[#0f141b]/50 border-0 border-b border-surface-variant focus:border-primary px-4 py-4 text-sm font-label text-white transition-all duration-300 placeholder:text-surface-variant/50 focus:ring-0 outline-none"
+                            id="username" name="username" placeholder="Username" type="text" required />
+                    </div>
+                    <!-- Password Field -->
+                    <div class="space-y-3">
+                        <label
+                            class="text-[11px] font-label font-bold text-on-surface-variant uppercase tracking-widest flex items-center"
+                            for="password">
+                            <span class="material-symbols-outlined text-[16px] mr-2" data-icon="lock">lock</span>
+                            Contraseña
+                        </label>
+                        <div class="relative group">
+                            <input
+                                class="w-full bg-[#0f141b]/50 border-0 border-b border-surface-variant focus:border-primary px-4 py-4 text-sm font-label text-white transition-all duration-300 placeholder:text-surface-variant/50 focus:ring-0 outline-none"
+                                id="password" name="password" placeholder="••••••••" type="password" required />
+                            <button id="togglePassword"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors"
+                                type="button">
+                                <span class="material-symbols-outlined text-[20px]"
+                                    data-icon="visibility">visibility</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Primary Action (AML Styled) -->
+                    <div class="pt-4">
+                        <button id="loginBtn"
+                            class="group relative w-full bg-primary text-on-primary font-bold py-4 px-8 flex items-center justify-center space-x-3 transition-all duration-200 active:scale-[0.99] hover:brightness-110"
+                            type="submit">
+                            <span class="font-label uppercase tracking-widest text-sm">Iniciar Sesión</span>
+                            <span
+                                class="material-symbols-outlined text-sm transition-transform group-hover:translate-x-1"
+                                data-icon="arrow_forward">arrow_forward</span>
+                        </button>
+                    </div>
+                </form>
+                <footer class="flex justify-center">
+                    <a class="text-[11px] font-label text-on-surface-variant uppercase tracking-widest hover:text-primary transition-colors border-b border-transparent hover:border-primary pb-1"
+                        href="#">
+                        ¿Olvidó su contraseña?
+                    </a>
+                </footer>
+            </div>
+        </div>
+        <!-- Security Notice Footer -->
+        <div class="mt-16 text-center space-y-4">
+            <div class="inline-flex items-center bg-surface-container-low px-5 py-2.5 border border-outline-variant/10">
+                <span class="material-symbols-outlined text-primary text-[16px] mr-3"
+                    data-icon="verified_user">verified_user</span>
+                <span class="text-[10px] font-label text-on-surface-variant uppercase tracking-[0.25em]">ACCESO
+                    RESTRINGIDO - NIVEL 4 CID</span>
+            </div>
+            <p
+                class="text-[10px] text-on-surface-variant/40 leading-relaxed max-w-sm mx-auto uppercase tracking-tighter">
+                EL ACCESO NO AUTORIZADO A ESTE SISTEMA DE INTELIGENCIA ESTÁ ESTRICTAMENTE PROHIBIDO POR LA NORMATIVA
+                SOVEREIGN-V3.
+            </p>
+        </div>
+    </main>
+    <!-- Aesthetic Floating Branding Image (Sustituido por el logo actualizado visualmente) -->
+    <div class="fixed bottom-10 right-10 hidden lg:block opacity-10 hover:opacity-40 transition-opacity duration-700">
+        <div class="w-32 h-32 flex items-center justify-center">
+            <img alt="Sovereign Shield" class="w-full h-full object-contain brightness-200 grayscale"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTf5jwBrSqmPQBYjSCG_fch0c2f8Ko4Wj1RrZjdTQxF8Y3z0SVQTshirlbAWXdB83D3cI2Hx69LBtO7U6SWc_jPr3W_gBAzHpOVr7-2pwcecC5HEYWRMAQWVuuhBUs6IMRKO9KUOuD_l9Jrc1jcq3OfWUJrubmQvaGFs2utZtUYcn-N_BJ4P1VOyTDFniRsh6Bdh8F2KCDpOCBxPcFMCaWRpwgpa3zo0Bs2hrxC-GegAoKo6Qu2Yy0wdy3yQpAaKVioS4R9MvrKoo" />
+        </div>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password');
+
+        // Toggle password visibility
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            const icon = togglePassword.querySelector('.material-symbols-outlined');
+            icon.textContent = type === 'password' ? 'visibility' : 'visibility_off';
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<span class="font-label uppercase tracking-widest text-sm">Validando...</span>';
+
+            try {
+                const response = await fetch('http://localhost:8000/auth/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, password: password })
+                });
+                const data = await response.json();
+
+                if (data.exists && data.is_active) {
+                    // Notificar a Streamlit (si se usa st.components.v1.html)
+                    window.parent.postMessage({
+                        type: 'streamlit:setComponentValue',
+                        value: { authenticated: true, user: username, licencia: data.licencia, access_token: data.access_token }
+                    }, '*');
+                } else {
+                    alert(data.message || "Acceso denegado o licencia inactiva.");
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = '<span class="font-label uppercase tracking-widest text-sm">Iniciar Sesión</span><span class="material-symbols-outlined text-sm transition-transform group-hover:translate-x-1" data-icon="arrow_forward">arrow_forward</span>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert("Error de conexión con el servidor de autenticación.");
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<span class="font-label uppercase tracking-widest text-sm">Iniciar Sesión</span><span class="material-symbols-outlined text-sm transition-transform group-hover:translate-x-1" data-icon="arrow_forward">arrow_forward</span>';
+            }
+        });
+    </script>
+</body>
+
+</html>
