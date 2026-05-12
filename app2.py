@@ -706,7 +706,7 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
 
         if not archivo:
             st.markdown("<br><br>", unsafe_allow_html=True)
-            st.markdown("<div style='text-align:center; font-family:\"IBM Plex Mono\", monospace; font-weight: 800; font-size: 14px; letter-spacing: 4px; color: #f59e0b;'>AML · INTELLIGENCE PLATFORM</div>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align:center; font-family:\"IBM Plex Mono\", monospace; font-weight: 800; font-size: 14px; letter-spacing: 4px; color: #f59e0b;'>SOVEREIGN AML</div>", unsafe_allow_html=True)
             st.markdown("<div style='text-align:center; width: 60px; height: 1px; background: linear-gradient(90deg, transparent, #f59e0b, transparent); margin: 10px auto 25px;'></div>", unsafe_allow_html=True)
             st.markdown("<h3 style='margin-bottom:0; text-align:center; font-family: \"IBM Plex Sans\", sans-serif; font-size: 24px;'>Cargue un archivo para iniciar el análisis</h3>", unsafe_allow_html=True)
             st.markdown("<p style='color:#8b949e; font-size:13px; text-align:center; font-family: \"IBM Plex Mono\", monospace;'>Suba su archivo Excel (.xlsx) con los datos de transacciones.<br>El motor AML procesará automáticamente las reglas de detección.</p>", unsafe_allow_html=True)

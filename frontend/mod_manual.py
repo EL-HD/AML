@@ -10,7 +10,7 @@ def mostrar():
 
     st.markdown("""
     ## 1. Introducción
-    AML Intelligence Platform es una solución integral de **Business Intelligence (BI)** y cumplimiento normativo. A diferencia de las herramientas reactivas tradicionales, esta plataforma utiliza análisis de datos avanzado para transformar el monitoreo de riesgos en **oportunidades estratégicas de negocio**, integrando estándares internacionales de gestión de riesgos como **ISO 31000** y el enfoque basado en riesgo (**RBA**) del **GAFI**.
+    SOVEREIGN AML es una solución integral de **Business Intelligence (BI)** y cumplimiento normativo. A diferencia de las herramientas reactivas tradicionales, esta plataforma utiliza análisis de datos avanzado para transformar el monitoreo de riesgos en **oportunidades estratégicas de negocio**, integrando estándares internacionales de gestión de riesgos como **ISO 31000** y el enfoque basado en riesgo (**RBA**) del **GAFI**.
 
     ## 1.1. Marco Normativo y Tríada de Riesgo
     El motor **IMPERATOR** opera bajo una estructura de cumplimiento moderno basada en tres pilares fundamentales:
@@ -70,6 +70,6 @@ def mostrar():
     4. **Configuración**: Personalice los umbrales de acuerdo con las políticas internas de cumplimiento de su institución.
 
     ---
-    **AML Intelligence Platform v3.0 (Enterprise Analytics)**  
+    **SOVEREIGN AML v3.0 (Analytical Intelligence Platform)**  
     *Ing. Hobéd Díaz — Msc. M.A.F.I*
     """)

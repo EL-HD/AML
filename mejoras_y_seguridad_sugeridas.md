@@ -1,6 +1,6 @@
 # Mejoras y Medidas de Seguridad Sugeridas (Sesiones Posteriores)
 
-Este documento contiene un conjunto de recomendaciones clave orientadas tanto a perfeccionar la funcionalidad analítica de la **AML Intelligence Platform** como a blindar la aplicación bajo los estándares de seguridad de **OWASP Top 10**.
+Este documento contiene un conjunto de recomendaciones clave orientadas tanto a perfeccionar la funcionalidad analítica de **SOVEREIGN AML** como a blindar la aplicación bajo los estándares de seguridad de **OWASP Top 10**.
 
 ---
 

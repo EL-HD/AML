@@ -117,14 +117,14 @@ def build_document(output_path: Path):
 
     title = doc.add_paragraph()
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = title.add_run("AML INTELLIGENCE PLATFORM")
+    run = title.add_run("SOVEREIGN AML")
     run.bold = True
-    run.font.size = Pt(26)
+    run.font.size = Pt(28)
     run.font.color.rgb = RGBColor(0x1A, 0x27, 0x44)
 
     subtitle = doc.add_paragraph()
     subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run2 = subtitle.add_run("Documentación Técnica de Ejecución y Uso")
+    run2 = subtitle.add_run("Analytical Intelligence Platform — Documentación Técnica")
     run2.font.size = Pt(14)
     run2.font.color.rgb = RGBColor(0x34, 0x5E, 0x8A)
 
@@ -144,16 +144,16 @@ def build_document(output_path: Path):
     # ── 1. INTRODUCCIÓN ──────────────────────────────────────
     heading(doc, "1. Introducción", 1)
     body(doc, (
-        "AML Intelligence Platform es una solución integral de Business Intelligence (BI) y cumplimiento "
-        "normativo. A diferencia de las herramientas reactivas tradicionales, esta plataforma utiliza "
-        "análisis de datos avanzado para transformar el monitoreo de riesgos en oportunidades "
-        "estratégicas de negocio, permitiendo identificar tendencias de mercado y proyecciones de "
-        "crecimiento mientras se mantiene una postura de seguridad impecable."
+        "SOVEREIGN AML es una solución integral de inteligencia analítica y cumplimiento "
+        "normativo de última generación. A diferencia de las herramientas reactivas tradicionales, "
+        "esta plataforma utiliza análisis de datos avanzado y modelos de grafos para transformar el "
+        "monitoreo de riesgos en oportunidades estratégicas de negocio, integrando estándares "
+        "internacionales como ISO 31000 y el enfoque basado en riesgo (RBA) del GAFI."
     ))
     body(doc, (
         "La plataforma está dirigida a oficiales de cumplimiento, analistas AML y supervisores "
-        "operativos de instituciones financieras que requieren una herramienta ágil para el "
-        "procesamiento de datos transaccionales y la generación de reportes de riesgo."
+        "operativos que requieren una herramienta de alta fidelidad para el procesamiento de "
+        "datos transaccionales complejos y la visualización de redes de lavado de activos."
     ))
 
     # ── 2. REQUISITOS ────────────────────────────────────────
@@ -164,27 +164,31 @@ def build_document(output_path: Path):
         headers=["Componente", "Versión mínima", "Descripción"],
         rows=[
             ["Python",         "3.9+",    "Lenguaje base del sistema"],
-            ["Streamlit",      "1.30+",   "Framework de interfaz web"],
-            ["pandas",         "2.0+",    "Procesamiento de datos tabulares"],
-            ["plotly",         "5.0+",    "Visualizaciones interactivas con hover"],
-            ["matplotlib",     "3.7+",    "Gráficos auxiliares (compatibilidad)"],
+            ["Streamlit",      "1.30+",   "Framework de interfaz web premium"],
+            ["pandas",         "2.0+",    "Procesamiento de datos vectoriales"],
+            ["plotly",         "5.0+",    "Visualizaciones interactivas de alta densidad"],
+            ["networkx",       "3.0+",    "Motor de análisis de grafos y redes"],
             ["numpy",          "1.24+",   "Cálculos numéricos y estadísticos"],
             ["openpyxl",       "3.1+",    "Lectura de archivos Excel (.xlsx)"],
             ["python-docx",    "1.0+",    "Generación de documentación (.docx)"],
-            ["requests",       "2.28+",   "Integración con API de IA (Claude)"],
+            ["requests",       "2.28+",   "Integración con API de Autenticación y IA"],
         ],
         col_widths=[4.0, 3.5, 9.0]
     )
 
     heading(doc, "2.2 Archivo de Entrada", 2)
-    body(doc, "La plataforma requiere un archivo Excel (.xlsx) con las siguientes columnas obligatorias:")
+    body(doc, "La plataforma requiere un archivo Excel (.xlsx) con la siguiente estructura extendida:")
     add_table(doc,
         headers=["Columna", "Tipo", "Descripción"],
         rows=[
-            ["Cliente",  "Texto / ID",  "Identificador único del cliente"],
-            ["Monto",    "Numérico",    "Monto de la transacción en quetzales (Q)"],
-            ["Perfil",   "Numérico",    "Límite esperado de actividad del cliente (Q)"],
-            ["Fecha",    "Fecha",       "Fecha de la transacción (formato YYYY-MM-DD o compatible)"],
+            ["Fecha",    "Fecha",       "Fecha de la transacción (YYYY-MM-DD)"],
+            ["Cliente",  "Texto",       "Identificador único del cliente origen"],
+            ["Monto",    "Numérico",    "Monto de la transacción (Q)"],
+            ["Perfil",   "Numérico",    "Límite esperado de actividad (Q)"],
+            ["EsPEP",    "Booleano",    "Persona Expuesta Políticamente"],
+            ["EsCPE",    "Booleano",    "Contratista o Proveedor del Estado"],
+            ["Ubicacion","Texto",       "Departamento o municipio de origen"],
+            ["Cliente_Destino", "Texto", "Requerido para el análisis de Red Transaccional"],
         ],
         col_widths=[3.5, 3.0, 10.0]
     )
@@ -192,204 +196,118 @@ def build_document(output_path: Path):
     # ── 3. INSTALACIÓN ───────────────────────────────────────
     heading(doc, "3. Instalación y Configuración", 1)
     heading(doc, "3.1 Instalación de Dependencias", 2)
-    body(doc, "Ejecutar el siguiente comando desde el directorio del proyecto:")
+    body(doc, "Ejecutar el siguiente comando para preparar el entorno:")
 
     code_p = doc.add_paragraph()
-    code_run = code_p.add_run("pip install streamlit pandas plotly matplotlib numpy openpyxl python-docx requests")
+    code_run = code_p.add_run("pip install streamlit pandas plotly networkx numpy openpyxl python-docx requests")
     code_run.font.name = "Courier New"
     code_run.font.size = Pt(9.5)
     code_run.font.color.rgb = RGBColor(0x0D, 0x6E, 0xFD)
 
-    heading(doc, "3.2 Ejecución de la Plataforma", 2)
-    body(doc, "Desde el directorio donde se encuentra app2.py, ejecutar:")
+    heading(doc, "3.2 Ejecución del Ecosistema", 2)
+    body(doc, "La plataforma requiere la API de Autenticación activa. En terminales separadas:")
+    
+    body(doc, "1. Iniciar Auth API:")
+    code_p_api = doc.add_paragraph()
+    run_api = code_p_api.add_run("python3 auth_api.py")
+    run_api.font.name = "Courier New"
+    run_api.font.size = Pt(9.5)
+    run_api.font.color.rgb = RGBColor(0x0D, 0x6E, 0xFD)
 
+    body(doc, "2. Iniciar SOVEREIGN UI:")
     code_p2 = doc.add_paragraph()
     run_c2 = code_p2.add_run("streamlit run app2.py")
     run_c2.font.name = "Courier New"
     run_c2.font.size = Pt(9.5)
     run_c2.font.color.rgb = RGBColor(0x0D, 0x6E, 0xFD)
 
-    body(doc, (
-        "Streamlit abrirá automáticamente el navegador en http://localhost:8501. "
-        "Si el navegador no se abre, ingresar esa URL manualmente. "
-        "Para detener el servidor, presionar Ctrl+C en la terminal."
-    ))
-
-    heading(doc, "3.3 Generación de la Documentación", 2)
-    body(doc, "Para regenerar este documento, ejecutar:")
-    code_p3 = doc.add_paragraph()
-    run_c3 = code_p3.add_run("python3 generar_docs.py")
-    run_c3.font.name = "Courier New"
-    run_c3.font.size = Pt(9.5)
-    run_c3.font.color.rgb = RGBColor(0x0D, 0x6E, 0xFD)
-    body(doc, "El archivo documentacion_tecnica.docx se generará en el directorio actual de trabajo.")
-
     # ── 4. ARQUITECTURA TÉCNICA ──────────────────────────────
-    heading(doc, "4. Arquitectura Técnica", 1)
+    heading(doc, "4. Arquitectura de Inteligencia (IMPERATOR ENGINE)", 1)
     body(doc, (
-        "La plataforma sigue una arquitectura de script único (single-file app) con las siguientes capas lógicas:"
+        "SOVEREIGN opera bajo el motor IMPERATOR, que segmenta el análisis en 4 dimensiones críticas:"
     ))
 
     capas = [
-        ("Carga de datos",        "Lectura del archivo Excel mediante pandas y validación de columnas requeridas."),
-        ("Motor de reglas",       "Aplicación secuencial de 6 reglas AML parametrizables usando operaciones vectoriales de pandas."),
-        ("Scoring",               "Suma ponderada de reglas activas por transacción, con peso configurable por regla (0–12 pts)."),
-        ("Clasificación",         "Asignación del nivel de riesgo (Crítico / Alto / Medio / Bajo) por cliente basada en Score_Max y Total_Mensual."),
-        ("Inteligencia (BI)",     "Capa de análisis estratégico que cruza riesgo vs. volumen para identificar canales de alto rendimiento."),
-        ("Visualización",         "Gráficos interactivos con Plotly (hover, zoom, descarga) y cuadros de interpretación de negocio."),
-        ("Integración IA",        "Generación de un resumen analítico textual por cliente mediante API de Claude (Anthropic)."),
+        ("S_T (Transaccional)",   "Detección de patrones mediante reglas de negocio (Smurfing, Picos, Acumulados)."),
+        ("S_C (Contextual)",      "Evaluación del perfil del cliente: PEP, CPE y zonas geográficas de riesgo."),
+        ("S_B (Conductual)",      "Análisis de desviaciones estadísticas respecto al comportamiento histórico."),
+        ("S_N (Red)",             "Módulo de grafos que identifica cuentas puente, ciclos y estratificación."),
     ]
     add_table(doc,
-        headers=["Capa", "Descripción"],
+        headers=["Dimensión", "Descripción"],
         rows=capas,
         col_widths=[5.0, 11.5]
     )
 
     # ── 5. MOTOR DE REGLAS AML ───────────────────────────────
-    heading(doc, "5. Motor de Reglas AML", 1)
+    heading(doc, "5. Configuración de Detección", 1)
     body(doc, (
-        "El sistema evalúa 6 reglas independientes sobre cada transacción. Los parámetros son "
-        "completamente configurables desde la vista '⚙️ Configuración de Reglas'. "
-        "A continuación se describen las reglas con sus valores por defecto:"
+        "El motor de detección es dinámico y permite ajustar pesos y umbrales en tiempo real. "
+        "Los parámetros por defecto del sistema son:"
     ))
 
     add_table(doc,
-        headers=["Regla", "Variable", "Condición (default)", "Peso default", "Activa por default"],
+        headers=["Regla", "Variable", "Condición (default)", "Peso", "Activa"],
         rows=[
-            ["Monto Alto Absoluto", "Alerta_Absoluto", "Monto > Q20,000", "3",  "Sí"],
-            ["Acumulado Mensual",   "Alerta_Acumulado","Total_Mensual > Perfil × 2.0", "2", "Sí"],
-            ["Exceso sobre Perfil", "Alerta_15",       "Monto > Perfil × 1.15", "1", "Sí"],
-            ["Frecuencia Alta",     "Alerta_Frecuencia","Transacciones en período > 5", "1", "Sí"],
-            ["Smurfing",            "Smurfing",         "Transacciones en mismo día ≥ 5", "3", "Sí"],
-            ["Pico Anómalo",        "Pico",             "Monto > Media + 2×Desv. Estándar", "2", "Sí"],
+            ["Monto Crítico",   "Alerta_Absoluto", "Monto > Q20,000", "3",  "Sí"],
+            ["Perfil Excedido", "Alerta_15",       "Monto > Perfil × 1.15", "1", "Sí"],
+            ["Smurfing",        "Smurfing",         "Transacciones mismo día ≥ 5", "3", "Sí"],
+            ["Geografía Riesgo","Ubicacion",        "Zonas fronterizas/sensibles", "2", "Sí"],
+            ["Status Político", "PEP/CPE",          "Persona Expuesta / Contratista", "2", "Sí"],
         ],
         col_widths=[4.0, 4.0, 5.5, 2.0, 2.5]
     )
 
-    doc.add_paragraph()
-    body(doc, "Fórmula de Score por transacción:")
-    code_score = doc.add_paragraph()
-    r = code_score.add_run(
-        "Score = (Alerta_Absoluto × peso_absoluto) + (Alerta_Acumulado × peso_acumulado)\n"
-        "      + (Alerta_15 × peso_perfil)  + (Alerta_Frecuencia × peso_frecuencia)\n"
-        "      + (Smurfing × peso_smurfing) + (Pico × peso_pico)"
-    )
-    r.font.name = "Courier New"
-    r.font.size = Pt(9)
-
     # ── 6. CLASIFICACIÓN DE RIESGO ───────────────────────────
-    heading(doc, "6. Clasificación de Riesgo por Cliente", 1)
-    body(doc, (
-        "El nivel de riesgo final se asigna según el Score_Max (máximo score alcanzado "
-        "por cualquier transacción del cliente) y el Total_Mensual:"
-    ))
-
+    heading(doc, "6. Niveles de Alerta SOVEREIGN", 1)
     add_table(doc,
-        headers=["Nivel", "Condición (default)", "Acción recomendada"],
+        headers=["Nivel", "Score Requerido", "Acción de Mitigación"],
         rows=[
-            ["Crítico", "Score_Max ≥ 8 O Total_Mensual > Q30,000", "Revisión inmediata, posible reporte a UIF"],
-            ["Alto",    "Score_Max ≥ 5",                           "Investigación obligatoria en 5 días hábiles"],
-            ["Medio",   "Score_Max ≥ 3",                           "Monitoreo continuo, revisión mensual"],
-            ["Bajo",    "Score_Max < 3",                           "Vigilancia rutinaria"],
+            ["Crítico", "≥ 8.0", "Bloqueo inmediato y Reporte de Operación Sospechosa (ROS)"],
+            ["Alto",    "5.0 - 7.9", "Debida Diligencia Ampliada (EDD) obligatoria"],
+            ["Medio",   "3.0 - 4.9", "Monitoreo reforzado y actualización de perfil"],
+            ["Bajo",    "< 3.0", "Vigilancia rutinaria"],
         ],
         col_widths=[2.5, 6.5, 7.5]
     )
 
     # ── 7. VISTAS DEL SISTEMA ────────────────────────────────
-    heading(doc, "7. Vistas del Sistema", 1)
+    heading(doc, "7. Módulos de Inteligencia", 1)
 
     vistas = [
         ("📋 Resumen Ejecutivo",
-         "Vista de alto nivel con KPIs principales y un Panel de Insights Estratégicos. Incluye gráficos "
-         "de distribución de riesgo, barras de alertas por tipo y la Matriz de Oportunidad de Canal."),
-        ("🎯 Inteligencia Estratégica",
-         "Módulo que visualiza la Matriz de Oportunidad (Burbujas: Volumen vs Clientes) y la Densidad de "
-         "Riesgo Agrupada para identificar Canales de Alto Rendimiento."),
+         "KPIs centrales, distribución de riesgo y matriz de oportunidad de canal."),
         ("🚨 Casos de Alerta",
-         "Tabla filtrable de todos los clientes con su Score_Max, Total_Mensual, número de transacciones "
-         "y nivel de riesgo. Soporta filtros por nivel de riesgo (multiselect) y score mínimo (slider)."),
-        ("📄 Transacciones",
-         "Registro detallado de todas las transacciones con sus columnas de alerta booleanas y score "
-         "individual. Permite filtrar por cliente y mostrar solo transacciones con alertas activas."),
+         "Centro de gestión de hallazgos con filtrado avanzado por score y tipo."),
+        ("🌐 Red Transaccional",
+         "Visualización de grafos para detectar estratificación y cuentas puente."),
+        ("🛡️ Acciones de Mitigación",
+         "Módulo de gestión de riesgos basado en el enfoque RBA del GAFI."),
+        ("📍 Gestión de Ubicaciones",
+         "Configuración dinámica de zonas de riesgo geográfico."),
+        ("📊 Informes y Reportes",
+         "Generación de reportes PDF de alta fidelidad para entes reguladores."),
         ("👤 Análisis por Cliente",
-         "Perfil individual del cliente: KPIs, resumen generado por IA (Claude API), gráfico de tendencia "
-         "de montos vs. perfil, mapa de picos anómalos estadísticos y frecuencia diaria de operaciones."),
-        ("🗂️ Matrices de Riesgo",
-         "Matriz de todos los clientes ordenada por score descendente y matriz de tipos de alerta con "
-         "descripción, peso y cantidad de activaciones. Incluye gráfico de contribución al score por regla."),
-        ("⚙️ Configuración de Reglas",
-         "Panel de control completo con 4 pestañas: Reglas de Detección (umbrales individuales con "
-         "toggle on/off), Pesos del Score, Clasificación de Riesgo y Resumen con botón de aplicar. "
-         "Todos los cambios son persistentes en la session_state de Streamlit."),
+         "Perfil 360° con tendencias, mapas de calor y resumen generado por IA."),
+        ("⚙️ Configuración",
+         "Control total de umbrales, pesos y parámetros del motor IMPERATOR."),
     ]
     for nombre, desc in vistas:
         heading(doc, nombre, 2)
         body(doc, desc)
 
-    # ── 8. GUÍA DE USO ───────────────────────────────────────
-    heading(doc, "8. Guía de Uso Paso a Paso", 1)
-
-    pasos = [
-        ("Paso 1 — Preparar el archivo Excel",
-         "Verificar que el archivo .xlsx tenga las columnas: Cliente, Monto, Perfil, Fecha. "
-         "Los nombres son case-sensitive. Las fechas deben estar en formato compatible con pandas."),
-        ("Paso 2 — Subir el archivo",
-         "En la sección '📁 Cargar Datos', hacer clic en el área de carga y seleccionar el archivo. "
-         "El sistema procesará automáticamente todas las reglas AML."),
-        ("Paso 3 — Revisar el Resumen Ejecutivo",
-         "La primera vista muestra los indicadores clave. Pasar el cursor sobre los gráficos "
-         "para ver los valores exactos mediante tooltips interactivos."),
-        ("Paso 4 — Analizar Casos Críticos",
-         "Ir a '🚨 Casos de Alerta', filtrar por nivel 'Crítico' y exportar si es necesario."),
-        ("Paso 5 — Investigar Clientes",
-         "En '👤 Análisis por Cliente', seleccionar el cliente y usar el botón '🤖 Generar Resumen con IA' "
-         "(requiere conexión a internet y API key configurada en el código)."),
-        ("Paso 6 — Ajustar Parámetros",
-         "Si los umbrales no se adaptan al perfil de la institución, ir a '⚙️ Configuración de Reglas' "
-         "y ajustar. Luego volver a cargar el archivo para reprocesar con nuevos parámetros."),
-    ]
-    for titulo, desc in pasos:
-        heading(doc, titulo, 2)
-        body(doc, desc)
-
-    # ── 9. GLOSARIO TÉCNICO ──────────────────────────────────
-    heading(doc, "9. Glosario Técnico AML", 1)
-    add_table(doc,
-        headers=["Término", "Definición"],
-        rows=[
-            ["AML (Anti-Money Laundering)", "Conjunto de leyes, regulaciones y procedimientos para prevenir el lavado de activos."],
-            ["Score de Riesgo",  "Puntuación compuesta (0–12) que refleja el nivel de actividad sospechosa de un cliente."],
-            ["Smurfing",         "Técnica de fragmentar grandes sumas en múltiples transacciones pequeñas para evadir controles."],
-            ["Pico Anómalo",     "Transacción cuyo monto supera la media histórica del cliente más 2 desviaciones estándar."],
-            ["Perfil de Riesgo", "Nivel de actividad transaccional esperado para un cliente según su tipo de negocio."],
-            ["Score_Max",        "Máximo score obtenido por cualquier transacción individual de un cliente en el período."],
-            ["UIF",              "Unidad de Información Financiera — entidad receptora de reportes de operaciones sospechosas."],
-            ["Session State",    "Mecanismo de Streamlit para mantener variables persistentes entre reruns de la aplicación."],
-            ["Hover Tooltip",    "Información emergente que aparece al posicionar el cursor sobre un punto del gráfico Plotly."],
-        ],
-        col_widths=[5.5, 11.0]
-    )
-
-    # ── 10. NOTAS TÉCNICAS ───────────────────────────────────
-    heading(doc, "10. Notas Técnicas Adicionales", 1)
+    # ── 8. NOTAS TÉCNICAS ───────────────────────────────────
+    heading(doc, "8. Seguridad y Cumplimiento", 1)
 
     notas = [
-        ("Gráficos interactivos", 
-         "Todos los gráficos utilizan Plotly. Cada punto, barra o segmento muestra un tooltip al "
-         "posicionar el cursor. Los gráficos soportan zoom (arrastrar), paneo (shift+arrastrar) "
-         "y descarga como PNG mediante el botón de cámara en la esquina superior derecha."),
+        ("Control de Acceso", 
+         "Autenticación robusta via Auth API con gestión de licencias corporativas."),
+        ("OWASP Top 10",
+         "Diseño orientado a la seguridad: prevención de inyecciones, control de acceso roto y fallos criptográficos."),
+        ("IA Generativa",
+         "Resúmenes analíticos automatizados mediante integración con modelos de lenguaje avanzados."),
         ("Portabilidad",
-         "La plataforma es completamente portable. Solo requiere Python 3.9+ y las dependencias "
-         "listadas en la Sección 2. No requiere instalación de base de datos ni servicios externos "
-         "(excepto la integración opcional con la API de IA)."),
-        ("Integración con IA",
-         "El módulo de resumen IA usa la API de Anthropic (Claude). Requiere que la API key esté "
-         "configurada directamente en el código. Si no hay conexión o key válida, el resto de la "
-         "plataforma funciona con normalidad."),
-        ("Persistencia de datos",
-         "La plataforma no almacena datos entre sesiones. Cada vez que se sube un nuevo archivo, "
-         "se reprocesa todo desde cero. Los cambios de configuración se mantienen durante la sesión "
-         "activa mediante session_state."),
+         "Estructura modular compatible con entornos locales y despliegues en la nube."),
     ]
     for titulo, desc in notas:
         heading(doc, titulo, 2)
@@ -398,7 +316,7 @@ def build_document(output_path: Path):
     doc.add_paragraph()
     footer_p = doc.add_paragraph()
     footer_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_f = footer_p.add_run(f"AML Intelligence Platform v3.0  ·  Generado el {date.today().strftime('%d/%m/%Y')}")
+    run_f = footer_p.add_run(f"SOVEREIGN AML Intelligence Platform v3.0  ·  Generado el {date.today().strftime('%d/%m/%Y')}")
     run_f.font.size = Pt(9)
     run_f.font.color.rgb = RGBColor(0x88, 0x88, 0x88)
 
