@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import math
+from frontend.mod_utils import render_html_table
 
 try:
     import networkx as nx
@@ -352,12 +353,12 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
         "Nivel_Destino": "Nivel destino",
     }).copy()
     df_relaciones["Monto total"] = df_relaciones["Monto total"].map(lambda v: f"Q{v:,.2f}")
-    st.dataframe(df_relaciones, use_container_width=True, hide_index=True)
+    st.markdown(render_html_table(df_relaciones, max_height=520), unsafe_allow_html=True)
 
     # Leyenda de colores
     st.markdown("""
     <div class="info-box" style="margin-top:5px;">
-        <b>📌 Leyenda:</b>
+        <b>Leyenda:</b>
         <span style="color:#ef4444; font-weight:700;">● Crítico</span> &nbsp;
         <span style="color:#f97316; font-weight:700;">● Alto</span> &nbsp;
         <span style="color:#eab308; font-weight:700;">● Medio</span> &nbsp;
@@ -409,7 +410,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
 
         if rutas:
             df_rutas = pd.DataFrame(rutas).drop_duplicates(subset=["Ruta"]).sort_values(["Saltos", "Score máx. en ruta"], ascending=[False, False])
-            st.dataframe(df_rutas, use_container_width=True, hide_index=True)
+            st.markdown(render_html_table(df_rutas, max_height=420), unsafe_allow_html=True)
         else:
             st.markdown('<div style="color:#6e7681; font-size:13px; padding:8px 0;">No se detectaron rutas multi-hop con los filtros actuales.</div>', unsafe_allow_html=True)
 
@@ -435,4 +436,4 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
         }
         for n, v in sorted(centralidad.items(), key=lambda x: -x[1])
     ])
-    st.dataframe(df_central, use_container_width=True, hide_index=True)
+    st.markdown(render_html_table(df_central, max_height=420), unsafe_allow_html=True)

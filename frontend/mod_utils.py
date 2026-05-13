@@ -1,4 +1,5 @@
 import plotly.graph_objects as go
+from html import escape
 
 def apply_dark_style(fig, ax):
     """Aplica el tema oscuro consistente a todas las gráficas (Matplotlib)."""
@@ -44,3 +45,86 @@ def plotly_dark_layout(**kwargs):
     )
     base.update(kwargs)
     return base
+
+
+def render_html_table(df, max_height=420, table_id=None):
+    """
+    Renderiza una tabla HTML estática y nítida con la paleta de Sovereign AML.
+    Útil para evitar el blur que puede aparecer con st.dataframe en columnas.
+    """
+    css = """
+        <style>
+            .sovereign-table-wrap {
+                width: 100%;
+                overflow: auto;
+                border: 1px solid #30353d;
+                border-top: 3px solid #f59e0b;
+                background: #171c23;
+                box-shadow: inset 0 1px 0 rgba(245, 158, 11, 0.12);
+                -webkit-font-smoothing: antialiased;
+                text-rendering: geometricPrecision;
+            }
+            .sovereign-table {
+                width: 100%;
+                min-width: 760px;
+                border-collapse: collapse;
+                table-layout: auto;
+                color: #1f2937;
+                font-family: Manrope, Arial, sans-serif;
+                font-size: 14px;
+                line-height: 1.35;
+                background: #ffffff;
+            }
+            .sovereign-table th,
+            .sovereign-table td {
+                padding: 13px 16px;
+                text-align: left;
+                border-right: 1px solid #e5e7eb;
+                border-bottom: 1px solid #e5e7eb;
+                white-space: nowrap;
+                vertical-align: middle;
+            }
+            .sovereign-table th {
+                position: sticky;
+                top: 0;
+                z-index: 2;
+                background: #fff7ed;
+                color: #5f3b0a;
+                font-weight: 800;
+            }
+            .sovereign-table td {
+                color: #1f2937;
+                font-weight: 600;
+            }
+            .sovereign-table tbody tr:nth-child(even) td {
+                background: #f9fafb;
+            }
+            .sovereign-table tbody tr:hover td {
+                background: #fffbeb;
+            }
+            .sovereign-table th:last-child,
+            .sovereign-table td:last-child {
+                border-right: none;
+            }
+            .sovereign-table tbody tr:last-child td {
+                border-bottom: none;
+            }
+        </style>
+    """
+
+    attrs = f' id="{escape(str(table_id))}"' if table_id else ""
+    headers = "".join(f"<th>{escape(str(col))}</th>" for col in df.columns)
+    rows = []
+    for _, row in df.iterrows():
+        cells = "".join(f"<td>{escape(str(value))}</td>" for value in row)
+        rows.append(f"<tr>{cells}</tr>")
+
+    return f"""
+    {css}
+    <div class="sovereign-table-wrap" style="max-height:{int(max_height)}px;">
+        <table class="sovereign-table"{attrs}>
+            <thead><tr>{headers}</tr></thead>
+            <tbody>{''.join(rows)}</tbody>
+        </table>
+    </div>
+    """

@@ -3,8 +3,8 @@ import streamlit as st
 def mostrar():
     st.markdown("""
     <div class="info-box">
-        <strong>Manual de Usuario — Versión 3.0</strong> — Documentación técnica integrada de ejecución y uso.
-        Explica el funcionamiento de cada módulo, el modelo de Scoring IMPERATOR (ISO 31000) y las nuevas capacidades de Red Transaccional y Mitigación.
+        <strong>Manual de Usuario — Versión 3.1</strong> — Documentación técnica integrada de ejecución y uso.
+        Explica el funcionamiento de cada módulo, el modelo de Scoring IMPERATOR (ISO 31000), la gestión de sesión y las capacidades de análisis transaccional.
     </div>
     """, unsafe_allow_html=True)
 
@@ -18,7 +18,7 @@ def mostrar():
     * **COSO ERM — Integración Estratégica:** Define *cómo se gobierna el riesgo*. Alinea la detección de alertas con los objetivos de negocio y la estrategia institucional.
     * **ISO 31000 — Metodología Estructural:** Define *cómo se implementa*. Proporciona el marco sistemático para identificar, analizar y tratar los riesgos detectados.
 
-    Este rediseño v3.0 asegura que cada score generado tenga un respaldo metodológico internacional sólido.
+    Este rediseño asegura que cada score generado tenga un respaldo metodológico internacional sólido.
 
     ### Dimensiones del Score IMPERATOR:
     1. **S_T (Riesgo Transaccional):** Basado en reglas de detección (montos, picos, smurfing).
@@ -36,11 +36,28 @@ def mostrar():
     * **TipoOperacion**: Canal usado (Transferencia, Efectivo, etc.).
     * **Cliente_Destino**: (Requerido para Red Transaccional) Identifica quién recibe los fondos.
 
+    ## 2.1. Inicio, Sesión y Persistencia Temporal
+    La plataforma mantiene una sesión operativa diseñada para reducir fricción sin comprometer el control:
+    * **Cierre por inactividad:** Si el usuario no interactúa durante 30 minutos, la sesión se cierra automáticamente y se muestra el aviso correspondiente en el login.
+    * **Recarga accidental:** Si la página se refresca antes de que expire la sesión, el sistema restaura el acceso sin solicitar nuevamente usuario y contraseña.
+    * **Análisis temporal:** Mientras la sesión esté vigente, el Excel cargado se conserva en una caché temporal local. Si el usuario refresca la vista, el análisis se restaura automáticamente sin volver a subir el archivo.
+    * **Limpieza segura:** Al cerrar sesión, iniciar un nuevo análisis o expirar por inactividad, la caché temporal del análisis se elimina.
+    * **Sesiones guardadas (.saml):** Además de la caché temporal, el usuario puede exportar una sesión `.saml` desde el menú lateral para retomarla posteriormente de forma manual.
+
     ## 3. Inteligencia de Red Transaccional
     El nuevo módulo de **Red Transaccional** permite visualizar el flujo de capital mediante grafos:
     * **Identificación de Estratificación (Layering):** Detecta automáticamente rutas "Multi-Hop" donde el dinero pasa por varios intermediarios antes de llegar a un destino final.
     * **Cuentas Puente:** Identifica nodos con alta "Centralidad de Intermediación" que podrían estar siendo usados para triangular fondos.
     * **Detección de Ciclos:** Localiza flujos circulares donde el dinero regresa al origen, señal común de esquemas de lavado.
+    * **Trazabilidad tabular:** Las tablas de relaciones, rutas y centralidad usan un render HTML nítido con la paleta visual de la plataforma para facilitar lectura y evitar problemas de desenfoque del navegador.
+
+    ## 3.1. Imperator Diagnostics
+    El módulo **Imperator Diagnostics** permite evaluar la salud analítica del motor:
+    * **Dominancia de reglas:** Identifica qué reglas generan más alertas y si alguna regla domina en exceso.
+    * **Explicabilidad:** Muestra la composición del score por pilares S_T, S_C, S_B y S_N.
+    * **Falsos positivos:** Estima ruido analítico sobre clientes de riesgo bajo.
+    * **Pruebas de estrés:** Simula cambios de parámetros antes de aplicarlos a la configuración.
+    * **Densidad de riesgo:** Analiza concentración del riesgo en la cartera.
 
     ## 4. Gestión de Acciones de Mitigación
     Basado en el **RBA (Risk-Based Approach)**, el sistema asigna automáticamente acciones según el nivel de alerta:
@@ -67,9 +84,16 @@ def mostrar():
     1. **Resumen Ejecutivo**: Observe la distribución de asociados PEP/CPE para entender la exposición política de la cartera.
     2. **Análisis de Red**: Use los filtros de **Enfoque** y **Saltos (Hops)** para limpiar el mapa y seguir la ruta del dinero de un cliente sospechoso.
     3. **Protocolo de Mitigación**: Consulte el módulo de acciones para saber exactamente qué medida aplicar según la normativa internacional.
-    4. **Configuración**: Personalice los umbrales de acuerdo con las políticas internas de cumplimiento de su institución.
+    4. **Imperator Diagnostics**: Revise dominancia de reglas, falsos positivos y sensibilidad de parámetros antes de ajustar umbrales.
+    5. **Configuración**: Personalice los umbrales de acuerdo con las políticas internas de cumplimiento de su institución.
+
+    ## 8. Recomendaciones de Seguridad Operativa
+    * Cierre sesión al terminar el análisis, especialmente en equipos compartidos.
+    * Use la exportación `.saml` únicamente cuando necesite conservar el análisis fuera de la sesión temporal.
+    * Proteja los archivos `.saml`; contienen transacciones originales y configuración del análisis.
+    * Revise periódicamente dependencias del entorno Python y mantenga versiones fijadas para instalaciones reproducibles.
 
     ---
-    **SOVEREIGN AML v3.0 (Analytical Intelligence Platform)**  
+    **SOVEREIGN AML v3.1 (Analytical Intelligence Platform)**  
     *Ing. Hobéd Díaz — Msc. M.A.F.I*
     """)

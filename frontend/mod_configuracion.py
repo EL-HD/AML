@@ -15,16 +15,16 @@ def mostrar(_DEFAULTS):
 
     # ── TABS de secciones ────────────────────────────────────────────────
     tab1, tab2, tab3, tab4 = st.tabs([
-        "🎯 Reglas de Detección",
-        "⚖️ Pesos del Score",
-        "🚦 Clasificación de Riesgo",
-        "📋 Resumen y Aplicar"
+        "Reglas de Detección",
+        "Pesos del Score",
+        "Clasificación de Riesgo",
+        "Resumen y Aplicar"
     ])
 
     # ── Botón Restablecer prominente arriba de los tabs ─────────────────
     col_rst1, col_rst2, col_rst3 = st.columns([3, 2, 3])
     with col_rst2:
-        if st.button("🔄 Restablecer configuración base", use_container_width=True):
+        if st.button("Restablecer configuración base", use_container_width=True):
             st.session_state["aml_config"] = _DEFAULTS.copy()
             st.success("✅ Todos los parámetros han sido restaurados a los valores por defecto.")
             st.rerun()
@@ -47,8 +47,8 @@ def mostrar(_DEFAULTS):
         with col_on:
             c["regla_absoluto"] = st.toggle("", value=c["regla_absoluto"], key="tog_abs")
         with col_title:
-            estado_abs = "🟢 ACTIVA" if c["regla_absoluto"] else "🔴 DESACTIVADA"
-            st.markdown(f'<div class="section-title">💰 Regla 1 — Monto Alto Absoluto &nbsp;<span class="section-badge">{estado_abs}</span></div>', unsafe_allow_html=True)
+            estado_abs = "ACTIVA" if c["regla_absoluto"] else "DESACTIVADA"
+            st.markdown(f'<div class="section-title">Regla 1 — Monto Alto Absoluto &nbsp;<span class="section-badge">{estado_abs}</span></div>', unsafe_allow_html=True)
 
         col_desc1, col_ctrl1 = st.columns([3, 2])
         with col_desc1:
@@ -93,8 +93,8 @@ def mostrar(_DEFAULTS):
         with col_on2:
             c["regla_acumulado"] = st.toggle("", value=c["regla_acumulado"], key="tog_acum")
         with col_title2:
-            estado_acum = "🟢 ACTIVA" if c["regla_acumulado"] else "🔴 DESACTIVADA"
-            st.markdown(f'<div class="section-title">📦 Regla 2 — Acumulado Mensual &nbsp;<span class="section-badge">{estado_acum}</span></div>', unsafe_allow_html=True)
+            estado_acum = "ACTIVA" if c["regla_acumulado"] else "DESACTIVADA"
+            st.markdown(f'<div class="section-title">Regla 2 — Acumulado Mensual &nbsp;<span class="section-badge">{estado_acum}</span></div>', unsafe_allow_html=True)
 
         col_desc2, col_ctrl2 = st.columns([3, 2])
         with col_desc2:
@@ -147,8 +147,8 @@ def mostrar(_DEFAULTS):
         with col_on3:
             c["regla_perfil"] = st.toggle("", value=c["regla_perfil"], key="tog_perf")
         with col_title3:
-            estado_perf = "🟢 ACTIVA" if c["regla_perfil"] else "🔴 DESACTIVADA"
-            st.markdown(f'<div class="section-title">📐 Regla 3 — Exceso sobre Perfil &nbsp;<span class="section-badge">{estado_perf}</span></div>', unsafe_allow_html=True)
+            estado_perf = "ACTIVA" if c["regla_perfil"] else "DESACTIVADA"
+            st.markdown(f'<div class="section-title">Regla 3 — Exceso sobre Perfil &nbsp;<span class="section-badge">{estado_perf}</span></div>', unsafe_allow_html=True)
 
         col_desc3, col_ctrl3 = st.columns([3, 2])
         with col_desc3:
@@ -193,8 +193,8 @@ def mostrar(_DEFAULTS):
         with col_on4:
             c["regla_frecuencia"] = st.toggle("", value=c["regla_frecuencia"], key="tog_frec")
         with col_title4:
-            estado_frec = "🟢 ACTIVA" if c["regla_frecuencia"] else "🔴 DESACTIVADA"
-            st.markdown(f'<div class="section-title">🔄 Regla 4 — Frecuencia Alta &nbsp;<span class="section-badge">{estado_frec}</span></div>', unsafe_allow_html=True)
+            estado_frec = "ACTIVA" if c["regla_frecuencia"] else "DESACTIVADA"
+            st.markdown(f'<div class="section-title">Regla 4 — Frecuencia Alta &nbsp;<span class="section-badge">{estado_frec}</span></div>', unsafe_allow_html=True)
 
         col_desc4, col_ctrl4 = st.columns([3, 2])
         with col_desc4:
@@ -239,8 +239,8 @@ def mostrar(_DEFAULTS):
         with col_on5:
             c["regla_smurfing"] = st.toggle("", value=c["regla_smurfing"], key="tog_smurf")
         with col_title5:
-            estado_smurf = "🟢 ACTIVA" if c["regla_smurfing"] else "🔴 DESACTIVADA"
-            st.markdown(f'<div class="section-title">🧩 Regla 5 — Smurfing (Fragmentación) &nbsp;<span class="section-badge">{estado_smurf}</span></div>', unsafe_allow_html=True)
+            estado_smurf = "ACTIVA" if c["regla_smurfing"] else "DESACTIVADA"
+            st.markdown(f'<div class="section-title">Regla 5 — Smurfing (Fragmentación) &nbsp;<span class="section-badge">{estado_smurf}</span></div>', unsafe_allow_html=True)
 
         col_desc5, col_ctrl5 = st.columns([3, 2])
         with col_desc5:
@@ -281,12 +281,13 @@ def mostrar(_DEFAULTS):
         st.markdown("---")
 
         # ── Regla 6 — Pico Anómalo ──────────────────────────────────────
+
         col_on6, col_title6 = st.columns([1, 9])
         with col_on6:
             c["regla_pico"] = st.toggle("", value=c["regla_pico"], key="tog_pico")
         with col_title6:
-            estado_pico = "🟢 ACTIVA" if c["regla_pico"] else "🔴 DESACTIVADA"
-            st.markdown(f'<div class="section-title">📈 Regla 6 — Pico Anómalo Estadístico &nbsp;<span class="section-badge">{estado_pico}</span></div>', unsafe_allow_html=True)
+            estado_pico = "ACTIVA" if c["regla_pico"] else "DESACTIVADA"
+            st.markdown(f'<div class="section-title">Regla 6 — Pico Anómalo Estadístico &nbsp;<span class="section-badge">{estado_pico}</span></div>', unsafe_allow_html=True)
 
         col_desc6, col_ctrl6 = st.columns([3, 2])
         with col_desc6:
@@ -324,6 +325,68 @@ def mostrar(_DEFAULTS):
                 <div class="metric-sub">Peso en score: <strong>{c['peso_pico']} pts</strong></div>
             </div>""", unsafe_allow_html=True)
 
+        st.markdown("---")
+
+        # ── Regla 7 — Verificación FEIS → FEIC ─────────────────────────
+        col_on7, col_title7 = st.columns([1, 9])
+        with col_on7:
+            c["regla_feic"] = st.toggle("", value=c.get("regla_feic", True), key="tog_feic")
+        with col_title7:
+            estado_feic = "ACTIVA" if c.get("regla_feic", True) else "DESACTIVADA"
+            st.markdown(
+                f'<div class="section-title">Regla 7 — Verificación FEIS → FEIC &nbsp;'
+                f'<span class="section-badge">{estado_feic}</span></div>',
+                unsafe_allow_html=True
+            )
+
+        col_desc7, col_ctrl7 = st.columns([3, 2])
+        with col_desc7:
+            umbral_actual = c.get("umbral_feic", 45000)
+            st.markdown(f"""
+            <div style="background:#171c23; border:1px solid #534434; border-radius:0px; padding:20px; margin-bottom:12px;">
+                <div style="color:#a855f7; font-size:11px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:12px;">
+                    <span class="pulse-dot" style="background:#a855f7; box-shadow:0 0 10px rgba(168,85,247,0.8);"></span> ESPECIFICACIÓN TÉCNICA
+                </div>
+                <div style="color:#dee2ed; font-size:13px; line-height:1.8; margin-bottom:15px;">
+                    Verifica que los <strong style='color:#a855f7;'>asociados con perfil transaccional bajo</strong>
+                    registrados con FEIS actualicen a FEIC cuando sus transacciones superan el umbral definido.
+                    Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acción de mitigación.
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div style="background:#1b2027; border-radius:0px; padding:12px; border:1px solid rgba(168,85,247,0.2);">
+                        <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Formulario origen</div>
+                        <div style="color:#a855f7; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">FEIS — Simplificado</div>
+                    </div>
+                    <div style="background:#1b2027; border-radius:0px; padding:12px; border:1px solid rgba(168,85,247,0.2);">
+                        <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Formulario objetivo</div>
+                        <div style="color:#a855f7; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">FEIC — Completo</div>
+                    </div>
+                </div>
+                <div style="margin-top:12px; padding:10px; background:#1b2027; border-left:2px solid #a855f7;">
+                    <div style="color:#a08e7a; font-size:11px; font-family:IBM Plex Mono,monospace;">LÓGICA DE ACTIVACIÓN</div>
+                    <div style="color:#a08e7a; font-size:12px; margin-top:4px; line-height:1.7;">
+                        <strong style='color:#c9d1d9;'>Total Mensual &gt; Q{umbral_actual:,} →</strong> Se agrega acción F-01 en Mitigación.<br>
+                        <strong style='color:#c9d1d9;'>Total Mensual ≤ Q{umbral_actual:,} →</strong> No se muestra la acción (perfil bajo OK).
+                    </div>
+                </div>
+            </div>""", unsafe_allow_html=True)
+        with col_ctrl7:
+            c["umbral_feic"] = st.number_input(
+                "Umbral máximo perfil bajo (Q)",
+                min_value=1000, max_value=500_000,
+                value=int(c.get("umbral_feic", 45000)),
+                step=1000,
+                help="Si el total mensual del asociado supera este monto, se activa la acción F-01 (actualizar a FEIC).",
+                disabled=not c.get("regla_feic", True)
+            )
+            color_feic = "amber" if c.get("regla_feic", True) else "blue"
+            st.markdown(f"""
+            <div class="metric-card {color_feic}" style="margin-top:8px; border-left-color:#a855f7;">
+                <div class="metric-number" style="font-size:22px; color:#a855f7;">Q{c.get('umbral_feic', 45000):,}</div>
+                <div class="metric-label">Umbral FEIC actual</div>
+                <div class="metric-sub">Código de acción: <strong>F-01</strong> | Norma: GAFI Rec. 10</div>
+            </div>""", unsafe_allow_html=True)
+
     # ── TAB 2: Pesos del Score ──────────────────────────────────────────
     with tab2:
         st.markdown("""
@@ -351,7 +414,7 @@ def mostrar(_DEFAULTS):
         col_p1, col_p2 = st.columns(2)
 
         with col_p1:
-            st.markdown("### 🏛️ Pilares Estratégicos (S_T, S_C, S_B, S_N)")
+            st.markdown("### Pilares Estratégicos (S_T, S_C, S_B, S_N)")
             st.markdown("""
             <div style="font-size:11px; color:#a08e7a; margin-bottom:12px;">
                 Defina la importancia relativa de cada pilar en el Score Total. La suma de estos pesos determinará el núcleo del motor.
@@ -369,7 +432,7 @@ def mostrar(_DEFAULTS):
                 st.success("✅ Ponderación equilibrada (Suma = 1.00)")
 
             st.markdown("---")
-            st.markdown("### 💰 Componentes Técnicos (S_T)")
+            st.markdown("### Componentes Técnicos (S_T)")
             st.markdown("""
             <div style="font-size:11px; color:#a08e7a; margin-bottom:12px;">
                 Ajusta el peso individual de cada regla que alimenta al pilar Transaccional. (0 = off, 10 = max).
@@ -416,7 +479,7 @@ def mostrar(_DEFAULTS):
             st.markdown(f"""
             <div class="warning-box" style="margin-top:12px;">
                 <strong>⚠️ Recuerda:</strong> Si cambias los pesos, ajusta también los umbrales de
-                clasificación en <em>🚦 Clasificación de Riesgo</em> para que Crítico/Alto/Medio
+                clasificación en <em>Clasificación de Riesgo</em> para que Crítico/Alto/Medio
                 sigan siendo proporcionales al nuevo score máximo de <strong>{score_max_teorico} pts</strong>.
             </div>""", unsafe_allow_html=True)
 
@@ -445,7 +508,7 @@ def mostrar(_DEFAULTS):
         col_r1, col_r2 = st.columns(2)
 
         with col_r1:
-            st.markdown("**🔴 Nivel Crítico**")
+            st.markdown("**Nivel Crítico**")
             c["score_critico"] = st.number_input(
                 "Score mínimo para Crítico",
                 min_value=1, max_value=30, value=int(c["score_critico"]),
@@ -457,14 +520,14 @@ def mostrar(_DEFAULTS):
                 help="Clientes cuyo total mensual supere este monto son Críticos, independiente del score."
             )
 
-            st.markdown("<br>**🟠 Nivel Alto**", unsafe_allow_html=True)
+            st.markdown("<br>**Nivel Alto**", unsafe_allow_html=True)
             c["score_alto"] = st.number_input(
                 "Score mínimo para Alto",
                 min_value=1, max_value=30, value=int(c["score_alto"]),
                 help="Clientes con score ≥ este valor (y menor que Crítico) son clasificados como Alto."
             )
 
-            st.markdown("<br>**🟡 Nivel Medio**", unsafe_allow_html=True)
+            st.markdown("<br>**Nivel Medio**", unsafe_allow_html=True)
             c["score_medio"] = st.number_input(
                 "Score mínimo para Medio",
                 min_value=1, max_value=30, value=int(c["score_medio"]),
@@ -473,7 +536,7 @@ def mostrar(_DEFAULTS):
 
             st.markdown("""
             <div class="info-box" style="margin-top:12px;">
-                <strong>🟢 Nivel Bajo</strong> — Se asigna automáticamente a todo cliente cuyo score
+                <strong>Nivel Bajo</strong> — Se asigna automáticamente a todo cliente cuyo score
                 sea menor al umbral Medio y cuyo total mensual no supere el monto crítico.
                 Son clientes sin señales de alerta significativas en el período.
             </div>""", unsafe_allow_html=True)
@@ -509,19 +572,19 @@ def mostrar(_DEFAULTS):
 
     # ── TAB 4: Resumen y Aplicar ────────────────────────────────────────
     with tab4:
-        st.markdown("### 📋 Resumen de la Configuración Actual")
+        st.markdown("### Resumen de la Configuración Actual")
 
         col_res1, col_res2 = st.columns(2)
 
         with col_res1:
-            st.markdown("**🎯 Reglas de Detección**")
+            st.markdown("**Reglas de Detección**")
             reglas_resumen = [
-                ("💰 Monto Alto Absoluto", c["regla_absoluto"],   f"Umbral: Q{c['umbral_absoluto']:,}"),
-                ("📦 Acumulado Mensual",   c["regla_acumulado"],  f"Multiplicador: {c['mult_acumulado']}x"),
-                ("📐 Exceso sobre Perfil", c["regla_perfil"],     f"Tolerancia: {c['tolerancia_perfil']}%"),
-                ("🔄 Frecuencia Alta",     c["regla_frecuencia"], f"Umbral: >{c['umbral_frecuencia']} transacciones"),
-                ("🧩 Smurfing",            c["regla_smurfing"],   f"Umbral: ≥{c['umbral_smurfing']} en mismo día"),
-                ("📈 Pico Anómalo",        c["regla_pico"],       f"Umbral: μ + {c['mult_std_pico']}σ"),
+                ("Monto Alto Absoluto", c["regla_absoluto"],   f"Umbral: Q{c['umbral_absoluto']:,}"),
+                ("Acumulado Mensual",   c["regla_acumulado"],  f"Multiplicador: {c['mult_acumulado']}x"),
+                ("Exceso sobre Perfil", c["regla_perfil"],     f"Tolerancia: {c['tolerancia_perfil']}%"),
+                ("Frecuencia Alta",     c["regla_frecuencia"], f"Umbral: >{c['umbral_frecuencia']} transacciones"),
+                ("Smurfing",            c["regla_smurfing"],   f"Umbral: ≥{c['umbral_smurfing']} en mismo día"),
+                ("Pico Anómalo",        c["regla_pico"],       f"Umbral: μ + {c['mult_std_pico']}σ"),
             ]
             for nombre_r, activa_r, detalle_r in reglas_resumen:
                 estado_color = "#22c55e" if activa_r else "#ef4444"
@@ -539,7 +602,7 @@ def mostrar(_DEFAULTS):
                 </div>""", unsafe_allow_html=True)
 
         with col_res2:
-            st.markdown("**⚖️ Pesos y Clasificación**")
+            st.markdown("**Pesos y Clasificación**")
             st.markdown(f"""
             <div style="background:#171c23; border:1px solid #21262d; border-radius:0px; padding:16px;">
                 <div style="font-family:IBM Plex Mono,monospace; font-size:12px; color:#8b949e; line-height:2;">

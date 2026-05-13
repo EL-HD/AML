@@ -1,11 +1,11 @@
 import streamlit as st
 import plotly.graph_objects as go
-from frontend.mod_utils import plotly_dark_layout
+from frontend.mod_utils import plotly_dark_layout, render_html_table
 
 def mostrar(casos, matriz_alertas):
     st.markdown("""<div class="info-box"><strong>MATRICES DE RIESGO</strong> — Arquitectura de decisión IMPERATOR. Clasificación técnica por perfiles de riesgo y tipologías de alerta analitica. Optimizado para calibración de umbrales y priorización táctica.</div>""", unsafe_allow_html=True)
 
-    st.markdown('<div class="section-title">👥 Matriz de Riesgo por Cliente</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Matriz de Riesgo por Cliente</div>', unsafe_allow_html=True)
     st.markdown("""
     <div class="glossary">
         <div class="glossary-title">DICCIONARIO DE DATOS</div>
@@ -22,25 +22,26 @@ def mostrar(casos, matriz_alertas):
         if col in casos_view.columns:
             casos_view[col] = casos_view[col].apply(lambda x: "Si" if x else "--")
 
-    st.dataframe(
-        casos_view.sort_values("Score_Max", ascending=False).reset_index(drop=True),
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Total_Mensual": st.column_config.NumberColumn("Total Mensual (Q)", format="Q%.2f"),
-            "Score_Max": st.column_config.NumberColumn("Score Máx.", format="%.2f pts"),
-            "ST_Max": st.column_config.NumberColumn("S_T", format="%.4f"),
-            "SC_Max": st.column_config.NumberColumn("S_C", format="%.4f"),
-            "SB_Max": st.column_config.NumberColumn("S_B", format="%.4f"),
-            "SN_Max": st.column_config.NumberColumn("S_N", format="%.4f"),
-            "EsPEP": st.column_config.TextColumn("EsPEP"),
-            "EsCPE": st.column_config.TextColumn("EsCPE"),
-            "Ubicacion_Riesgo": st.column_config.TextColumn("Ubicacion_Riesgo"),
-        }
-    )
+    tabla_casos = casos_view.sort_values("Score_Max", ascending=False).reset_index(drop=True).copy()
+    if "Total_Mensual" in tabla_casos.columns:
+        tabla_casos["Total_Mensual"] = tabla_casos["Total_Mensual"].map(lambda v: f"Q{v:,.2f}")
+    if "Score_Max" in tabla_casos.columns:
+        tabla_casos["Score_Max"] = tabla_casos["Score_Max"].map(lambda v: f"{v:.2f} pts")
+    for col in ["ST_Max", "SC_Max", "SB_Max", "SN_Max"]:
+        if col in tabla_casos.columns:
+            tabla_casos[col] = tabla_casos[col].map(lambda v: f"{v:.4f}")
+    tabla_casos = tabla_casos.rename(columns={
+        "Total_Mensual": "Total Mensual (Q)",
+        "Score_Max": "Score Máx.",
+        "ST_Max": "S_T",
+        "SC_Max": "S_C",
+        "SB_Max": "S_B",
+        "SN_Max": "S_N",
+    })
+    st.markdown(render_html_table(tabla_casos, max_height=520), unsafe_allow_html=True)
 
     st.markdown("<br><br>", unsafe_allow_html=True)
-    st.markdown('<div class="section-title">🛡️ Matriz de Tipos de Alerta</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Matriz de Tipos de Alerta</div>', unsafe_allow_html=True)
     st.markdown("""<div class="glossary"><div class="glossary-title">DICCIONARIO DE REGLAS</div><div class="glossary-item"><span class="glossary-key">Tipo de Alerta</span><span>Regla IMPERATOR aplicada.</span></div><div class="glossary-item"><span class="glossary-key">Cantidad</span><span>Detecciones activas.</span></div><div class="glossary-item"><span class="glossary-key">Nivel de Impacto</span><span>Magnitud de severidad.</span></div><div class="glossary-item"><span class="glossary-key">Peso en Score</span><span>Ponderación analítica.</span></div><div class="glossary-item"><span class="glossary-key">Descripción</span><span>Lógica de detección técnica.</span></div></div>""", unsafe_allow_html=True)
 
     # ── Tabla limpia HTML — texto blanco garantizado ──
@@ -100,4 +101,4 @@ def mostrar(casos, matriz_alertas):
         xaxis=dict(tickangle=-30, gridcolor='#30353d', linecolor='#30353d', tickfont=dict(color='#d8c3ad', size=9)),
     ))
     st.plotly_chart(fig_contrib, use_container_width=True)
-    st.markdown("""<div class="info-box" style="margin-top: 5px;"><b>📌 Interpretación:</b> Análisis de contribución ponderada. Destaca las reglas que inyectan mayor riesgo distribuido en la cartera analizada.</div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="info-box" style="margin-top: 5px;"><b>Interpretación:</b> Análisis de contribución ponderada. Destaca las reglas que inyectan mayor riesgo distribuido en la cartera analizada.</div>""", unsafe_allow_html=True)

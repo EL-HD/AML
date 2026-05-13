@@ -149,7 +149,7 @@ def mostrar(df, casos, cfg):
         xaxis=dict(tickangle=-45, gridcolor='#30353d', linecolor='#30353d', tickfont=dict(color='#d8c3ad', size=9)),
     ))
     st.plotly_chart(fig_tend, use_container_width=True)
-    st.markdown("""<div class="info-box" style="margin-top: 5px;"><b>📌 Interpretación:</b> Análisis de desviación sobre perfil de riesgo. El área roja destaca transacciones que superan los umbrales de tolerancia institucional.</div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="info-box" style="margin-top: 5px;"><b>Interpretación:</b> Análisis de desviación sobre perfil de riesgo. El área roja destaca transacciones que superan los umbrales de tolerancia institucional.</div>""", unsafe_allow_html=True)
 
 
     col_g1, col_g2 = st.columns(2)
@@ -191,7 +191,7 @@ def mostrar(df, casos, cfg):
             xaxis=dict(tickangle=-45, gridcolor='#30353d', linecolor='#30353d', tickfont=dict(color='#d8c3ad', size=8)),
         ))
         st.plotly_chart(fig_picos, use_container_width=True)
-        st.markdown("""<div class="info-box" style="margin-top: 5px;"><b>📌 Interpretación:</b> Identificación de anomalías estadísticas (+2 Std). Los diamantes rojos representan actividad que rompe la distribución normal del cliente.</div>""", unsafe_allow_html=True)
+        st.markdown("""<div class="info-box" style="margin-top: 5px;"><b>Interpretación:</b> Identificación de anomalías estadísticas (+2 Std). Los diamantes rojos representan actividad que rompe la distribución normal del cliente.</div>""", unsafe_allow_html=True)
 
 
     with col_g2:
@@ -223,4 +223,4 @@ def mostrar(df, casos, cfg):
             xaxis=dict(tickangle=-45, gridcolor='#30353d', linecolor='#30353d', tickfont=dict(color='#d8c3ad', size=8)),
         ))
         st.plotly_chart(fig_freq, use_container_width=True)
-        st.markdown("""<div class="info-box" style="margin-top: 5px;"><b>📌 Interpretación:</b> Vigilancia de fragmentación estructural. Barras rojas indican una densidad operativa superior al umbral crítico de smurfing.</div>""", unsafe_allow_html=True)
+        st.markdown("""<div class="info-box" style="margin-top: 5px;"><b>Interpretación:</b> Vigilancia de fragmentación estructural. Barras rojas indican una densidad operativa superior al umbral crítico de smurfing.</div>""", unsafe_allow_html=True)

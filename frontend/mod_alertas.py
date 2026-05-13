@@ -1,4 +1,5 @@
 import streamlit as st
+from frontend.mod_utils import render_html_table
 
 def mostrar(casos):
     st.markdown("""
@@ -53,22 +54,22 @@ def mostrar(casos):
         El listado se presenta de mayor a menor score para facilitar priorización operativa.
     </div>
     """, unsafe_allow_html=True)
-    st.dataframe(
-        casos_view,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Cliente": st.column_config.TextColumn("Cliente"),
-            "Total_Mensual": st.column_config.NumberColumn("Total Mensual (Q)", format="Q%.2f"),
-            "Score_Max": st.column_config.NumberColumn("Score de Riesgo", format="%.2f pts"),
-            "ST_Max": st.column_config.NumberColumn("S_T (Transaccional)", format="%.4f"),
-            "SC_Max": st.column_config.NumberColumn("S_C (Contextual)", format="%.4f"),
-            "SB_Max": st.column_config.NumberColumn("S_B (Conductual)", format="%.4f"),
-            "SN_Max": st.column_config.NumberColumn("S_N (Red)", format="%.4f"),
-            "Transacciones": st.column_config.NumberColumn("N° Transacciones"),
-            "EsPEP": st.column_config.TextColumn("EsPEP"),
-            "EsCPE": st.column_config.TextColumn("EsCPE"),
-            "Ubicacion_Riesgo": st.column_config.TextColumn("Ubicacion_Riesgo"),
-            "Nivel_Riesgo": st.column_config.TextColumn("Nivel de Riesgo"),
-        }
-    )
+    tabla_casos = casos_view.copy()
+    if "Total_Mensual" in tabla_casos.columns:
+        tabla_casos["Total_Mensual"] = tabla_casos["Total_Mensual"].map(lambda v: f"Q{v:,.2f}")
+    if "Score_Max" in tabla_casos.columns:
+        tabla_casos["Score_Max"] = tabla_casos["Score_Max"].map(lambda v: f"{v:.2f} pts")
+    for col in ["ST_Max", "SC_Max", "SB_Max", "SN_Max"]:
+        if col in tabla_casos.columns:
+            tabla_casos[col] = tabla_casos[col].map(lambda v: f"{v:.4f}")
+    tabla_casos = tabla_casos.rename(columns={
+        "Total_Mensual": "Total Mensual (Q)",
+        "Score_Max": "Score de Riesgo",
+        "ST_Max": "S_T (Transaccional)",
+        "SC_Max": "S_C (Contextual)",
+        "SB_Max": "S_B (Conductual)",
+        "SN_Max": "S_N (Red)",
+        "Transacciones": "N. Transacciones",
+        "Nivel_Riesgo": "Nivel de Riesgo",
+    })
+    st.markdown(render_html_table(tabla_casos, max_height=560), unsafe_allow_html=True)

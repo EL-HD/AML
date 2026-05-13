@@ -29,13 +29,18 @@ _CATALOGO = {
         {"accion": "Reclasificación de segmento",   "codigo": "E-02", "norma": "RBA GAFI §2"},
         {"accion": "Restricción de productos",       "codigo": "E-03", "norma": "ISO 31000 §6.4.3"},
     ],
+    "Formularios KYC": [
+        {"accion": "Actualizar FEIS a FEIC (Formulario Electrónico de Información del Cliente)",
+         "codigo": "F-01", "norma": "GAFI Rec. 10 / KYC"},
+    ],
 }
 
 _COLOR_CAT = {
-    "Preventivas":  "#ef4444",
-    "Correctivas":  "#f97316",
-    "Regulatorias": "#eab308",
-    "Estratégicas": "#3b82f6",
+    "Preventivas":   "#ef4444",
+    "Correctivas":   "#f97316",
+    "Regulatorias":  "#eab308",
+    "Estratégicas":  "#3b82f6",
+    "Formularios KYC": "#a855f7",
 }
 
 
@@ -45,24 +50,27 @@ def _texto_seguro(valor):
         return "—"
     return html.escape(str(valor))
 
-def _determinar_acciones(row):
+def _determinar_acciones(row, cfg=None):
     """
     Determina las acciones de mitigación según el nivel de riesgo,
     score y factores agravantes (RBA / GAFI / ISO 31000).
+    Incluye verificación FEIS→FEIC cuando el asociado tiene perfil
+    transaccional bajo (total mensual <= umbral configurable).
     """
     acciones = []
-    score    = row.get("Score_Max", 0)
-    nivel    = row.get("Nivel_Riesgo", "Bajo")
-    es_pep   = row.get("EsPEP", False)
-    es_cpe   = row.get("EsCPE", False)
-    smurfing = row.get("Smurfing_Count", 0) > 0
-    pico     = row.get("Pico_Count", 0) > 0
-    geo      = row.get("Ubicacion_Riesgo", False)
+    score         = row.get("Score_Max", 0)
+    nivel         = row.get("Nivel_Riesgo", "Bajo")
+    es_pep        = row.get("EsPEP", False)
+    es_cpe        = row.get("EsCPE", False)
+    smurfing      = row.get("Smurfing_Count", 0) > 0
+    pico          = row.get("Pico_Count", 0) > 0
+    geo           = row.get("Ubicacion_Riesgo", False)
+    total_mensual = row.get("Total_Mensual", 0)
 
     # ── NIVEL CRÍTICO (score ≥ 8) ──────────────────────────────────────────
     if nivel == "Crítico":
         acciones += ["P-01", "P-02"]          # Bloqueo + Rechazo
-        acciones += ["C-01", "C-02"]          #DDA + Documentación
+        acciones += ["C-01", "C-02"]          # DDA + Documentación
         acciones += ["R-01", "R-02"]          # RTS/RTI + Escalamiento
         if es_pep or es_cpe:
             acciones += ["E-01", "E-02"]      # Ajuste perfil + Reclasificación
@@ -87,6 +95,15 @@ def _determinar_acciones(row):
     # ── NIVEL BAJO ─────────────────────────────────────────────────────────
     else:
         acciones += ["E-01"]                  # Ajuste de perfil preventivo
+
+    # ── ALERTA FEIS → FEIC (perfil transaccional bajo) ─────────────────────
+    # Solo se activa si: la regla está habilitada Y el total mensual
+    # supera el umbral FEIC configurado (indica que ya no es perfil bajo).
+    if cfg is not None:
+        regla_feic   = cfg.get("regla_feic", True)
+        umbral_feic  = cfg.get("umbral_feic", 45000)
+        if regla_feic and total_mensual > umbral_feic:
+            acciones += ["F-01"]
 
     return list(dict.fromkeys(acciones))       # eliminar duplicados manteniendo orden
 
@@ -129,9 +146,22 @@ def mostrar(df, casos):
 
     st.markdown("---")
 
+    # ── ALERTA FEIS → FEIC ────────────────────────────────────────────────
+    cfg_mit = st.session_state.get("aml_config", {})
+    regla_feic  = cfg_mit.get("regla_feic", True)
+    umbral_feic = cfg_mit.get("umbral_feic", 45000)
+    if regla_feic:
+        st.markdown(f"""
+        <div style="background:#1b1027; border-left:4px solid #a855f7; padding:14px; margin-bottom:16px; font-size:12px; color:#d8c3ad;">
+            <span style="color:#a855f7; font-weight:700; font-family:'IBM Plex Mono',monospace;">VERIFICACIÓN FEIS → FEIC ACTIVA</span>
+            &nbsp;|&nbsp; Umbral configurado: <strong>Q{umbral_feic:,}</strong><br>
+            Los asociados que superen este monto mensual recibirán la acción <strong>F-01</strong>:
+            actualización de FEIS a FEIC (Formulario Electrónico de Información del Cliente).
+        </div>""", unsafe_allow_html=True)
+
     # ── CATÁLOGO DE ACCIONES DE MITIGACIÓN ────────────────────────────────
     st.markdown('<div class="section-title">Catálogo de Acciones Estandarizadas</div>', unsafe_allow_html=True)
-    col_cats = st.columns(4)
+    col_cats = st.columns(5)
     for col, (cat_nombre, items) in zip(col_cats, _CATALOGO.items()):
         color = _COLOR_CAT[cat_nombre]
         with col:
@@ -168,9 +198,10 @@ def mostrar(df, casos):
         return
 
     # Construir tabla de acciones
+    cfg = st.session_state.get("aml_config", {})
     registros = []
     for _, row in df_filtrado.iterrows():
-        codigos = _determinar_acciones(row)
+        codigos = _determinar_acciones(row, cfg)
         for cod in codigos:
             det = _buscar_accion(cod)
             registros.append({
@@ -292,7 +323,7 @@ def mostrar(df, casos):
     ))
     st.plotly_chart(fig, use_container_width=True)
     st.markdown("""<div class="info-box" style="margin-top:5px;">
-        <b>📌 Interpretación:</b> Distribución del catálogo de acciones ejecutadas en el período.
+        <b>Interpretación:</b> Distribución del catálogo de acciones ejecutadas en el período.
         El volumen de acciones regulatorias indica la presión de reporte hacia la SIB.
         Las estratégicas reflejan ajustes preventivos al perfil de riesgo del cliente.
     </div>""", unsafe_allow_html=True)

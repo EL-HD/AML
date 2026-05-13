@@ -1,4 +1,5 @@
 import streamlit as st
+from frontend.mod_utils import render_html_table
 
 def mostrar(df):
     st.markdown("""
@@ -57,18 +58,24 @@ def mostrar(df):
         Las columnas de validación muestran <strong>Si</strong> cuando la condición aplica y <strong>--</strong> cuando no fue activada en el análisis.
     </div>
     """, unsafe_allow_html=True)
-    st.dataframe(
-        df_view[columnas_mostrar].sort_values("Score", ascending=False).reset_index(drop=True),
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Monto": st.column_config.NumberColumn("Monto (Q)", format="Q%.2f"),
-            "Perfil": st.column_config.NumberColumn("Perfil (Q)", format="Q%.2f"),
-            "Score": st.column_config.NumberColumn("Score", format="%.2f pts"),
-            "_ST": st.column_config.NumberColumn("S_T", format="%.4f"),
-            "_SC": st.column_config.NumberColumn("S_C", format="%.4f"),
-            "_SB": st.column_config.NumberColumn("S_B", format="%.4f"),
-            "_SN": st.column_config.NumberColumn("S_N", format="%.4f"),
-            "Fecha": st.column_config.DateColumn("Fecha"),
-        }
-    )
+    tabla = df_view[columnas_mostrar].sort_values("Score", ascending=False).reset_index(drop=True).copy()
+    rename_cols = {
+        "Monto": "Monto (Q)",
+        "Perfil": "Perfil (Q)",
+        "Score": "Score",
+        "_ST": "S_T",
+        "_SC": "S_C",
+        "_SB": "S_B",
+        "_SN": "S_N",
+    }
+    for col in ["Monto", "Perfil"]:
+        if col in tabla.columns:
+            tabla[col] = tabla[col].map(lambda v: f"Q{v:,.2f}")
+    for col in ["Score"]:
+        if col in tabla.columns:
+            tabla[col] = tabla[col].map(lambda v: f"{v:.2f} pts")
+    for col in ["_ST", "_SC", "_SB", "_SN"]:
+        if col in tabla.columns:
+            tabla[col] = tabla[col].map(lambda v: f"{v:.4f}")
+    tabla = tabla.rename(columns=rename_cols)
+    st.markdown(render_html_table(tabla, max_height=560), unsafe_allow_html=True)

@@ -131,7 +131,7 @@ def build_document(output_path: Path):
     doc.add_paragraph()
     meta = doc.add_paragraph()
     meta.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    meta.add_run(f"Versión 3.0  ·  {date.today().strftime('%d de %B de %Y')}").font.size = Pt(10)
+    meta.add_run(f"Versión 3.1  ·  {date.today().strftime('%d de %B de %Y')}").font.size = Pt(10)
 
     author_p = doc.add_paragraph()
     author_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -164,14 +164,18 @@ def build_document(output_path: Path):
         headers=["Componente", "Versión mínima", "Descripción"],
         rows=[
             ["Python",         "3.9+",    "Lenguaje base del sistema"],
-            ["Streamlit",      "1.30+",   "Framework de interfaz web premium"],
-            ["pandas",         "2.0+",    "Procesamiento de datos vectoriales"],
-            ["plotly",         "5.0+",    "Visualizaciones interactivas de alta densidad"],
-            ["networkx",       "3.0+",    "Motor de análisis de grafos y redes"],
-            ["numpy",          "1.24+",   "Cálculos numéricos y estadísticos"],
+            ["Streamlit",      "1.55+",   "Framework de interfaz web premium"],
+            ["pandas",         "2.3+",    "Procesamiento de datos vectoriales"],
+            ["plotly",         "6.6+",    "Visualizaciones interactivas de alta densidad"],
+            ["networkx",       "3.6+",    "Motor de análisis de grafos y redes"],
+            ["numpy",          "2.4+",    "Cálculos numéricos y estadísticos"],
             ["openpyxl",       "3.1+",    "Lectura de archivos Excel (.xlsx)"],
             ["python-docx",    "1.0+",    "Generación de documentación (.docx)"],
-            ["requests",       "2.28+",   "Integración con API de Autenticación y IA"],
+            ["requests",       "2.33+",   "Integración con API de Autenticación y servicios internos"],
+            ["GitPython",      "3.1.50+", "Dependencia auditada para integración Streamlit/Git"],
+            ["lxml",           "6.1+",    "Procesamiento XML seguro para documentos"],
+            ["Pillow",         "12.2+",   "Procesamiento de imágenes con parches de seguridad"],
+            ["urllib3",        "2.7+",    "Cliente HTTP subyacente auditado"],
         ],
         col_widths=[4.0, 3.5, 9.0]
     )
@@ -199,7 +203,7 @@ def build_document(output_path: Path):
     body(doc, "Ejecutar el siguiente comando para preparar el entorno:")
 
     code_p = doc.add_paragraph()
-    code_run = code_p.add_run("pip install streamlit pandas plotly networkx numpy openpyxl python-docx requests")
+    code_run = code_p.add_run("pip install -r requirements.txt")
     code_run.font.name = "Courier New"
     code_run.font.size = Pt(9.5)
     code_run.font.color.rgb = RGBColor(0x0D, 0x6E, 0xFD)
@@ -220,6 +224,14 @@ def build_document(output_path: Path):
     run_c2.font.name = "Courier New"
     run_c2.font.size = Pt(9.5)
     run_c2.font.color.rgb = RGBColor(0x0D, 0x6E, 0xFD)
+
+    heading(doc, "3.3 Gestión de Sesión y Persistencia Temporal", 2)
+    body(doc, (
+        "La interfaz mantiene sesión activa durante 30 minutos de actividad. Si el usuario refresca "
+        "la página dentro de ese período, el navegador restaura la sesión sin solicitar nuevamente "
+        "credenciales. Los análisis cargados se preservan temporalmente en una caché local del servidor "
+        "en formato .saml y se eliminan al cerrar sesión, iniciar un nuevo análisis o vencer por inactividad."
+    ))
 
     # ── 4. ARQUITECTURA TÉCNICA ──────────────────────────────
     heading(doc, "4. Arquitectura de Inteligencia (IMPERATOR ENGINE)", 1)
@@ -296,6 +308,20 @@ def build_document(output_path: Path):
         heading(doc, nombre, 2)
         body(doc, desc)
 
+    heading(doc, "Imperator Diagnostics", 2)
+    body(doc, (
+        "Módulo de validación analítica que revisa dominancia de reglas, explicabilidad del score, "
+        "falsos positivos estimados, pruebas de estrés de configuración y densidad de riesgo de cartera."
+    ))
+
+    heading(doc, "Tablas de lectura nítida", 2)
+    body(doc, (
+        "Las vistas tabulares de la plataforma utilizan un render HTML estático con la paleta institucional "
+        "para evitar desenfoque visual observado en componentes interactivos del navegador. Este patrón se "
+        "aplica en Red Transaccional, Resumen Ejecutivo, Casos de Alerta, Transacciones, Matrices e "
+        "Imperator Diagnostics."
+    ))
+
     # ── 8. NOTAS TÉCNICAS ───────────────────────────────────
     heading(doc, "8. Seguridad y Cumplimiento", 1)
 
@@ -308,6 +334,10 @@ def build_document(output_path: Path):
          "Resúmenes analíticos automatizados mediante integración con modelos de lenguaje avanzados."),
         ("Portabilidad",
          "Estructura modular compatible con entornos locales y despliegues en la nube."),
+        ("Gestión de dependencias",
+         "Las dependencias críticas se mantienen fijadas en requirements.txt para instalaciones reproducibles. La última auditoría con pip-audit no reportó vulnerabilidades conocidas."),
+        ("Persistencia temporal",
+         "El análisis cargado se conserva sólo durante la sesión activa y se purga al cerrar sesión o al vencimiento por inactividad."),
     ]
     for titulo, desc in notas:
         heading(doc, titulo, 2)
@@ -316,7 +346,7 @@ def build_document(output_path: Path):
     doc.add_paragraph()
     footer_p = doc.add_paragraph()
     footer_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_f = footer_p.add_run(f"SOVEREIGN AML Intelligence Platform v3.0  ·  Generado el {date.today().strftime('%d/%m/%Y')}")
+    run_f = footer_p.add_run(f"SOVEREIGN AML Intelligence Platform v3.1  ·  Generado el {date.today().strftime('%d/%m/%Y')}")
     run_f.font.size = Pt(9)
     run_f.font.color.rgb = RGBColor(0x88, 0x88, 0x88)
 
