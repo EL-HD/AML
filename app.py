@@ -469,7 +469,10 @@ def login_flow():
             
             if submit:
                 try:
-                    response = requests.post("http://localhost:8000/auth/validate", json={"username": user, "password": pwd})
+                    import os
+                    api_url = os.getenv("API_URL", "https://sovereing-aml-auth-api.onrender.com")
+                    endpoint = f"{api_url}/auth/validate"
+                    response = requests.post(endpoint, json={"username": user, "password": pwd})
                     if response.status_code == 200:
                         data = response.json()
                         if data.get("exists") and data.get("is_active"):
