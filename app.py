@@ -20,6 +20,7 @@ import time
 import uuid
 from pathlib import Path
 from datetime import date, datetime, timedelta
+from auth_api import app
 
 
 # --- Importaciones Modulares ---
