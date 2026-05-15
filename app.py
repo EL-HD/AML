@@ -164,6 +164,10 @@ def _logout_session(timed_out=False):
     st.session_state.access_token = None
     st.session_state.last_activity_at = datetime.now()
     clear_analysis_cache()
+    for key in ["data", "data_raw", "aml_config", "archivo_nombre",
+                "pep_cpe_info", "session_meta", "from_cache",
+                "analysis_cache_id"]:
+        st.session_state.pop(key, None)
     if timed_out:
         st.session_state.session_timeout_alert = True
 
