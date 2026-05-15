@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import desc
@@ -33,7 +34,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # --- Configuración JWT ---
-SECRET_KEY = "SOVEREIGN_SECRET_KEY_INTELLIGENCE" # CAMBIAR EN PRODUCCIÓN
+SECRET_KEY = os.getenv("SECRET_KEY", "SOVEREIGN_SECRET_KEY_INTELLIGENCE")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

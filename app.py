@@ -19,8 +19,8 @@ import tempfile
 import time
 import uuid
 from pathlib import Path
+import os
 from datetime import date, datetime, timedelta
-from auth_api import app
 
 
 # --- Importaciones Modulares ---
@@ -469,12 +469,8 @@ def login_flow():
             
             if submit:
                 try:
-                    # Lógica para Render (comentada temporalmente)
-                    # import os
-                    # api_url = os.getenv("API_URL", "https://sovereing-aml-auth-api.onrender.com")
-                    # endpoint = f"{api_url}/auth/validate"
-                    
-                    endpoint = "http://localhost:8000/auth/validate"
+                    api_url = os.getenv("AUTH_API_URL", "http://localhost:8000")
+                    endpoint = f"{api_url}/auth/validate"
                     response = requests.post(endpoint, json={"username": user, "password": pwd})
                     
                     if response.status_code == 200:

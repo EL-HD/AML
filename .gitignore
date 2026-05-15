@@ -1,1 +1,5 @@
 /~$Transacciones_AML_200.xlsx
+.env
+__pycache__/
+*.pyc
+*.pyo
