@@ -30,9 +30,7 @@ services:
     startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
     plan: free
     envVars:
-      # IMPORTANTE: Después de desplegar sovereign-aml-api, copia su URL aquí.
-      # Formato: https://sovereign-aml-api.onrender.com  (sin barra al final)
       - key: AUTH_API_URL
-        sync: false
+        value: https://sovereign-aml-api.onrender.com
       - key: PYTHON_VERSION
         value: 3.10.0
