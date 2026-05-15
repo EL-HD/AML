@@ -170,6 +170,27 @@ def validate_user(auth: schemas.AuthRequest, db: Session = Depends(get_db)):
         "access_token": token
     }
 
+@app.post("/bootstrap-seed", include_in_schema=False)
+def bootstrap_seed(db: Session = Depends(get_db)):
+    """Endpoint temporal de un solo uso. Se elimina tras crear los usuarios iniciales."""
+    from datetime import date, timedelta
+    import uuid as _uuid
+    existing = db.query(models.Licencia).first()
+    if existing:
+        return {"status": "ya existen usuarios, no se hizo nada"}
+    new_user = crud.create_licencia(db, licencia=schemas.LicenciaCreate(
+        user="analista_082",
+        password="SovereignAML2025!",
+        name="Hobed Diaz",
+        mail="hdiazavila27@gmail.com",
+        licence_id=_uuid.uuid4(),
+        fecha_compra=date.today(),
+        dias_vigencia=365,
+        fecha_expiracion=date.today() + timedelta(days=365),
+        empresa="SOVEREIGN Intelligence"
+    ))
+    return {"status": "ok", "user": new_user.user, "mail": new_user.mail}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
