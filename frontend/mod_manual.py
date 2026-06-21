@@ -3,97 +3,149 @@ import streamlit as st
 def mostrar():
     st.markdown("""
     <div class="info-box">
-        <strong>Manual de Usuario — Versión 3.1</strong> — Documentación técnica integrada de ejecución y uso.
+        <strong>Manual de Prevención LD/FT/FPADM — Versión 3.1</strong> — Documentación técnica integrada de ejecución y uso. (Art. 12 Ley 6593)
         Explica el funcionamiento de cada módulo, el modelo de Scoring IMPERATOR (ISO 31000), la gestión de sesión y las capacidades de análisis transaccional.
     </div>
     """, unsafe_allow_html=True)
 
     st.markdown("""
     ## 1. Introducción
-    SOVEREIGN AML es una solución integral de **Business Intelligence (BI)** y cumplimiento normativo. A diferencia de las herramientas reactivas tradicionales, esta plataforma utiliza análisis de datos avanzado para transformar el monitoreo de riesgos en **oportunidades estratégicas de negocio**, integrando estándares internacionales de gestión de riesgos como **ISO 31000** y el enfoque basado en riesgo (**RBA**) del **GAFI**.
+    SOVEREIGN AML es una solución integral de **Business Intelligence (BI)** y cumplimiento normativo, alineada con la **Iniciativa de Ley 6593** de Guatemala (*Ley Integral contra el Lavado de Dinero u Otros Activos y el Financiamiento del Terrorismo*) y las **40 Recomendaciones del GAFI**. La plataforma utiliza análisis de datos avanzado para transformar el monitoreo de riesgos en oportunidades estratégicas, integrando estándares internacionales: **ISO 31000**, **COSO ERM** y el enfoque basado en riesgo (**RBA**) del GAFI.
 
     ## 1.1. Marco Normativo y Tríada de Riesgo
-    El motor **IMPERATOR** opera bajo una estructura de cumplimiento moderno basada en tres pilares fundamentales:
-    * **RBA (GAFI) — Núcleo Operativo:** Define *cómo se evalúa el riesgo*. Es la base para clasificar clientes y transacciones mediante un Enfoque Basado en Riesgo.
-    * **COSO ERM — Integración Estratégica:** Define *cómo se gobierna el riesgo*. Alinea la detección de alertas con los objetivos de negocio y la estrategia institucional.
-    * **ISO 31000 — Metodología Estructural:** Define *cómo se implementa*. Proporciona el marco sistemático para identificar, analizar y tratar los riesgos detectados.
-
-    Este rediseño asegura que cada score generado tenga un respaldo metodológico internacional sólido.
+    El motor **IMPERATOR** opera bajo una cuádruple referencia normativa:
+    * **RBA (GAFI) — Núcleo Operativo:** Define *cómo se evalúa el riesgo*. Clasifica clientes y transacciones con enfoque proporcional.
+    * **COSO ERM — Integración Estratégica:** Define *cómo se gobierna el riesgo*. Alinea detección de alertas con objetivos institucionales.
+    * **ISO 31000 — Metodología Estructural:** Define *cómo se implementa*. Marco sistemático para identificar, analizar y tratar riesgos.
+    * **Ley 6593 (Guatemala) — Trazabilidad IVE:** Provee la base legal nacional para los reportes RTS, RTE y el ciclo Inusual → Sospechosa.
 
     ### Dimensiones del Score IMPERATOR:
-    1. **S_T (Riesgo Transaccional):** Basado en reglas de detección (montos, picos, smurfing).
-    2. **S_C (Riesgo Contextual):** Evalúa la naturaleza del cliente (PEP, CPE, Ubicación).
-    3. **S_B (Riesgo Conductual):** Mide desviaciones estadísticas respecto al perfil histórico del cliente.
-    4. **S_N (Riesgo de Red):** Analiza la importancia del cliente dentro de la red de flujos monetarios.
+    1. **S_T (Riesgo Transaccional):** Reglas de detección — montos, picos, smurfing, frecuencia.
+    2. **S_C (Riesgo Contextual):** Naturaleza del cliente — PEP, CPE, Ubicación de Riesgo, **Beneficiario Final (UBO)**.
+    3. **S_B (Riesgo Conductual):** Desviaciones estadísticas sobre el perfil histórico del cliente.
+    4. **S_N (Riesgo de Red):** Importancia del cliente en la red de flujos monetarios.
 
     ## 2. Requisitos del Archivo de Entrada
-    Para un análisis completo, el archivo Excel (`.xlsx`) debe incluir:
+    Para un análisis completo, el archivo Excel (`.xlsx`) debe incluir las columnas base:
     * **Cliente**: Nombre o identificación del cliente origen.
     * **Monto**: Valor numérico de la operación.
     * **Perfil**: Límite de actividad mensual esperada.
     * **Fecha**: Fecha de registro (YYYY-MM-DD).
-    * **EsPEP / EsCPE**: (Boleanos/Texto) Indica si es Persona Expuesta Políticamente o Contratista/Proveedor del Estado.
+    * **EsPEP / EsCPE**: (Booleanos) Persona Expuesta Políticamente o Contratista/Proveedor del Estado.
     * **TipoOperacion**: Canal usado (Transferencia, Efectivo, etc.).
-    * **Cliente_Destino**: (Requerido para Red Transaccional) Identifica quién recibe los fondos.
+    * **Cliente_Destino**: (Requerido para Red Transaccional) Receptor de los fondos.
+
+    ### Columnas opcionales para cumplimiento Ley 6593:
+    * **Tipo_Instrumento**: Instrumento de pago (Efectivo, Transferencia, Cheque…). Activa la detección automática de **RTE** (Art. 31) cuando el valor es `EFECTIVO` y el monto ≥ USD 10,000.
+    * **Beneficiario_Final / EsPEP_UBO / Porcentaje_Participacion**: Datos del titular real (UBO). Activan penalización de SC y alerta de DDA Obligatoria (Art. 21 Ley 6593 / GAFI Rec. 12).
+    * **Tipo_Cliente**: Categoría jurídica del cliente — `Persona Individual`, `Persona Jurídica`, `Estructura Jurídica` (Art. 3 Ley 6593).
+    * **EsFPADM**: (Booleano) Marca al cliente con riesgo de Financiamiento de Proliferación de Armas de Destrucción Masiva. Activa la acción **R-03** (GAFI Rec. 7 / Art. 2 Ley 6593).
 
     ## 2.1. Inicio, Sesión y Persistencia Temporal
     La plataforma mantiene una sesión operativa diseñada para reducir fricción sin comprometer el control:
-    * **Cierre por inactividad:** Si el usuario no interactúa durante 30 minutos, la sesión se cierra automáticamente y se muestra el aviso correspondiente en el login.
-    * **Recarga accidental:** Si la página se refresca antes de que expire la sesión, el sistema restaura el acceso sin solicitar nuevamente usuario y contraseña.
-    * **Análisis temporal:** Mientras la sesión esté vigente, el Excel cargado se conserva en una caché temporal local. Si el usuario refresca la vista, el análisis se restaura automáticamente sin volver a subir el archivo.
-    * **Limpieza segura:** Al cerrar sesión, iniciar un nuevo análisis o expirar por inactividad, la caché temporal del análisis se elimina.
-    * **Sesiones guardadas (.saml):** Además de la caché temporal, el usuario puede exportar una sesión `.saml` desde el menú lateral para retomarla posteriormente de forma manual.
+    * **Cierre por inactividad:** Si el usuario no interactúa durante 30 minutos, la sesión se cierra automáticamente.
+    * **Recarga accidental:** Si la página se refresca antes de que expire la sesión, el sistema restaura el acceso sin solicitar nuevamente credenciales.
+    * **Análisis temporal:** El Excel cargado se conserva en caché temporal. Al refrescar la vista, el análisis se restaura sin volver a subir el archivo.
+    * **Limpieza segura:** Al cerrar sesión, iniciar un nuevo análisis o expirar por inactividad, la caché temporal se elimina.
+    * **Sesiones guardadas (.saml):** El usuario puede exportar una sesión `.saml` para retomarla manualmente en sesiones futuras.
+    * **Auditoría de accesos (Art. 19 Ley 6593):** Cada acceso a módulos sensibles queda registrado en la bitácora de sesión (`auditoria_sesion`).
 
-    ## 3. Inteligencia de Red Transaccional
-    El nuevo módulo de **Red Transaccional** permite visualizar el flujo de capital mediante grafos:
-    * **Identificación de Estratificación (Layering):** Detecta automáticamente rutas "Multi-Hop" donde el dinero pasa por varios intermediarios antes de llegar a un destino final.
-    * **Cuentas Puente:** Identifica nodos con alta "Centralidad de Intermediación" que podrían estar siendo usados para triangular fondos.
-    * **Detección de Ciclos:** Localiza flujos circulares donde el dinero regresa al origen, señal común de esquemas de lavado.
-    * **Trazabilidad tabular:** Las tablas de relaciones, rutas y centralidad usan un render HTML nítido con la paleta visual de la plataforma para facilitar lectura y evitar problemas de desenfoque del navegador.
+    ## 3. Ciclo de Vida de Alertas — Inusual → Sospechosa (Arts. 28-30 Ley 6593)
+    El módulo **Casos de Alerta** implementa el flujo legal de dos fases:
 
-    ## 3.1. Imperator Diagnostics
-    El módulo **Imperator Diagnostics** permite evaluar la salud analítica del motor:
-    * **Dominancia de reglas:** Identifica qué reglas generan más alertas y si alguna regla domina en exceso.
-    * **Explicabilidad:** Muestra la composición del score por pilares S_T, S_C, S_B y S_N.
-    * **Falsos positivos:** Estima ruido analítico sobre clientes de riesgo bajo.
-    * **Pruebas de estrés:** Simula cambios de parámetros antes de aplicarlos a la configuración.
-    * **Densidad de riesgo:** Analiza concentración del riesgo en la cartera.
+    | Estado | Significado |
+    |--------|-------------|
+    | `Inusual_Pendiente` | Detectado por IMPERATOR, pendiente de revisión del analista |
+    | `Inusual_Examinada` | Analista revisó y descartó escalamiento |
+    | `Sospechosa_Confirmada` | Analista confirmó — **requiere RTS ante la IVE (Art. 30)** |
+    | `Descartada` | Falso positivo documentado |
 
-    ## 4. Gestión de Acciones de Mitigación
-    Basado en el **RBA (Risk-Based Approach)**, el sistema asigna automáticamente acciones según el nivel de alerta:
-    * **Preventivas:** Bloqueos temporales o rechazos ante riesgos críticos inmediatos.
-    * **Correctivas:** Requerimiento de Debida Diligencia Ampliada (EDD) y documentos de soporte.
-    * **Regulatorias:** Generación de reportes obligatorios (ROS/SAR) ante la entidad reguladora.
-    * **Estratégicas:** Ajustes preventivos en la segmentación y perfil del cliente.
+    El analista selecciona el caso, registra el **Fundamento del Examen** (Art. 29) y guarda la clasificación. Al marcar `Sospechosa_Confirmada`, el sistema activa el generador de **RTS** en el módulo de Reportes.
 
-    ## 5. Motor de Reglas de Detección
-    El sistema mantiene sus reglas core para alimentar el score transaccional:
-    1. **Monto Alto**: Supera umbrales individuales.
-    2. **Acumulado**: El total mensual excede el perfil permitido.
-    3. **Smurfing (Pitufeo)**: Multiplicidad de operaciones pequeñas en ventanas cortas de tiempo.
-    4. **Pico Anómalo**: Salto estadístico inusual sobre la media del cliente.
-    5. **Geografía de Riesgo**: Operaciones en zonas fronterizas o de alta sensibilidad.
+    ## 4. Reportes Regulatorios IVE (Ley 6593)
+    El módulo **Reportes** incluye una pestaña dedicada **RTS / RTE — IVE**:
 
-    ## 6. Clasificación y Umbrales
-    * **Crítico (Score ≥ 8.0)**: Requiere acción inmediata (P-01/R-01). Bloqueo y reporte.
-    * **Alto (Score 5.0 - 7.9)**: Requiere investigación EDD mandatoria.
-    * **Medio (Score 3.0 - 4.9)**: Vigilancia reforzada.
-    * **Bajo (Score < 3.0)**: Sin alertas críticas detectadas.
+    * **RTS — Reporte de Transacción Sospechosa (Art. 30):** Se genera para casos clasificados como `Sospechosa_Confirmada`. Incluye datos del sujeto obligado, cliente, score IMPERATOR y fundamento del examen. Formato compatible con la IVE-SIB.
+    * **RTE — Reporte de Transacción en Efectivo (Art. 31):** Se genera automáticamente para transacciones con `Tipo_Instrumento = EFECTIVO` y `Monto ≥ USD 10,000`. El sistema alerta en el módulo de Transacciones cuando existen casos pendientes.
 
-    ## 7. Guía de Uso Estratégico
-    1. **Resumen Ejecutivo**: Observe la distribución de asociados PEP/CPE para entender la exposición política de la cartera.
-    2. **Análisis de Red**: Use los filtros de **Enfoque** y **Saltos (Hops)** para limpiar el mapa y seguir la ruta del dinero de un cliente sospechoso.
-    3. **Protocolo de Mitigación**: Consulte el módulo de acciones para saber exactamente qué medida aplicar según la normativa internacional.
-    4. **Imperator Diagnostics**: Revise dominancia de reglas, falsos positivos y sensibilidad de parámetros antes de ajustar umbrales.
-    5. **Configuración**: Personalice los umbrales de acuerdo con las políticas internas de cumplimiento de su institución.
+    ## 5. Inteligencia de Red Transaccional
+    El módulo de **Red Transaccional** visualiza el flujo de capital mediante grafos. Patrones detectados:
+    * **Layering (Estratificación LD/FT/FPADM):** Rutas "Multi-Hop" donde el dinero pasa por múltiples intermediarios.
+    * **Cuentas Puente:** Nodos con alta "Centralidad de Intermediación" (posible triangulación de fondos).
+    * **Ciclos:** Flujos circulares donde el dinero regresa al origen.
+    * **Trazabilidad tabular:** Tablas de relaciones, rutas y centralidad en render HTML nítido.
 
-    ## 8. Recomendaciones de Seguridad Operativa
+    ## 5.1. Imperator Diagnostics
+    * **Dominancia de reglas:** ¿Alguna regla genera exceso de alertas?
+    * **Explicabilidad:** Composición del score por pilares S_T, S_C, S_B y S_N.
+    * **Falsos positivos:** Ruido analítico en clientes de bajo riesgo.
+    * **Pruebas de estrés:** Simula cambios de parámetros antes de aplicarlos.
+    * **Densidad de riesgo:** Concentración del riesgo en la cartera.
+
+    ## 6. Acciones de Mitigación (RBA / GAFI / ISO 31000)
+    El sistema asigna automáticamente acciones proporcionales al nivel de alerta:
+    * **Preventivas (P):** Bloqueo temporal (P-01), Rechazo de operación (P-02), Limitación de montos (P-03).
+    * **Correctivas (C):** DDA Ampliada (C-01), Documentación (C-02), Revisión manual (C-03).
+    * **Regulatorias (R):**
+        * **R-01** — Generación de RTS (GAFI Rec. 20 / Art. 30 Ley 6593)
+        * **R-02** — Escalamiento a Cumplimiento (ISO 31000 §6.6)
+        * **R-03** — Verificación sanciones FPADM / proliferación (GAFI Rec. 7 / Art. 2 Ley 6593) — se activa en nivel Crítico o cuando `EsFPADM = True`
+    * **Estratégicas (E):** Ajuste de perfil (E-01), Reclasificación de segmento (E-02), Restricción de productos (E-03).
+    * **Formularios KYC (F):** Actualización de FEIS a FEIC (F-01 / GAFI Rec. 10).
+
+    ## 7. Motor de Reglas de Detección
+    1. **Monto Alto (Alerta_Absoluto):** Supera umbrales individuales configurados.
+    2. **Acumulado (Alerta_Acumulado):** Total mensual excede el multiplicador del perfil.
+    3. **Desviación de Perfil (Alerta_15):** Monto supera el porcentaje de tolerancia del perfil esperado.
+    4. **Smurfing / Pitufeo:** Múltiples operaciones pequeñas en ventanas cortas de tiempo.
+    5. **Pico Anómalo:** Salto estadístico sobre la media histórica del cliente (+2 Std).
+    6. **Frecuencia (Alerta_Frecuencia):** Densidad operativa superior al umbral.
+    7. **Geografía de Riesgo:** Operaciones en zonas fronterizas o de alta sensibilidad.
+
+    ## 8. Clasificación y Umbrales
+    * **Crítico (Score ≥ umbral configurado):** Acción inmediata (P-01 + R-01 + R-03). Bloqueo y generación de RTS.
+    * **Alto (Score intermedio):** Investigación EDD mandatoria. RTS si hay smurfing o pico.
+    * **Medio:** Vigilancia reforzada. Revisión manual (C-03).
+    * **Bajo:** Sin alertas críticas. Diligencia estándar.
+
+    ## 9. Beneficiario Final (UBO) — Art. 21 Ley 6593
+    El módulo **Análisis por Cliente** incluye un panel expandible de **Beneficiario Final (UBO)**:
+    * Muestra el nombre del titular real, porcentaje de participación y fuente de verificación.
+    * Si el UBO tiene perfil PEP (`EsPEP_UBO = True`), se activa una alerta de **DDA Obligatoria** (GAFI Rec. 12 / Art. 25a Ley 6593) y se aplica un incremento al Score Contextual (S_C).
+    * Tipos de cliente soportados: `Persona Individual`, `Persona Jurídica`, `Estructura Jurídica` (trusts, fundaciones).
+    * Personas Obligadas incluyen: Bancos, Cooperativas, Casas de Cambio, Aseguradoras, Emisoras de Tarjetas y **PSAV** (Proveedores de Servicios de Activos Virtuales — Art. 3 c)1 vii) Ley 6593).
+
+    ## 10. Retención de Datos — Art. 34 Ley 6593
+    La plataforma fuerza un **mínimo de 5 años** de retención de registros. Esta política está visible y configurable en el módulo de **Configuración** (sección Política de Retención de Datos):
+    * La retención mínima legal es **5 años** (no reducible).
+    * La institución puede configurar un período mayor (hasta 20 años).
+    * La función `_validar_retencion()` bloquea la eliminación de registros que aún están dentro del período obligatorio.
+
+    ## 11. KPIs de Cumplimiento en el Resumen Ejecutivo
+    El **Resumen Ejecutivo** incluye dos indicadores de gestión de casos (Arts. 28-30 Ley 6593):
+    * **Inusuales pendientes de examen:** Transacciones detectadas por IMPERATOR sin clasificación del analista.
+    * **Sospechosas sin RTS generado:** Casos confirmados que requieren envío urgente del RTS a la IVE.
+    Un indicador en rojo aparece cuando hay sospechosas sin resolver.
+
+    ## 12. Guía de Uso Estratégico
+    1. **Resumen Ejecutivo:** Revise los KPIs de alerta y distribución PEP/CPE para priorizar la jornada.
+    2. **Casos de Alerta:** Clasifique cada caso (Inusual → Sospechosa → Descartada) y registre el fundamento.
+    3. **Transacciones:** Identifique los RTE pendientes (efectivo ≥ USD 10,000) con la columna `RTE (Art.31)`.
+    4. **Análisis de Red:** Use filtros de Enfoque y Hops para rastrear la ruta del dinero en esquemas LD/FT/FPADM.
+    5. **Mitigación:** Consulte las acciones R-01, R-02 y R-03 para saber qué reporte corresponde por norma.
+    6. **Reportes → RTS/RTE:** Genere el PDF formal para la IVE directamente desde la plataforma.
+    7. **Diagnostics:** Calibre reglas y umbrales antes de cerrar el período de análisis.
+    8. **Configuración:** Ajuste parámetros y verifique la política de retención de datos.
+
+    ## 13. Recomendaciones de Seguridad Operativa (OWASP / Art. 19 Ley 6593)
     * Cierre sesión al terminar el análisis, especialmente en equipos compartidos.
-    * Use la exportación `.saml` únicamente cuando necesite conservar el análisis fuera de la sesión temporal.
-    * Proteja los archivos `.saml`; contienen transacciones originales y configuración del análisis.
-    * Revise periódicamente dependencias del entorno Python y mantenga versiones fijadas para instalaciones reproducibles.
+    * Use la exportación `.saml` solo cuando necesite conservar el análisis fuera de la sesión.
+    * Proteja los archivos `.saml`; contienen transacciones originales y configuración.
+    * Los `Fundamento_Examen` y datos UBO son campos sensibles — trátelos con confidencialidad.
+    * El acceso a módulos de Reportes y Alertas queda registrado en la bitácora de sesión.
+    * Revise periódicamente dependencias del entorno Python y mantenga versiones fijadas.
 
     ---
-    **SOVEREIGN AML v3.1 (Analytical Intelligence Platform)**  
-    *Ing. Hobéd Díaz — Msc. M.A.F.I*
+    **SOVEREIGN AML v3.1 — Adecuado a Ley 6593 / GAFI 40 Recomendaciones**
+    *Ing. Hobéd Díaz — Msc. M.A.F.I | 2026*
     """)

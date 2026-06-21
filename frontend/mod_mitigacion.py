@@ -21,8 +21,9 @@ _CATALOGO = {
         {"accion": "Revisión manual por analista",  "codigo": "C-03", "norma": "COSO ERM Pilar 4"},
     ],
     "Regulatorias": [
-        {"accion": "Generación de RTS/RTI",         "codigo": "R-01", "norma": "GAFI Rec. 20"},
-        {"accion": "Escalamiento a Cumplimiento",   "codigo": "R-02", "norma": "ISO 31000 §6.6"},
+        {"accion": "Generación de RTS",                          "codigo": "R-01", "norma": "GAFI Rec. 20 / Art. 30 Ley 6593"},
+        {"accion": "Escalamiento a Cumplimiento",                "codigo": "R-02", "norma": "ISO 31000 §6.6"},
+        {"accion": "Verificación sanciones FPADM (proliferación)", "codigo": "R-03", "norma": "GAFI Rec. 7 / Art. 2 Ley 6593"},
     ],
     "Estratégicas": [
         {"accion": "Ajuste de perfil del cliente",  "codigo": "E-01", "norma": "COSO ERM Obj. 2"},
@@ -71,7 +72,9 @@ def _determinar_acciones(row, cfg=None):
     if nivel == "Crítico":
         acciones += ["P-01", "P-02"]          # Bloqueo + Rechazo
         acciones += ["C-01", "C-02"]          # DDA + Documentación
-        acciones += ["R-01", "R-02"]          # RTS/RTI + Escalamiento
+        acciones += ["R-01", "R-02"]          # RTS + Escalamiento
+        if row.get("EsFPADM", False) or nivel == "Crítico":
+            acciones += ["R-03"]              # Verificación FPADM / sanciones proliferación
         if es_pep or es_cpe:
             acciones += ["E-01", "E-02"]      # Ajuste perfil + Reclasificación
 

@@ -74,6 +74,28 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
                 <div class="metric-sub">Monto acumulado analizado</div>
             </div>""", unsafe_allow_html=True)
 
+    # ── KPIs de gestión de alertas (Arts. 28-30 Ley 6593) ────────────────────
+    if "Estado_Alerta" in casos.columns:
+        kpi_inusuales_pendientes = int((casos["Estado_Alerta"] == "Inusual_Pendiente").sum())
+        kpi_sospechosas_sin_rts  = int((casos["Estado_Alerta"] == "Sospechosa_Confirmada").sum())
+
+        col_kpi_a, col_kpi_b = st.columns(2)
+        with col_kpi_a:
+            st.metric(
+                label="Inusuales pendientes de examen",
+                value=kpi_inusuales_pendientes,
+                help="Transacciones inusuales detectadas por IMPERATOR sin clasificación del analista (Art. 29 Ley 6593)"
+            )
+        with col_kpi_b:
+            st.metric(
+                label="Sospechosas sin RTS generado",
+                value=kpi_sospechosas_sin_rts,
+                help="Casos confirmados como sospechosos que aún no tienen RTS enviado a la IVE (Art. 30 Ley 6593)"
+            )
+
+        if kpi_sospechosas_sin_rts > 0:
+            st.error(f"🚨 {kpi_sospechosas_sin_rts} caso(s) sospechoso(s) requieren generación urgente de RTS ante la IVE.")
+
     st.markdown("<br>", unsafe_allow_html=True)
 
     col_a, col_b = st.columns(2)

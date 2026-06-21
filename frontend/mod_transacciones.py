@@ -1,6 +1,18 @@
 import streamlit as st
 from frontend.mod_utils import render_html_table
 
+UMBRAL_RTE_USD = 10_000  # Art. 31 Ley 6593
+
+def _detectar_rte(df, col_monto: str = "Monto", col_tipo: str = "Tipo_Instrumento"):
+    """Marca transacciones en efectivo >= USD 10,000 para RTE (Art. 31 Ley 6593)."""
+    if col_tipo not in df.columns or col_monto not in df.columns:
+        return df
+    df["Es_RTE"] = (
+        (df[col_tipo].str.upper() == "EFECTIVO") &
+        (df[col_monto] >= UMBRAL_RTE_USD)
+    )
+    return df
+
 def mostrar(df):
     st.markdown("""
     <div class="info-box">
@@ -37,9 +49,12 @@ def mostrar(df):
     if solo_alertas:
         df_view = df_view[df_view["Score"] > 0]
 
-    bool_cols = ["Alerta_15", "Alerta_Absoluto", "Alerta_Acumulado", 
-                 "Alerta_Frecuencia", "Smurfing", "Pico", "EsPEP", "EsCPE", "Ubicacion_Riesgo"]
-    
+    df_view = _detectar_rte(df_view)
+    n_rte = int(df_view["Es_RTE"].sum()) if "Es_RTE" in df_view.columns else 0
+
+    bool_cols = ["Alerta_15", "Alerta_Absoluto", "Alerta_Acumulado",
+                 "Alerta_Frecuencia", "Smurfing", "Pico", "EsPEP", "EsCPE", "Ubicacion_Riesgo", "Es_RTE"]
+
     for c in bool_cols:
         if c in df_view.columns:
             df_view[c] = df_view[c].apply(lambda x: "Si" if x else "--")
@@ -49,8 +64,13 @@ def mostrar(df):
     columnas_mostrar = ["Cliente", "Fecha", "Monto", "Perfil"]
     if "TipoOperacion" in df_view.columns:
         columnas_mostrar.append("TipoOperacion")
-    
+    if "Tipo_Instrumento" in df_view.columns:
+        columnas_mostrar.insert(columnas_mostrar.index("Monto") + 1, "Tipo_Instrumento")
+
     columnas_mostrar += bool_cols + pilares_cols + ["Score"]
+
+    if n_rte > 0:
+        st.warning(f"⚠️ {n_rte} transacción(es) en efectivo ≥ USD {UMBRAL_RTE_USD:,} — Requieren RTE ante la IVE (Art. 31 Ley 6593)")
 
     st.markdown(f"""
     <div class="warning-box" style="margin-top:10px;">
@@ -67,6 +87,8 @@ def mostrar(df):
         "_SC": "S_C",
         "_SB": "S_B",
         "_SN": "S_N",
+        "Tipo_Instrumento": "Instrumento",
+        "Es_RTE": "RTE (Art.31)",
     }
     for col in ["Monto", "Perfil"]:
         if col in tabla.columns:

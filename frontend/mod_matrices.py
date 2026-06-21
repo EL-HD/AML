@@ -12,7 +12,7 @@ def mostrar(casos, matriz_alertas):
         <div class="glossary-item"><span class="glossary-key">Cliente</span><span>Identificador soberano de la entidad analizada.</span></div>
         <div class="glossary-item"><span class="glossary-key">Total_Mensual</span><span>Volumen económico acumulado en el ciclo.</span></div>
         <div class="glossary-item"><span class="glossary-key">Score_Max</span><span>Magnitud de riesgo final (IMPERATOR 0–10).</span></div>
-        <div class="glossary-item"><span class="glossary-key">ST_Max / SC_Max</span><span>Riesgo Transaccional (Reglas) y Contextual (PEP, CPE, Geo).</span></div>
+        <div class="glossary-item"><span class="glossary-key">ST_Max / SC_Max</span><span>Riesgo Transaccional (Reglas) y Contextual (PEP, CPE, Geo, Beneficiario Final).</span></div>
         <div class="glossary-item"><span class="glossary-key">SB_Max / SN_Max</span><span>Riesgo Conductual (Estadística) y de Red (Conexiones).</span></div>
         <div class="glossary-item"><span class="glossary-key">Nivel_Riesgo</span><span>Clasificación táctica final institucional.</span></div>
     </div>""", unsafe_allow_html=True)

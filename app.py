@@ -32,6 +32,14 @@ from frontend import (
     mod_mitigacion, mod_red_transaccional,
     mod_imperator_diagnostics, mod_sesion
 )
+from frontend.mod_sesion import _registrar_acceso_auditoria
+
+def _auditar(modulo: str, accion: str = "VISUALIZACION") -> None:
+    """Registra acceso de sesión activa — Art. 19 Ley 6593."""
+    ud = st.session_state.get("user_data") or {}
+    usuario    = ud.get("user", "desconocido")
+    licenciaid = ud.get("licence_id")
+    _registrar_acceso_auditoria(usuario, licenciaid, modulo, accion)
 
 # ============================================================
 # SISTEMA DE AUTENTICACIÓN Y LICENCIAS
@@ -1342,6 +1350,7 @@ if vista == "Resumen Ejecutivo":
     else: st.info("Sube un archivo.")
 
 elif vista == "Casos de Alerta":
+    _auditar("Casos de Alerta")
     if data_ready: mod_alertas.mostrar(st.session_state["data"][1])
     else: st.info("Sube un archivo.")
 
@@ -1350,6 +1359,7 @@ elif vista == "Transacciones":
     else: st.info("Sube un archivo.")
 
 elif vista == "Análisis por Cliente":
+    _auditar("Análisis por Cliente")
     if data_ready: mod_cliente.mostrar(st.session_state["data"][0], st.session_state["data"][1], st.session_state["aml_config"])
     else: st.info("Sube un archivo.")
 
@@ -1362,6 +1372,7 @@ elif vista == "Red Transaccional":
     else: st.info("Sube un archivo.")
 
 elif vista == "Acciones de Mitigación":
+    _auditar("Acciones de Mitigación")
     if data_ready: mod_mitigacion.mostrar(st.session_state["data"][0], st.session_state["data"][1])
     else: st.info("Sube un archivo.")
 
@@ -1378,10 +1389,12 @@ elif vista == "Gestión de Ubicaciones":
     mod_ubicaciones.mostrar()
 
 elif vista == "Informes y Reportes":
+    _auditar("Informes y Reportes")
     if data_ready: mod_reportes.mostrar(*st.session_state["data"], st.session_state["aml_config"])
     else: st.info("Sube un archivo.")
 
 elif vista == "Configuración":
+    _auditar("Configuración")
     mod_configuracion.mostrar(_DEFAULTS)
 
 elif vista == "Manual de Usuario":

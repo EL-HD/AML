@@ -1,6 +1,26 @@
 import streamlit as st
 import matplotlib.pyplot as plt
+from datetime import date as _date
 from frontend.mod_utils import apply_dark_style
+
+_RETENCION_MINIMA_ANOS = 5  # Art. 34 Ley 6593
+
+def _validar_retencion(fecha_registro, anos_retencion: int = _RETENCION_MINIMA_ANOS) -> bool:
+    """
+    Retorna True si el registro puede eliminarse (superó el período de retención).
+    Retorna False si está dentro del período de retención (Art. 34 Ley 6593).
+    """
+    if fecha_registro is None:
+        return False
+    fecha_limite = _date.today().replace(year=_date.today().year - anos_retencion)
+    puede_eliminar = fecha_registro < fecha_limite
+    if not puede_eliminar:
+        st.error(
+            f"🚫 No se puede eliminar este registro. "
+            f"La Ley 6593 (Art. 34) exige conservarlo hasta "
+            f"{fecha_registro.replace(year=fecha_registro.year + anos_retencion)}."
+        )
+    return puede_eliminar
 
 def mostrar(_DEFAULTS):
     st.markdown("""
@@ -545,7 +565,7 @@ def mostrar(_DEFAULTS):
             st.markdown("**Escala de clasificación actual**")
             escala = [
                 ("Crítico", f"Score ≥ {c['score_critico']} o Total > Q{c['monto_critico']:,}", "#ef4444",
-                 "Reporte RTI/RTS a la SIB (mediante la IVE)"),
+                 "Reporte RTS a la IVE (Art. 30 Ley 6593)"),
                 ("Alto",    f"Score ≥ {c['score_alto']}",  "#f97316",
                  "Seguimiento prioritario / Actualizar perfil"),
                 ("Medio",   f"Score ≥ {c['score_medio']}", "#eab308",
@@ -661,3 +681,29 @@ def mostrar(_DEFAULTS):
             mime="application/json",
             use_container_width=True
         )
+
+    # ── POLÍTICA DE RETENCIÓN DE DATOS (Art. 34 Ley 6593) ─────────────────────
+    st.markdown("---")
+    st.markdown("### 🗄️ Política de Retención de Datos")
+    st.markdown(
+        "**Art. 34 Ley 6593:** Los sujetos obligados deben conservar todos los registros y documentos "
+        "por un mínimo de **5 años** desde la fecha de la transacción o finalización de la relación comercial."
+    )
+
+    RETENCION_MINIMA_ANOS = 5  # Art. 34 — no modificable por el usuario
+
+    col_ret1, col_ret2 = st.columns(2)
+    with col_ret1:
+        st.metric("Retención mínima obligatoria", f"{RETENCION_MINIMA_ANOS} años",
+                  help="Art. 34 Ley 6593 — no configurable")
+    with col_ret2:
+        retencion_config = st.number_input(
+            "Retención configurada por la institución (años)",
+            min_value=RETENCION_MINIMA_ANOS,
+            max_value=20,
+            value=RETENCION_MINIMA_ANOS,
+            step=1,
+            help="No puede ser inferior al mínimo legal de 5 años."
+        )
+
+    st.info(f"ℹ️ El sistema bloqueará cualquier eliminación de registros con antigüedad inferior a {retencion_config} años.")

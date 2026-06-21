@@ -1,5 +1,13 @@
 import streamlit as st
+from datetime import datetime
 from frontend.mod_utils import render_html_table
+
+ESTADOS_ALERTA = [
+    "Inusual_Pendiente",       # Detectado por IMPERATOR, sin examinar
+    "Inusual_Examinada",       # Analista revisó, no escaló
+    "Sospechosa_Confirmada",   # Analista confirmó — requiere RTS (Art. 30)
+    "Descartada",              # Falso positivo documentado
+]
 
 def mostrar(casos):
     st.markdown("""
@@ -26,6 +34,14 @@ def mostrar(casos):
     </div>
     """, unsafe_allow_html=True)
 
+    # Inicializar columnas del ciclo de vida (Arts. 28-30 Ley 6593)
+    if "Estado_Alerta" not in casos.columns:
+        casos["Estado_Alerta"] = "Inusual_Pendiente"
+    if "Fundamento_Examen" not in casos.columns:
+        casos["Fundamento_Examen"] = ""
+    if "Fecha_Clasificacion_Sospechosa" not in casos.columns:
+        casos["Fecha_Clasificacion_Sospechosa"] = None
+
     # Filtros rápidos
     col_f1, col_f2 = st.columns([3, 1])
     with col_f1:
@@ -37,10 +53,19 @@ def mostrar(casos):
     with col_f2:
         min_score = st.slider("Score mínimo requerido", 0, 12, 0)
 
+    estado_filtro = st.selectbox(
+        "Filtrar por estado",
+        ["Todos"] + ESTADOS_ALERTA,
+        key="filtro_estado_alerta"
+    )
+
     casos_filtrados = casos[
         (casos["Nivel_Riesgo"].isin(filtro_riesgo)) &
         (casos["Score_Max"] >= min_score)
-    ].sort_values("Score_Max", ascending=False).reset_index(drop=True)
+    ]
+    if estado_filtro != "Todos":
+        casos_filtrados = casos_filtrados[casos_filtrados["Estado_Alerta"] == estado_filtro]
+    casos_filtrados = casos_filtrados.sort_values("Score_Max", ascending=False).reset_index(drop=True)
 
     bool_cols = ["EsPEP", "EsCPE", "Ubicacion_Riesgo"]
     casos_view = casos_filtrados.copy()
@@ -73,3 +98,30 @@ def mostrar(casos):
         "Nivel_Riesgo": "Nivel de Riesgo",
     })
     st.markdown(render_html_table(tabla_casos, max_height=560), unsafe_allow_html=True)
+
+    # ── PANEL DE GESTIÓN DE CASOS (Arts. 28-30 Ley 6593) ─────────────────────
+    st.markdown("---")
+    st.markdown('<div class="section-title">Gestión de Casos — Ciclo Inusual → Sospechosa</div>', unsafe_allow_html=True)
+    if not casos_filtrados.empty:
+        caso_idx = st.selectbox(
+            "Seleccionar caso para gestionar",
+            casos_filtrados.index.tolist(),
+            format_func=lambda i: f"{casos_filtrados.at[i, 'Cliente']} — Score: {casos_filtrados.at[i, 'Score_Max']:.2f} — Estado: {casos_filtrados.at[i, 'Estado_Alerta']}",
+            key="sel_caso"
+        )
+        if caso_idx is not None:
+            with st.expander("Gestión del caso", expanded=False):
+                nuevo_estado = st.selectbox("Clasificar como", ESTADOS_ALERTA, key="nuevo_estado")
+                fundamento = st.text_area(
+                    "Fundamento del examen (Art. 29 Ley 6593)",
+                    value=str(casos_filtrados.at[caso_idx, "Fundamento_Examen"]),
+                    key="fundamento_examen",
+                    help="Describe la base legal/económica que justifica o descarta la operación sospechosa."
+                )
+                if st.button("💾 Guardar clasificación", key="btn_clasificar"):
+                    casos_filtrados.at[caso_idx, "Estado_Alerta"] = nuevo_estado
+                    casos_filtrados.at[caso_idx, "Fundamento_Examen"] = fundamento
+                    if nuevo_estado == "Sospechosa_Confirmada":
+                        casos_filtrados.at[caso_idx, "Fecha_Clasificacion_Sospechosa"] = datetime.now().date()
+                        st.warning("⚠️ Caso clasificado como SOSPECHOSO. Proceder a generar RTS ante la IVE (Art. 30 Ley 6593).")
+                    st.success("Clasificación guardada.")

@@ -375,7 +375,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
     st.markdown("""
     <div class="info-box" style="border-left-color: #ef4444;">
         <strong>Análisis de encadenamiento:</strong> Rutas donde el dinero pasa por ≥2 clientes intermedios.
-        Patrón típico de <em>layering</em> (estratificación) en esquemas de LD/FT.
+        Patrón típico de <em>layering</em> (estratificación) en esquemas de LD/FT/FPADM.
     </div>
     """, unsafe_allow_html=True)
 

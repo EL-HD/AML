@@ -1,5 +1,20 @@
-/~$Transacciones_AML_200.xlsx
-.env
+# Temporales Office
+~$*
+
+# macOS
+.DS_Store
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
+
+# Entorno virtual
+aml_env/
+
+# Variables de entorno
+.env
+.env.*
+
+# Claude worktrees
+.claude/

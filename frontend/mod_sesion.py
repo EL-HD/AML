@@ -9,6 +9,51 @@ from datetime import datetime
 
 import pandas as pd
 
+
+def _registrar_acceso_auditoria(usuario: str, licenciaid, modulo: str, accion: str = "VISUALIZACION") -> None:
+    """
+    Registra acceso en bitácora para cumplimiento Art. 19 Ley 6593.
+    1) Escribe en st.session_state["auditoria_sesion"] (in-memory).
+    2) Persiste en public."BitacoraAuditoria" (PostgreSQL).
+    No interrumpe el flujo principal si la DB falla.
+    """
+    import streamlit as st
+
+    # 1. Registro en memoria de sesión
+    if "auditoria_sesion" not in st.session_state:
+        st.session_state["auditoria_sesion"] = []
+    st.session_state["auditoria_sesion"].append({
+        "timestamp": datetime.now().isoformat(),
+        "usuario":   usuario,
+        "modulo":    modulo,
+        "accion":    accion,
+    })
+
+    # 2. Persistencia en BD — Art. 19 Ley 6593
+    if licenciaid is None:
+        return
+    try:
+        import uuid as _uuid
+        from backend.database import SessionLocal
+        from backend import models as _models
+        # Normalizar licenciaid a UUID
+        lid = _uuid.UUID(str(licenciaid)) if not isinstance(licenciaid, _uuid.UUID) else licenciaid
+        db = SessionLocal()
+        try:
+            registro = _models.BitacoraAuditoria(
+                licenciaid=lid,
+                username=usuario,
+                modulo_accedido=modulo,
+                accion=accion,
+                timestamp=datetime.now(),
+            )
+            db.add(registro)
+            db.commit()
+        finally:
+            db.close()
+    except Exception:
+        pass  # auditoría no debe bloquear la UI
+
 _VERSION_SAML = "1.0"
 _SAML_TRANSACTIONS = "transactions.csv"
 _SAML_CONFIG       = "config.json"

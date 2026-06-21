@@ -26,3 +26,16 @@ class BitacoraSesions(Base):
     sessionid = Column("sessionid", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     last_activity = Column("last_activity", DateTime, nullable=False, default=datetime.now)
     licenciaid = Column("licenciaid", UUID(as_uuid=True), nullable=False)
+
+
+class BitacoraAuditoria(Base):
+    """Auditoría de accesos a módulos sensibles — Art. 19 Ley 6593."""
+    __tablename__ = "BitacoraAuditoria"
+    __table_args__ = {"schema": "public"}
+
+    id              = Column("id",              UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    licenciaid      = Column("licenciaid",      UUID(as_uuid=True), nullable=False)
+    username        = Column("username",        String(100),        nullable=False)
+    timestamp       = Column("timestamp",       DateTime,           nullable=False, default=datetime.now)
+    modulo_accedido = Column("modulo_accedido", String(100),        nullable=False)
+    accion          = Column("accion",          String(100),        nullable=False, default="VISUALIZACION")

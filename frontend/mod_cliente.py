@@ -2,6 +2,21 @@ import streamlit as st
 import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout
 
+TIPOS_CLIENTE = [
+    "Persona Individual",
+    "Persona Jurídica",
+    "Estructura Jurídica",   # Art. 3 Ley 6593 — trusts, fundaciones
+]
+
+TIPOS_PERSONA_OBLIGADA = [
+    "Banco",
+    "Cooperativa",
+    "Casa de Cambio",
+    "Seguradora",
+    "Emisora de Tarjetas",
+    "PSAV",  # Art. 3 c)1 vii) Ley 6593 — Proveedor de Servicios de Activos Virtuales
+]
+
 def mostrar(df, casos, cfg):
     st.markdown("""<div class="info-box"><strong>ANÁLISIS POR CLIENTE</strong> — Perfil detallado de comportamiento transaccional IMPERATOR. Identifica vectores de riesgo individuales, picos de actividad estadística y patrones de fragmentación técnica (smurfing).</div>""", unsafe_allow_html=True)
 
@@ -43,6 +58,33 @@ def mostrar(df, casos, cfg):
         </div>""", unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
+
+    # ── BENEFICIARIO FINAL (UBO) — Art. 21 num. 2 Ley 6593 ───────────────────
+    with st.expander("Beneficiario Final (UBO)", expanded=False):
+        col_u1, col_u2 = st.columns(2)
+        with col_u1:
+            benef_final = info_cliente.get("Beneficiario_Final", "No registrado")
+            st.markdown(f"**Beneficiario Final:** {benef_final}")
+
+            pct_participacion = info_cliente.get("Porcentaje_Participacion", None)
+            if pct_participacion is not None:
+                st.markdown(f"**Participación:** {float(pct_participacion):.1f}%")
+
+        with col_u2:
+            es_pep_ubo = info_cliente.get("EsPEP_UBO", False)
+            if es_pep_ubo:
+                st.error("🔴 UBO es PEP — DDA Obligatoria (GAFI Rec. 12 / Art. 25a Ley 6593)")
+                st.caption(f"⚠️ SC incluye penalización adicional por Beneficiario Final PEP (Art. 25a)")
+
+            fuente_ubo = info_cliente.get("Fuente_Verificacion_UBO", "—")
+            st.markdown(f"**Fuente de verificación:** {fuente_ubo}")
+
+        tipo_cliente = info_cliente.get("Tipo_Cliente", None)
+        if tipo_cliente:
+            st.markdown(f"**Tipo de cliente:** {tipo_cliente}")
+        persona_obligada = info_cliente.get("Tipo_Persona_Obligada", None)
+        if persona_obligada:
+            st.markdown(f"**Persona Obligada:** {persona_obligada}")
 
     datos_cliente = df[df["Cliente"] == cliente]
 
