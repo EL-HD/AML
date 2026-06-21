@@ -13,6 +13,8 @@ import plotly.graph_objects as go
 import streamlit.components.v1 as components
 import requests
 import base64
+import hashlib
+import hmac
 import json
 import re
 import tempfile
@@ -152,14 +154,38 @@ def clear_analysis_cache():
             pass
 
 
-def _encode_session_payload(user_data):
+def _session_sign_key() -> bytes | None:
+    """Retorna la clave para firmar payloads de sesión, o None si no está configurada."""
+    key = os.getenv("SESSION_SIGN_KEY", "")
+    return key.encode() if key else None
+
+
+def _encode_session_payload(user_data) -> str:
+    """Codifica user_data en base64 y le añade firma HMAC-SHA256 (C1 fix)."""
     payload = json.dumps(user_data or {}, ensure_ascii=False).encode("utf-8")
-    return base64.urlsafe_b64encode(payload).decode("ascii")
+    b64 = base64.urlsafe_b64encode(payload).decode("ascii")
+    key = _session_sign_key()
+    if not key:
+        return b64
+    sig = hmac.new(key, b64.encode("ascii"), digestmod=hashlib.sha256).hexdigest()
+    return f"{b64}.{sig}"
 
 
-def _decode_session_payload(payload):
+def _decode_session_payload(token: str):
+    """Verifica la firma HMAC y decodifica el payload de sesión (C1 fix)."""
     try:
-        data = base64.urlsafe_b64decode(payload.encode("ascii"))
+        key = _session_sign_key()
+        if key:
+            parts = token.rsplit(".", 1)
+            if len(parts) != 2:
+                return None
+            b64, sig = parts
+            expected = hmac.new(key, b64.encode("ascii"), digestmod=hashlib.sha256).hexdigest()
+            if not hmac.compare_digest(sig, expected):
+                return None
+        else:
+            b64 = token
+        data = base64.urlsafe_b64decode(b64.encode("ascii"))
         parsed = json.loads(data.decode("utf-8"))
         return parsed if isinstance(parsed, dict) else None
     except Exception:
@@ -497,8 +523,8 @@ def login_flow():
                             st.error(data.get("message", "Acceso denegado."))
                     else:
                         st.error("Error de conexión con la API.")
-                except Exception as e:
-                    st.error(f"Error: {e}")
+                except Exception:
+                    st.error("No se pudo conectar con el servidor de autenticación. Intente nuevamente.")
             
             st.markdown("""
                 <div style="text-align: center; margin-top: 2rem;">

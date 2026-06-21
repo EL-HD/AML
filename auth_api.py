@@ -1,5 +1,8 @@
 import os
-from fastapi import FastAPI, Depends, HTTPException, status
+import logging
+from collections import defaultdict
+from time import time
+from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
@@ -7,12 +10,25 @@ from typing import List
 from backend import models, schemas, crud
 from backend.database import SessionLocal, engine, get_db
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 # Crear tablas si no existen
 models.Base.metadata.create_all(bind=engine)
 
 from fastapi.middleware.cors import CORSMiddleware
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# --- Configuración JWT (C2 fix: falla si SECRET_KEY no está configurada) ---
+SECRET_KEY = os.getenv("SECRET_KEY", "")
+if not SECRET_KEY:
+    raise RuntimeError(
+        "SECRET_KEY no está configurada. "
+        "Genere una clave segura: python -c \"import secrets; print(secrets.token_hex(32))\""
+    )
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 app = FastAPI(
     title="Sovereign AML Auth API",
@@ -20,31 +36,40 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configuración de CORS
+# --- CORS (A2 fix: orígenes restringidos, configurable por env var) ---
+_raw_origins = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:8501")
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Permitir todos los orígenes en desarrollo
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
-import logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# --- Rate limiting en memoria (A3 fix: protección básica contra fuerza bruta) ---
+# Nota: para múltiples workers en producción, migrar a Redis.
+_rl_store: dict = defaultdict(list)
+_RL_MAX_ATTEMPTS = 5
+_RL_WINDOW_SECONDS = 300  # 5 minutos
 
-# --- Configuración JWT ---
-SECRET_KEY = os.getenv("SECRET_KEY", "SOVEREIGN_SECRET_KEY_INTELLIGENCE")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+def _check_rate_limit(identifier: str) -> bool:
+    now = time()
+    window_start = now - _RL_WINDOW_SECONDS
+    _rl_store[identifier] = [t for t in _rl_store[identifier] if t > window_start]
+    if len(_rl_store[identifier]) >= _RL_MAX_ATTEMPTS:
+        return False
+    _rl_store[identifier].append(now)
+    return True
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    # B1 fix: usar datetime.now(timezone.utc) en lugar del deprecated utcnow()
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=15))
     to_encode.update({"exp": expire})
-    # Aseguramos que session_id esté presente en el payload
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
@@ -152,9 +177,16 @@ def search_users(q: str, db: Session = Depends(get_db), current_user: models.Lic
 # --- Endpoint de Autenticación ---
 
 @app.post("/auth/validate", response_model=schemas.AuthResponse)
-def validate_user(auth: schemas.AuthRequest, db: Session = Depends(get_db)):
+def validate_user(auth: schemas.AuthRequest, request: Request, db: Session = Depends(get_db)):
+    client_ip = request.client.host if request.client else "unknown"
+    if not _check_rate_limit(client_ip):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiados intentos de autenticación. Intente nuevamente en 5 minutos."
+        )
+
     exists, is_active, message, licencia = crud.validate_auth(db, username=auth.username, password=auth.password, mail=auth.mail)
-    
+
     token = None
     if is_active and licencia:
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)

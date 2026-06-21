@@ -7,7 +7,7 @@ import bcrypt
 from datetime import date, timedelta
 from sqlalchemy import create_engine, Column, Integer, String, Date
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -67,7 +67,7 @@ for u in USUARIOS:
     )
     db.add(licencia)
     db.commit()
-    print(f"OK creado: {u['user']} / {u['mail']} / pass: {u['password']}")
+    print(f"OK creado: {u['user']} / {u['mail']}")
 
 db.close()
 print("Seed completado.")

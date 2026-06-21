@@ -50,7 +50,7 @@ def create_licencia(db: Session, licencia: schemas.LicenciaCreate):
 def update_licencia(db: Session, licencia_id: int, licencia: schemas.LicenciaUpdate):
     db_licencia = db.query(models.Licencia).filter(models.Licencia.id == licencia_id).first()
     if db_licencia:
-        update_data = licencia.dict(exclude_unset=True)
+        update_data = licencia.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(db_licencia, key, value)
         db.commit()
