@@ -49,7 +49,10 @@ RUN mkdir -p /tmp/sovereign_aml_cache \
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PORT=8501 \
-    AUTH_API_URL=http://localhost:8000
+    AUTH_API_URL=http://localhost:8000 \
+    HOME=/tmp \
+    STREAMLIT_BROWSER_GATHER_USAGE_STATS=false \
+    MPLCONFIGDIR=/tmp/matplotlib
 
 # Solo se expone el puerto de Streamlit; FastAPI es interno (127.0.0.1:8000)
 EXPOSE 8501
