@@ -1,0 +1,74 @@
+# ── Control de versiones ──────────────────────────────────────────────────────
+.git/
+.gitignore
+.gitattributes
+
+# ── macOS metadata ────────────────────────────────────────────────────────────
+.DS_Store
+**/.DS_Store
+
+# ── Python bytecode ───────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Entorno virtual local ─────────────────────────────────────────────────────
+aml_env/
+.venv/
+venv/
+env/
+
+# ── Secretos y configuración local ───────────────────────────────────────────
+.env
+.env.*
+*.env
+.envrc
+
+# ── Herramientas de desarrollo ────────────────────────────────────────────────
+.claude/
+.vscode/
+.idea/
+*.code-workspace
+
+# ── Código de respaldo / legacy ───────────────────────────────────────────────
+backup_dark_fintech/
+
+# ── Datos de prueba y archivos de análisis ───────────────────────────────────
+*.xlsx
+*.xls
+Transacciones_AML_200.xlsx
+transacciones_prueba.xlsx
+
+# ── Documentación (no necesaria en la imagen) ─────────────────────────────────
+*.docx
+*.md
+PLAN_TRABAJO_LEY6593.md
+documentacion_tecnica.docx
+Analisis_Brechas_SOVEREIGN_Ley6593.docx
+mejoras_y_seguridad_sugeridas.md
+frontend_design_reference/
+
+# ── Scripts de uso único (no deben correr en producción) ─────────────────────
+seed_db.py
+seed_prod.py
+diagnose_db.py
+generar_docs.py
+
+# ── Testing y herramientas de API ─────────────────────────────────────────────
+*.postman_collection.json
+Sovereign_AML_API.postman_collection.json
+
+# ── Configuración de otras plataformas (Render) ───────────────────────────────
+render.yaml
+Procfile
+runtime.txt
+
+# ── Docker meta (no necesario dentro de la imagen) ────────────────────────────
+Dockerfile
+.dockerignore
