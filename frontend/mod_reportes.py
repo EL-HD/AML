@@ -594,10 +594,10 @@ def mostrar(df, casos, matriz_alertas, cfg):
         story.append(Spacer(1, 8))
 
         total_clientes   = len(casos)
-        criticos_g       = len(casos[casos["Nivel_Riesgo"] == "\ud83d\udd34 Cr\u00edtico"])
-        altos_g          = len(casos[casos["Nivel_Riesgo"] == "\ud83d\udfe7 Alto"])
-        medios_g         = len(casos[casos["Nivel_Riesgo"] == "\ud83d\udfe1 Medio"])
-        bajos_g          = len(casos[casos["Nivel_Riesgo"] == "\ud83d\udfe2 Bajo"])
+        criticos_g       = len(casos[casos["Nivel_Riesgo"] == "Cr\u00edtico"])
+        altos_g          = len(casos[casos["Nivel_Riesgo"] == "Alto"])
+        medios_g         = len(casos[casos["Nivel_Riesgo"] == "Medio"])
+        bajos_g          = len(casos[casos["Nivel_Riesgo"] == "Bajo"])
         total_alertas_g  = int(df["Score"].gt(0).sum())
         monto_total_g    = df["Monto"].sum()
         clientes_alerta  = len(df[df["Score"] > 0]["Cliente"].unique())
@@ -1284,8 +1284,8 @@ def mostrar(df, casos, matriz_alertas, cfg):
         if cliente_pdf:
             info_prev = casos[casos["Cliente"] == cliente_pdf].iloc[0]
             nivel_prev = info_prev["Nivel_Riesgo"]
-            color_prev = {"\ud83d\udd34 Cr\u00edtico": "red", "\ud83d\udfe7 Alto": "amber",
-                          "\ud83d\udfe1 Medio": "blue", "\ud83d\udfe2 Bajo": "green"}.get(nivel_prev, "blue")
+            color_prev = {"Cr\u00edtico": "red", "Alto": "amber",
+                          "Medio": "blue", "Bajo": "green"}.get(nivel_prev, "blue")
 
             col_p1, col_p2, col_p3, col_p4 = st.columns(4)
             with col_p1:
@@ -1354,8 +1354,8 @@ def mostrar(df, casos, matriz_alertas, cfg):
 
         with col_g2:
             total_cl = len(casos)
-            crit_g   = len(casos[casos["Nivel_Riesgo"] == "\ud83d\udd34 Cr\u00edtico"])
-            alto_g   = len(casos[casos["Nivel_Riesgo"] == "\ud83d\udfe7 Alto"])
+            crit_g   = len(casos[casos["Nivel_Riesgo"] == "Cr\u00edtico"])
+            alto_g   = len(casos[casos["Nivel_Riesgo"] == "Alto"])
             vol_g    = df["Monto"].sum()
             at_g     = int(df["Score"].gt(0).sum())
 
