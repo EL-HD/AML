@@ -15,6 +15,15 @@ if not DATABASE_URL:
     print("ERROR: DATABASE_URL no esta configurada")
     sys.exit(1)
 
+SEED_PROD_PASSWORD = os.environ.get("SEED_PROD_PASSWORD")
+if not SEED_PROD_PASSWORD:
+    print(
+        "ERROR: SEED_PROD_PASSWORD no esta configurada. "
+        "Genere una contrasena segura y pasela solo por variable de entorno "
+        "(nunca la escriba en el codigo fuente)."
+    )
+    sys.exit(1)
+
 engine = create_engine(DATABASE_URL)
 Base = declarative_base()
 
@@ -39,7 +48,7 @@ db = Session()
 USUARIOS = [
     {
         "user": "analista_082",
-        "password": "SovereignAML2025!",
+        "password": SEED_PROD_PASSWORD,
         "name": "Hobed Diaz",
         "mail": "hdiazavila27@gmail.com",
         "empresa": "SOVEREIGN Intelligence",

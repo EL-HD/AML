@@ -509,7 +509,7 @@ def login_flow():
                 try:
                     api_url = os.getenv("AUTH_API_URL", "http://localhost:8000")
                     endpoint = f"{api_url}/auth/validate"
-                    response = requests.post(endpoint, json={"username": user, "password": pwd})
+                    response = requests.post(endpoint, json={"username": user, "password": pwd}, timeout=10)
                     
                     if response.status_code == 200:
                         data = response.json()
