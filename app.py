@@ -32,7 +32,7 @@ from frontend import (
     mod_cliente, mod_matrices, mod_manual,
     mod_configuracion, mod_reportes, mod_ubicaciones,
     mod_mitigacion, mod_red_transaccional,
-    mod_imperator_diagnostics, mod_sesion
+    mod_imperator_diagnostics, mod_sesion, mod_riesgo_ldft
 )
 from frontend.mod_sesion import _registrar_acceso_auditoria
 
@@ -1155,6 +1155,7 @@ with st.sidebar:
         "Acciones de Mitigación",
         "Imperator Diagnostics",
         "Gestión de Ubicaciones",
+        "Riesgo Institucional LD/FT",
         "Informes y Reportes",
         "Configuración",
         "Manual de Usuario"
@@ -1230,7 +1231,7 @@ if st.session_state.authenticated:
 # ============================================================
 # CARGA DE ARCHIVO
 # ============================================================
-if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones", "Red Transaccional", "Acciones de Mitigación", "Imperator Diagnostics"]:
+if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones", "Red Transaccional", "Acciones de Mitigación", "Imperator Diagnostics", "Riesgo Institucional LD/FT"]:
     data_ready = "data" in st.session_state
 
     if not data_ready or "archivo_nombre" not in st.session_state:
@@ -1413,6 +1414,10 @@ elif vista == "Imperator Diagnostics":
 
 elif vista == "Gestión de Ubicaciones":
     mod_ubicaciones.mostrar()
+
+elif vista == "Riesgo Institucional LD/FT":
+    _auditar("Riesgo Institucional LD/FT")
+    mod_riesgo_ldft.mostrar()
 
 elif vista == "Informes y Reportes":
     _auditar("Informes y Reportes")
