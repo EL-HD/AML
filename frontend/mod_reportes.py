@@ -215,7 +215,7 @@ def page_header_footer(canvas_obj, doc, report_title, fecha_str):
     canvas_obj.setFont("Helvetica", 7)
     canvas_obj.setFillColor(C_MUTED_LT)
     canvas_obj.drawString(1.0 * inch, 10, f"Confidencial \u00b7 Uso interno \u00b7 {fecha_str}")
-    canvas_obj.drawCentredString(W / 2, 10, "Powered by IMPERATOR \u00b7 Ing. Hob\u00e9d D\u00edaz, Msc. M.A.F.I")
+    canvas_obj.drawCentredString(W / 2, 10, "Powered by IMPERATOR \u00b7 Ing. Hob\u00e9d D\u00edaz M.A. M.A.F.I.")
     canvas_obj.drawRightString(W - 1.0 * inch, 10, f"P\u00e1gina {doc.page}")
     canvas_obj.restoreState()
 
@@ -533,7 +533,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
 
         story.append(Paragraph(
             f"Reporte generado automaticamente por SOVEREIGN AML \u00b7 Powered by IMPERATOR \u00b7 "
-            f"{fecha_gen} \u00b7 Ing. Hob\u00e9d D\u00edaz, Msc. M.A.F.I",
+            f"{fecha_gen} \u00b7 Ing. Hob\u00e9d D\u00edaz M.A. M.A.F.I.",
             S["footer_txt"]
         ))
 
@@ -871,7 +871,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         story.append(Spacer(1, 8))
         story.append(Paragraph(
             f"Informe generado automaticamente por SOVEREIGN AML \u00b7 Powered by IMPERATOR \u00b7 "
-            f"{fecha_gen} \u00b7 Ing. Hob\u00e9d D\u00edaz, Msc. M.A.F.I \u00b7 CONFIDENCIAL",
+            f"{fecha_gen} \u00b7 Ing. Hob\u00e9d D\u00edaz M.A. M.A.F.I. \u00b7 CONFIDENCIAL",
             S["footer_txt"]
         ))
 
@@ -1124,7 +1124,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         story.append(Spacer(1, 8))
         story.append(Paragraph(
             f"SOVEREIGN AML · Powered by IMPERATOR · {fecha_gen} · "
-            "Ing. Hobéd Díaz, Msc. M.A.F.I · CONFIDENCIAL — IVE/SIB",
+            "Ing. Hobéd Díaz M.A. M.A.F.I. · CONFIDENCIAL — IVE/SIB",
             S["footer_txt"]
         ))
 
@@ -1233,7 +1233,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         story.append(Spacer(1, 8))
         story.append(Paragraph(
             f"SOVEREIGN AML · Powered by IMPERATOR · {fecha_gen} · "
-            "Ing. Hobéd Díaz, Msc. M.A.F.I · CONFIDENCIAL — IVE/SIB",
+            "Ing. Hobéd Díaz M.A. M.A.F.I. · CONFIDENCIAL — IVE/SIB",
             S["footer_txt"]
         ))
 

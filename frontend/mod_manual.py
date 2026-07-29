@@ -147,5 +147,5 @@ def mostrar():
 
     ---
     **SOVEREIGN AML v3.1 — Adecuado a Ley 6593 / GAFI 40 Recomendaciones**
-    *Ing. Hobéd Díaz — Msc. M.A.F.I | 2026*
+    *Ing. Hobéd Díaz M.A. M.A.F.I. | 2026*
     """)

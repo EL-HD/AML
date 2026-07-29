@@ -135,7 +135,7 @@ def build_document(output_path: Path):
 
     author_p = doc.add_paragraph()
     author_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_a = author_p.add_run("Ing. Hobéd Díaz — Msc. M.A.F.I")
+    run_a = author_p.add_run("Ing. Hobéd Díaz M.A. M.A.F.I.")
     run_a.font.size = Pt(10)
     run_a.font.color.rgb = RGBColor(0x55, 0x5E, 0x6D)
 

@@ -1197,7 +1197,7 @@ with st.sidebar:
     st.markdown("""
     <div class='sidebar-footer'>
         v3.0 · Sovereign AML Intelligence<br>
-        Ing. Hobéd Díaz Msc. M.A.F.I.
+        Ing. Hobéd Díaz M.A. M.A.F.I.
     </div>
     """, unsafe_allow_html=True)
 
@@ -1437,7 +1437,7 @@ elif vista == "Manual de Usuario":
 st.markdown("""
 <div class="footer">
     SOVEREIGN AML Intelligence Platform v3.0 &nbsp;·&nbsp;
-    Diseñado por el Ing. Hobéd Díaz Msc. M.A.F.I. &nbsp;·&nbsp;
+    Diseñado por el Ing. Hobéd Díaz M.A. M.A.F.I. &nbsp;·&nbsp;
     Sovereign Intelligence Framework
 </div>
 """, unsafe_allow_html=True)

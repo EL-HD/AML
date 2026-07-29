@@ -6,7 +6,7 @@ from frontend.mod_utils import plotly_dark_layout, render_html_table
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # IMPERATOR DIAGNOSTICS — Centro de Validación del Motor y Aseguramiento de Riesgo
-# Diseñado por Ing. Hobéd Díaz, Msc. M.A.F.I.
+# Diseñado por Ing. Hobéd Díaz M.A. M.A.F.I.
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _REGLAS = [
