@@ -1198,15 +1198,15 @@ with st.sidebar:
     <div class='sidebar-footer'>
         v3.0 · Sovereign AML Intelligence
     </div>
-    <div style="margin-top:8px; line-height:1.4;">
+    <div style="margin-top:8px; line-height:1.5;">
         <span style="font-size:12.5px; font-weight:700; color:#d8c3ad; letter-spacing:0.2px;">
             Ing. Hobéd Díaz
         </span><br>
-        <span style="font-size:9.5px; font-weight:600; color:#a08e7a; text-transform:uppercase; letter-spacing:1.1px;">
+        <span style="font-size:12.5px; font-weight:600; color:#a08e7a; text-transform:uppercase; letter-spacing:1.1px;">
             Magíster Artium
         </span><br>
-        <span style="font-size:10.5px; font-weight:700; color:#f59e0b;">M.A.F.I.</span>
-        <span style="font-size:10px; font-weight:400; color:#8b949e;"> · Análisis Forense Informático</span>
+        <span style="font-size:12.5px; font-weight:700; color:#f59e0b;">M.A.F.I.</span>
+        <span style="font-size:12.5px; font-weight:400; color:#8b949e;"> · Análisis Forense Informático</span>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1450,12 +1450,12 @@ st.markdown("""
         <span style="font-size:12px; font-weight:700; color:#f0f6fc; letter-spacing:0.2px;">
             Diseñado por el Ing. Hobéd Díaz
         </span><br>
-        <span style="font-size:9.5px; font-weight:600; color:#8b949e; text-transform:uppercase; letter-spacing:1.2px;">
+        <span style="font-size:12px; font-weight:600; color:#8b949e; text-transform:uppercase; letter-spacing:1.2px;">
             Magíster Artium
         </span>
         &nbsp;·&nbsp;
-        <span style="font-size:10.5px; font-weight:700; color:#f59e0b;">M.A.F.I.</span>
-        <span style="font-size:10px; font-weight:400; color:#8b949e;"> Análisis Forense Informático</span>
+        <span style="font-size:12px; font-weight:700; color:#f59e0b;">M.A.F.I.</span>
+        <span style="font-size:12px; font-weight:400; color:#8b949e;"> Análisis Forense Informático</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
