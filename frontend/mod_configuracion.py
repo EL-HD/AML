@@ -1,7 +1,35 @@
 import streamlit as st
 import matplotlib.pyplot as plt
+import pandas as pd
 from datetime import date as _date
-from frontend.mod_utils import apply_dark_style
+from backend import models
+from backend.database import SessionLocal
+from frontend.mod_utils import apply_dark_style, render_html_table
+
+# Catálogos globales del RTS disponibles para verificación (Oficio IVE 19-2025, Anexo 2).
+# Un solo diccionario de configuración evita repetir la misma consulta 10 veces.
+_CATALOGOS_RTS = {
+    "Departamentos":              (models.CatDepartamento,           ["codigo", "nombre"]),
+    "Municipios":                 (models.CatMunicipio,               ["codigo", "nombre", "departamento_codigo"]),
+    "Países":                     (models.CatPais,                    ["codigo", "nombre"]),
+    "Monedas":                    (models.CatMoneda,                  ["codigo", "nombre"]),
+    "Tipo de Canal":               (models.CatTipoCanal,               ["codigo", "nombre"]),
+    "Tipo de Instrumento":         (models.CatTipoInstrumento,         ["codigo", "nombre"]),
+    "Tipo de Producto (oficial)":  (models.CatTipoProductoOficial,     ["codigo", "nombre"]),
+    "Tipo de Identificación":      (models.CatTipoIdentificacion,      ["codigo", "nombre"]),
+    "Motivo de Involucramiento":   (models.CatMotivoInvolucramiento,   ["codigo", "nombre"]),
+    "Tipo de Reporte":             (models.CatTipoReporte,             ["codigo", "nombre", "es_regulatorio", "articulo_legal"]),
+}
+
+
+def _consultar_catalogo_df(db, modelo, columnas: list) -> pd.DataFrame:
+    """
+    Consulta todas las filas de un catálogo global y las devuelve como DataFrame.
+    Reutilizable para cualquier catálogo de `_CATALOGOS_RTS` — evita repetir la
+    misma lógica de consulta/serialización por cada tabla.
+    """
+    filas = db.query(modelo).order_by(modelo.codigo).all()
+    return pd.DataFrame([{col: getattr(fila, col) for col in columnas} for fila in filas], columns=columnas)
 
 _RETENCION_MINIMA_ANOS = 5  # Art. 34 Ley 6593
 
@@ -34,11 +62,12 @@ def mostrar(_DEFAULTS):
     c = st.session_state["aml_config"].copy()
 
     # ── TABS de secciones ────────────────────────────────────────────────
-    tab1, tab2, tab3, tab4 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "Reglas de Detección",
         "Pesos del Score",
         "Clasificación de Riesgo",
-        "Resumen y Aplicar"
+        "Resumen y Aplicar",
+        "Catálogos IVE (RTS)",
     ])
 
     # ── Botón Restablecer prominente arriba de los tabs ─────────────────
@@ -681,6 +710,48 @@ def mostrar(_DEFAULTS):
             mime="application/json",
             use_container_width=True
         )
+
+    # ── TAB 5: Catálogos IVE (RTS) — solo lectura ────────────────────────
+    with tab5:
+        st.markdown("""
+        <div class="info-box">
+            <strong>CATÁLOGOS GLOBALES DEL RTS</strong> — Datos de referencia oficiales del
+            Oficio IVE Núm. 19-2025 (Anexo 2), compartidos por todas las licencias. Solo lectura:
+            se administran mediante <code>scripts/seed_catalogos_globales.py</code>, no desde aquí.
+        </div>
+        """, unsafe_allow_html=True)
+
+        db = SessionLocal()
+        try:
+            col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+            conteos = {
+                nombre: db.query(modelo).count()
+                for nombre, (modelo, _cols) in _CATALOGOS_RTS.items()
+            }
+            for columna, nombre in zip(
+                [col_m1, col_m2, col_m3, col_m4],
+                ["Departamentos", "Municipios", "Países", "Monedas"],
+            ):
+                with columna:
+                    st.metric(nombre, conteos.get(nombre, 0))
+
+            if conteos.get("Municipios", 0) != 340:
+                st.warning(
+                    f"Se esperaban 340 municipios (Guatemala) y hay {conteos.get('Municipios', 0)}. "
+                    "Verifique que `scripts/seed_catalogos_globales.py` se haya ejecutado correctamente."
+                )
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            catalogo_sel = st.selectbox("Ver catálogo completo", options=list(_CATALOGOS_RTS.keys()))
+            modelo_sel, columnas_sel = _CATALOGOS_RTS[catalogo_sel]
+            df_catalogo = _consultar_catalogo_df(db, modelo_sel, columnas_sel)
+            st.caption(f"{len(df_catalogo)} fila(s) en `{modelo_sel.__tablename__}`.")
+            if df_catalogo.empty:
+                st.info("Este catálogo aún no tiene datos. Ejecute el script de seed correspondiente.")
+            else:
+                render_html_table(df_catalogo, table_id="tabla_catalogos_rts")
+        finally:
+            db.close()
 
     # ── POLÍTICA DE RETENCIÓN DE DATOS (Art. 34 Ley 6593) ─────────────────────
     st.markdown("---")
