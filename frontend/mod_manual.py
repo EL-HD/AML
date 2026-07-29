@@ -82,6 +82,22 @@ def mostrar():
     * **Pruebas de estrés:** Simula cambios de parámetros antes de aplicarlos.
     * **Densidad de riesgo:** Concentración del riesgo en la cartera.
 
+    ## 5.2. Riesgo Institucional de LD/FT/FPADM (Art. 8-11 Decreto 15-2026 / Modelo GAFILAT-IVE)
+    Módulo independiente de **administración del riesgo institucional** de la Persona Obligada (distinto del riesgo por transacción/cliente de IMPERATOR). Sigue el modelo de la Intendencia de Verificación Especial de Guatemala (GERILAFT App) en 6 etapas:
+
+    | Pestaña | Etapa | Propósito |
+    |---------|-------|-----------|
+    | **Segmentación** | Identificación | Define Factor (Clientes, Productos y Servicios, Canales de Distribución, Ubicación Geográfica) → Segmento → Variable. |
+    | **Eventos** | Identificación / Medición | Registra eventos de riesgo con probabilidad (1-4) y los 4 riesgos asociados (Operacional, Legal, Reputacional, Contagio). El sistema calcula automáticamente el **Impacto** (máximo de los 4 riesgos) y el **Riesgo Inherente** (matriz de calor probabilidad × impacto). |
+    | **Controles** | Control | Registra mitigadores con tipo (Preventivo/Detectivo/Correctivo), ejecución (Automático/Semiautomático/Manual) y niveles de cumplimiento/efectividad. El sistema calcula la **Ponderación (0-100)** y el **Riesgo Residual** al vincular controles a eventos. |
+    | **Plan de Acción** | Monitoreo | Obligatorio cuando el riesgo residual es Medio Alto o Alto. Registra medida propuesta, responsable, fechas y porcentaje de avance. |
+    | **Resultados** | Seguimiento | Panel de KPIs (eventos sin control, sin plan, sin segmentar) y mapa de calor consolidado del riesgo inherente. |
+    | **Reportes** | Consolidación | Matriz de riesgo por factor, mapa de calor, y exportación a CSV (saneada contra inyección de fórmulas). |
+
+    **Niveles de riesgo (1-4):** Bajo, Medio Bajo, Medio Alto, Alto. Un riesgo residual de nivel 3 o 4 **exige** Plan de Acción (`requiere_plan_accion`).
+
+    **Aislamiento de datos:** todas las tablas (`RiesgoSegmentos`, `RiesgoEventos`, `RiesgoControles`, `RiesgoEventoControl`, `RiesgoPlanesAccion`) se segmentan por `licenciaid` — una Persona Obligada solo ve su propia información, incluso en el mismo servidor.
+
     ## 6. Acciones de Mitigación (RBA / GAFI / ISO 31000)
     El sistema asigna automáticamente acciones proporcionales al nivel de alerta:
     * **Preventivas (P):** Bloqueo temporal (P-01), Rechazo de operación (P-02), Limitación de montos (P-03).
