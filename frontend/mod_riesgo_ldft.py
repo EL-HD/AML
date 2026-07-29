@@ -387,7 +387,7 @@ def _render_tabla_conteo(eventos):
     st.markdown(render_html_table(df, max_height=260), unsafe_allow_html=True)
 
 
-def _render_mapa_calor(eventos):
+def _render_mapa_calor(eventos, key: str):
     conteo = {}
     for e in eventos:
         clave = (e.probabilidad, e.impacto)
@@ -417,7 +417,7 @@ def _render_mapa_calor(eventos):
         range=[0, 4], title="Probabilidad",
     )
     fig.update_layout(plotly_dark_layout(height=420, showlegend=False))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key=key)
 
 
 def _tab_resultados(db, licenciaid):
@@ -439,7 +439,7 @@ def _tab_resultados(db, licenciaid):
     if not eventos:
         st.info("Registre eventos de riesgo para visualizar el mapa de calor.")
         return
-    _render_mapa_calor(eventos)
+    _render_mapa_calor(eventos, key="mapa_calor_resultados")
     st.markdown("<br>", unsafe_allow_html=True)
     _render_tabla_conteo(eventos)
 
@@ -455,7 +455,7 @@ def _tab_reportes(db, licenciaid):
 
     _render_tabla_conteo(eventos)
     st.markdown("<br>", unsafe_allow_html=True)
-    _render_mapa_calor(eventos)
+    _render_mapa_calor(eventos, key="mapa_calor_reportes")
 
     st.markdown("---")
     st.markdown('<div class="section-title">Riesgo por factor</div>', unsafe_allow_html=True)
