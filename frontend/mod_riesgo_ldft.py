@@ -477,9 +477,9 @@ def _tab_reportes(db, licenciaid):
     """, unsafe_allow_html=True)
 
     # Saneado anti-inyección de fórmulas (CSV/Excel Formula Injection) antes de exportar.
-    # Se usa .applymap() (no .map(), disponible solo desde pandas 2.1) para mantener
-    # compatibilidad con el piso de requirements.txt (pandas>=2.0.0).
-    df_csv = df_factor.applymap(_sanear_celda_csv)
+    # DataFrame.applymap() fue eliminado en pandas 3.0 (deprecado desde 2.1);
+    # el reemplazo oficial es DataFrame.map(), fijado en requirements.txt.
+    df_csv = df_factor.map(_sanear_celda_csv)
     csv = df_csv.to_csv(index=False).encode("utf-8-sig")
     st.download_button(
         "Descargar matriz (CSV)", data=csv,
