@@ -140,3 +140,104 @@ class RiesgoPlanAccion(Base):
     creado_por        = Column("creado_por",        String(100), nullable=False)
     creado_en         = Column("creado_en",         DateTime, nullable=False, default=datetime.now)
     actualizado_en    = Column("actualizado_en",    DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CATÁLOGOS GLOBALES — REPORTES REGULATORIOS IVE (RTS/RTE)
+# Base legal: Oficio IVE Núm. 19-2025 y sus Anexos 1 y 2 (RTS), Art. 30-31 Ley 6593.
+# Tablas de referencia compartidas por TODAS las licencias (sin licenciaid):
+# el código oficial es la clave primaria, son de solo lectura para las PO y
+# solo se actualizan cuando la IVE publica un catálogo nuevo o revisado.
+# ═══════════════════════════════════════════════════════════════════════════
+
+class CatDepartamento(Base):
+    """Departamentos de Guatemala (Anexo 2)."""
+    __tablename__ = "CatDepartamentos"
+    __table_args__ = {"schema": "public"}
+
+    codigo = Column("codigo", String(2), primary_key=True)
+    nombre = Column("nombre", String(100), nullable=False)
+
+
+class CatMunicipio(Base):
+    """Municipios de Guatemala, vinculados a su departamento (Anexo 2)."""
+    __tablename__ = "CatMunicipios"
+    __table_args__ = {"schema": "public"}
+
+    codigo               = Column("codigo",               String(4), primary_key=True)
+    nombre               = Column("nombre",               String(100), nullable=False)
+    departamento_codigo  = Column("departamento_codigo",  String(2), nullable=False, index=True)
+
+
+class CatPais(Base):
+    """Catálogo de países (Anexo 2)."""
+    __tablename__ = "CatPaises"
+    __table_args__ = {"schema": "public"}
+
+    codigo = Column("codigo", String(2), primary_key=True)
+    nombre = Column("nombre", String(150), nullable=False)
+
+
+class CatMoneda(Base):
+    """Catálogo de monedas (Anexo 2)."""
+    __tablename__ = "CatMonedas"
+    __table_args__ = {"schema": "public"}
+
+    codigo = Column("codigo", String(3), primary_key=True)
+    nombre = Column("nombre", String(100), nullable=False)
+
+
+class CatTipoCanal(Base):
+    """Tipo de canal transaccional — Módulo 4 del RTS (Anexo 2)."""
+    __tablename__ = "CatTipoCanal"
+    __table_args__ = {"schema": "public"}
+
+    codigo = Column("codigo", String(3), primary_key=True)
+    nombre = Column("nombre", String(100), nullable=False)
+
+
+class CatTipoInstrumento(Base):
+    """Tipo de instrumento de integración — Módulo 4 del RTS (Anexo 2)."""
+    __tablename__ = "CatTipoInstrumento"
+    __table_args__ = {"schema": "public"}
+
+    codigo = Column("codigo", String(3), primary_key=True)
+    nombre = Column("nombre", String(100), nullable=False)
+
+
+class CatTipoProductoOficial(Base):
+    """Tipo de producto o servicio según nomenclatura oficial IVE — Módulo 2 del RTS (Anexo 2)."""
+    __tablename__ = "CatTipoProductoOficial"
+    __table_args__ = {"schema": "public"}
+
+    codigo = Column("codigo", String(3), primary_key=True)
+    nombre = Column("nombre", String(100), nullable=False)
+
+
+class CatTipoIdentificacion(Base):
+    """Tipo de identificación de persona — Módulo 2 del RTS (Anexo 1)."""
+    __tablename__ = "CatTipoIdentificacion"
+    __table_args__ = {"schema": "public"}
+
+    codigo = Column("codigo", String(1), primary_key=True)
+    nombre = Column("nombre", String(100), nullable=False)
+
+
+class CatMotivoInvolucramiento(Base):
+    """Motivo de involucramiento de una persona en el RTS — Módulo 2 (Anexo 1)."""
+    __tablename__ = "CatMotivoInvolucramiento"
+    __table_args__ = {"schema": "public"}
+
+    codigo = Column("codigo", String(20), primary_key=True)
+    nombre = Column("nombre", String(150), nullable=False)
+
+
+class CatTipoReporte(Base):
+    """Tipos de reporte/informe que puede generar el sistema (alimenta ReporteGenerado, fase 2)."""
+    __tablename__ = "CatTipoReporte"
+    __table_args__ = {"schema": "public"}
+
+    codigo         = Column("codigo",         String(30), primary_key=True)
+    nombre         = Column("nombre",         String(150), nullable=False)
+    es_regulatorio = Column("es_regulatorio", Boolean, nullable=False, default=False)
+    articulo_legal = Column("articulo_legal", String(100), nullable=True)
