@@ -772,7 +772,7 @@ def mostrar(_DEFAULTS):
                 opciones_entrada = [
                     f"{fila['codigo']} — {fila['nombre']}" for _, fila in df_catalogo.iterrows()
                 ]
-                col_sel, col_estado, col_btn = st.columns([3, 1, 1])
+                col_sel, col_estado, col_btn = st.columns([3, 1, 1], vertical_alignment="center")
                 with col_sel:
                     entrada_sel = st.selectbox(
                         "Entrada", options=opciones_entrada, key="entrada_catalogo_sel",
@@ -783,9 +783,14 @@ def mostrar(_DEFAULTS):
                     df_catalogo.loc[df_catalogo["codigo"] == codigo_sel, "activo"].iloc[0]
                 )
                 with col_estado:
-                    st.metric("Estado actual", "Activo" if activo_actual else "Inactivo")
+                    color_estado = "#2ecc71" if activo_actual else "#e74c3c"
+                    texto_estado = "Activo" if activo_actual else "Inactivo"
+                    st.markdown(
+                        f"<div style='text-align:center; font-weight:600; color:{color_estado};'>"
+                        f"{texto_estado}</div>",
+                        unsafe_allow_html=True,
+                    )
                 with col_btn:
-                    st.markdown("<div style='height:1.8rem'></div>", unsafe_allow_html=True)
                     etiqueta_boton = "Inactivar" if activo_actual else "Activar"
                     if st.button(etiqueta_boton, key="btn_toggle_catalogo", use_container_width=True):
                         actualizado = _actualizar_estado_catalogo(
