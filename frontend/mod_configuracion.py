@@ -716,8 +716,8 @@ def mostrar(_DEFAULTS):
         st.markdown("""
         <div class="info-box">
             <strong>CATÁLOGOS GLOBALES DEL RTS</strong> — Datos de referencia oficiales del
-            Oficio IVE Núm. 19-2025 (Anexo 2), compartidos por todas las licencias. Solo lectura:
-            se administran mediante <code>scripts/seed_catalogos_globales.py</code>, no desde aquí.
+            Oficio IVE Núm. 19-2025 (Anexo 2), compartidos por todas las licencias. Vista de
+            solo lectura; para cambios contacte a soporte técnico.
         </div>
         """, unsafe_allow_html=True)
 
@@ -738,16 +738,16 @@ def mostrar(_DEFAULTS):
             if conteos.get("Municipios", 0) != 340:
                 st.warning(
                     f"Se esperaban 340 municipios (Guatemala) y hay {conteos.get('Municipios', 0)}. "
-                    "Verifique que `scripts/seed_catalogos_globales.py` se haya ejecutado correctamente."
+                    "Contacte a soporte técnico para regularizar el catálogo."
                 )
 
             st.markdown("<br>", unsafe_allow_html=True)
             catalogo_sel = st.selectbox("Ver catálogo completo", options=list(_CATALOGOS_RTS.keys()))
             modelo_sel, columnas_sel = _CATALOGOS_RTS[catalogo_sel]
             df_catalogo = _consultar_catalogo_df(db, modelo_sel, columnas_sel)
-            st.caption(f"{len(df_catalogo)} fila(s) en `{modelo_sel.__tablename__}`.")
+            st.caption(f"{len(df_catalogo)} registro(s).")
             if df_catalogo.empty:
-                st.info("Este catálogo aún no tiene datos. Ejecute el script de seed correspondiente.")
+                st.info("Este catálogo aún no tiene datos. Contacte a soporte técnico.")
             else:
                 render_html_table(df_catalogo, table_id="tabla_catalogos_rts")
         finally:

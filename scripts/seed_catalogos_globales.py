@@ -24,7 +24,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from backend.database import SessionLocal
+from backend.database import SessionLocal, engine
 from backend import models
 
 
@@ -891,6 +891,12 @@ PLN,ZLOTY
 
 
 def main():
+    # Idempotente y autosuficiente: crea las tablas si aun no existen antes de
+    # sembrar. Esto evita depender del orden de arranque de otros procesos
+    # (p. ej. si este script corre en preDeployCommand, antes de que auth_api.py
+    # llame a create_all() al iniciar). Sigue el mismo patron que seed_prod.py.
+    models.Base.metadata.create_all(bind=engine)
+
     db = SessionLocal()
     try:
         resultados = {
