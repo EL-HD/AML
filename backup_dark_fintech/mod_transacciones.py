@@ -3,7 +3,7 @@ import streamlit as st
 def mostrar(df):
     st.markdown("""
     <div class="info-box">
-        <strong>BITÁCORA TRANSACCIONAL SENTINEL</strong> — Registro granular de operaciones analizadas.
+        <strong>BITÁCORA TRANSACCIONAL SENTINEL</strong>: Registro granular de operaciones analizadas.
         Cada registro incluye vectores de detección técnicos y el score de riesgo acumulado según el motor de cumplimiento.
     </div>
     """, unsafe_allow_html=True)

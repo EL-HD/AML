@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Stage 1 — builder: instala dependencias en un prefijo aislado
+# Stage 1: builder: instala dependencias en un prefijo aislado
 # ─────────────────────────────────────────────────────────────────────────────
 FROM python:3.11-slim-bookworm AS builder
 
@@ -21,7 +21,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Stage 2 — runtime: imagen mínima y sin herramientas de compilación
+# Stage 2: runtime: imagen mínima y sin herramientas de compilación
 # ─────────────────────────────────────────────────────────────────────────────
 FROM python:3.11-slim-bookworm AS runtime
 
@@ -45,7 +45,7 @@ RUN mkdir -p /tmp/sovereign_aml_cache \
 
 # ── Variables de entorno (valores seguros por defecto, sin secretos) ───────
 # Las variables sensibles (SECRET_KEY, SESSION_SIGN_KEY, DATABASE_URL)
-# DEBEN inyectarse desde Railway — NUNCA hardcodeadas aquí.
+# DEBEN inyectarse desde Railway: NUNCA hardcodeadas aquí.
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PORT=8501 \

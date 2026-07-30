@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout
 
 def mostrar(df, casos, matriz_alertas):
-    st.markdown("""<div class="info-box"><strong>RESUMEN EJECUTIVO</strong> — Análisis de alto nivel Sentinel Intelligence. Muestra indicadores críticos y distribución de riesgo detectada. Optimizado para supervisión operativa mediante capas tonales.</div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="info-box"><strong>RESUMEN EJECUTIVO</strong>: Análisis de alto nivel Sentinel Intelligence. Muestra indicadores críticos y distribución de riesgo detectada. Optimizado para supervisión operativa mediante capas tonales.</div>""", unsafe_allow_html=True)
 
     # KPIs
     total_clientes = len(casos)

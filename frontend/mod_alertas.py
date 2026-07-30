@@ -5,14 +5,14 @@ from frontend.mod_utils import render_html_table
 ESTADOS_ALERTA = [
     "Inusual_Pendiente",       # Detectado por IMPERATOR, sin examinar
     "Inusual_Examinada",       # Analista revisó, no escaló
-    "Sospechosa_Confirmada",   # Analista confirmó — requiere RTS (Art. 30)
+    "Sospechosa_Confirmada",   # Analista confirmó: requiere RTS (Art. 30)
     "Descartada",              # Falso positivo documentado
 ]
 
 def mostrar(casos):
     st.markdown("""
     <div class="info-box">
-        <strong>CASOS DE ALERTA</strong> — Consolida los clientes que activaron señales de riesgo durante el período analizado.
+        <strong>CASOS DE ALERTA</strong>: Consolida los clientes que activaron señales de riesgo durante el período analizado.
         Esta vista prioriza sujetos con exposición relevante, resume factores activados y facilita la selección de expedientes para revisión, escalamiento y debida diligencia ampliada.
     </div>
     """, unsafe_allow_html=True)
@@ -101,12 +101,12 @@ def mostrar(casos):
 
     # ── PANEL DE GESTIÓN DE CASOS (Arts. 28-30 Ley 6593) ─────────────────────
     st.markdown("---")
-    st.markdown('<div class="section-title">Gestión de Casos — Ciclo Inusual → Sospechosa</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Gestión de Casos: Ciclo Inusual → Sospechosa</div>', unsafe_allow_html=True)
     if not casos_filtrados.empty:
         caso_idx = st.selectbox(
             "Seleccionar caso para gestionar",
             casos_filtrados.index.tolist(),
-            format_func=lambda i: f"{casos_filtrados.at[i, 'Cliente']} — Score: {casos_filtrados.at[i, 'Score_Max']:.2f} — Estado: {casos_filtrados.at[i, 'Estado_Alerta']}",
+            format_func=lambda i: f"{casos_filtrados.at[i, 'Cliente']}: Score: {casos_filtrados.at[i, 'Score_Max']:.2f}: Estado: {casos_filtrados.at[i, 'Estado_Alerta']}",
             key="sel_caso"
         )
         if caso_idx is not None:

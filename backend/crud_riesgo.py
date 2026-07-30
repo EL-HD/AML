@@ -1,17 +1,17 @@
 """
-crud_riesgo.py — Acceso a datos para la Administración de Riesgo Institucional
+crud_riesgo.py: Acceso a datos para la Administración de Riesgo Institucional
 de LD/FT (segmentación, eventos, controles, planes de acción).
 
-Reglas de seguridad (OWASP A01 — control de acceso roto / IDOR):
+Reglas de seguridad (OWASP A01: control de acceso roto / IDOR):
   * TODA consulta, actualización o eliminación filtra siempre por
     `licenciaid` además del id del registro. Un usuario autenticado jamás
     puede leer ni modificar datos de otra Persona Obligada (otra licencia),
     incluso si adivina o manipula un UUID de otro registro.
   * `licenciaid` debe provenir siempre del lado servidor (JWT / sesión
-    autenticada — `st.session_state.user_data["licence_id"]`), nunca de un
+    autenticada: `st.session_state.user_data["licence_id"]`), nunca de un
     campo de texto editable por el usuario.
   * Todo acceso a la base de datos usa el ORM de SQLAlchemy con parámetros
-    ligados (sin construir SQL por concatenación de strings) — previene
+    ligados (sin construir SQL por concatenación de strings): previene
     inyección SQL (OWASP A03).
 """
 from __future__ import annotations

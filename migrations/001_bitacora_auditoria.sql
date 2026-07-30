@@ -1,7 +1,7 @@
 -- =============================================================
--- MIGRACIÓN 001 — BitacoraAuditoria
+-- MIGRACIÓN 001: BitacoraAuditoria
 -- Propósito : Tabla de auditoría de accesos a módulos sensibles
--- Base legal : Art. 19 Ley 6593 (Guatemala) — trazabilidad
+-- Base legal : Art. 19 Ley 6593 (Guatemala): trazabilidad
 --              del Oficial de Cumplimiento
 -- Ejecutar  : psql -U postgres -d AML -f 001_bitacora_auditoria.sql
 -- =============================================================
@@ -29,7 +29,7 @@ CREATE INDEX IF NOT EXISTS idx_auditoria_modulo
     ON public."BitacoraAuditoria"(modulo_accedido);
 
 -- Comentarios descriptivos
-COMMENT ON TABLE  public."BitacoraAuditoria"          IS 'Registro de accesos a módulos sensibles — Art. 19 Ley 6593';
+COMMENT ON TABLE  public."BitacoraAuditoria"          IS 'Registro de accesos a módulos sensibles: Art. 19 Ley 6593';
 COMMENT ON COLUMN public."BitacoraAuditoria".licenciaid IS 'FK lógica a Licencias.licenceid';
 COMMENT ON COLUMN public."BitacoraAuditoria".username   IS 'Nombre de usuario autenticado';
 COMMENT ON COLUMN public."BitacoraAuditoria".timestamp  IS 'Timestamp del acceso (con timezone)';

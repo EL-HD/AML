@@ -16,7 +16,7 @@ def _detectar_rte(df, col_monto: str = "Monto", col_tipo: str = "Tipo_Instrument
 def mostrar(df):
     st.markdown("""
     <div class="info-box">
-        <strong>BITÁCORA TRANSACCIONAL IMPERATOR</strong> — Registro granular de operaciones analizadas.
+        <strong>BITÁCORA TRANSACCIONAL IMPERATOR</strong>: Registro granular de operaciones analizadas.
         Cada registro incluye vectores de detección técnicos y el score de riesgo acumulado según el motor de cumplimiento.
     </div>
     """, unsafe_allow_html=True)
@@ -70,7 +70,7 @@ def mostrar(df):
     columnas_mostrar += bool_cols + pilares_cols + ["Score"]
 
     if n_rte > 0:
-        st.warning(f"⚠️ {n_rte} transacción(es) en efectivo ≥ USD {UMBRAL_RTE_USD:,} — Requieren RTE ante la IVE (Art. 31 Ley 6593)")
+        st.warning(f"⚠️ {n_rte} transacción(es) en efectivo ≥ USD {UMBRAL_RTE_USD:,}: Requieren RTE ante la IVE (Art. 31 Ley 6593)")
 
     st.markdown(f"""
     <div class="warning-box" style="margin-top:10px;">

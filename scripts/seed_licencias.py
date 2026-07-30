@@ -1,5 +1,5 @@
 """
-seed_licencias.py — Crea o restablece licencias (usuarios) base del sistema.
+seed_licencias.py: Crea o restablece licencias (usuarios) base del sistema.
 
 Uso: se ejecuta una sola vez como preDeployCommand en Railway (o manualmente
 con `python -m scripts.seed_licencias` desde la raíz del repo, con las
@@ -10,7 +10,7 @@ Seguridad (OWASP A02 - Cryptographic Failures / A07 - Auth Failures):
   Cada usuario a crear/restablecer lee su contraseña desde una variable de
   entorno (convención: SEED_<USERNAME_EN_MAYUSCULAS>_PASSWORD).
 - El hash se genera con bcrypt.gensalt() (backend.crud.get_password_hash),
-  el mismo mecanismo que usa el resto del sistema — sin duplicar lógica.
+  el mismo mecanismo que usa el resto del sistema: sin duplicar lógica.
 - Operación idempotente: si la licencia ya existe (por mail, columna única),
   se actualiza en vez de duplicarse; si no existe, se crea.
 - Falla explícitamente (exit code 1) si falta una variable de entorno

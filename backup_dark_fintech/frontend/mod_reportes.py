@@ -840,7 +840,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
 
     st.markdown("""
     <div class="info-box">
-        <strong>INFORMES Y REPORTES PDF</strong> — Documentación formal bajo estándares IMPERATOR.
+        <strong>INFORMES Y REPORTES PDF</strong>: Documentación formal bajo estándares IMPERATOR.
         Genera instrumentos analíticos de alta fidelidad para procesos de auditoría y reporte regulatorio (RTI/RTS a la SIB).
         Utilice la <strong>Ficha Individual</strong> para expedientes específicos o el <strong>Informe Ejecutivo</strong> para visión de junta directiva.
     </div>

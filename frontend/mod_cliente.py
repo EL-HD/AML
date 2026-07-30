@@ -5,7 +5,7 @@ from frontend.mod_utils import plotly_dark_layout
 TIPOS_CLIENTE = [
     "Persona Individual",
     "Persona Jurídica",
-    "Estructura Jurídica",   # Art. 3 Ley 6593 — trusts, fundaciones
+    "Estructura Jurídica",   # Art. 3 Ley 6593: trusts, fundaciones
 ]
 
 TIPOS_PERSONA_OBLIGADA = [
@@ -14,11 +14,11 @@ TIPOS_PERSONA_OBLIGADA = [
     "Casa de Cambio",
     "Seguradora",
     "Emisora de Tarjetas",
-    "PSAV",  # Art. 3 c)1 vii) Ley 6593 — Proveedor de Servicios de Activos Virtuales
+    "PSAV",  # Art. 3 c)1 vii) Ley 6593: Proveedor de Servicios de Activos Virtuales
 ]
 
 def mostrar(df, casos, cfg):
-    st.markdown("""<div class="info-box"><strong>ANÁLISIS POR CLIENTE</strong> — Perfil detallado de comportamiento transaccional IMPERATOR. Identifica vectores de riesgo individuales, picos de actividad estadística y patrones de fragmentación técnica (smurfing).</div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="info-box"><strong>ANÁLISIS POR CLIENTE</strong>: Perfil detallado de comportamiento transaccional IMPERATOR. Identifica vectores de riesgo individuales, picos de actividad estadística y patrones de fragmentación técnica (smurfing).</div>""", unsafe_allow_html=True)
 
     cliente = st.selectbox("Selecciona un cliente para analizar", df["Cliente"].unique())
     datos = df[df["Cliente"] == cliente].sort_values("Fecha")
@@ -59,7 +59,7 @@ def mostrar(df, casos, cfg):
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── BENEFICIARIO FINAL (UBO) — Art. 21 num. 2 Ley 6593 ───────────────────
+    # ── BENEFICIARIO FINAL (UBO): Art. 21 num. 2 Ley 6593 ───────────────────
     with st.expander("Beneficiario Final (UBO)", expanded=False):
         col_u1, col_u2 = st.columns(2)
         with col_u1:
@@ -73,10 +73,10 @@ def mostrar(df, casos, cfg):
         with col_u2:
             es_pep_ubo = info_cliente.get("EsPEP_UBO", False)
             if es_pep_ubo:
-                st.error("🔴 UBO es PEP — DDA Obligatoria (GAFI Rec. 12 / Art. 25a Ley 6593)")
+                st.error("🔴 UBO es PEP: DDA Obligatoria (GAFI Rec. 12 / Art. 25a Ley 6593)")
                 st.caption(f"⚠️ SC incluye penalización adicional por Beneficiario Final PEP (Art. 25a)")
 
-            fuente_ubo = info_cliente.get("Fuente_Verificacion_UBO", "—")
+            fuente_ubo = info_cliente.get("Fuente_Verificacion_UBO", "N/D")
             st.markdown(f"**Fuente de verificación:** {fuente_ubo}")
 
         tipo_cliente = info_cliente.get("Tipo_Cliente", None)

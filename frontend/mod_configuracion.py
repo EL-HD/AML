@@ -6,7 +6,7 @@ from backend import models
 from backend.database import SessionLocal
 from frontend.mod_utils import apply_dark_style, render_html_table
 
-# Catálogos globales del RTS disponibles para verificación (Oficio IVE 19-2025, Anexo 2).
+# Catálogos globales del RTS disponibles para verificación (normativa IVE vigente).
 # Un solo diccionario de configuración evita repetir la misma consulta 10 veces.
 _CATALOGOS_RTS = {
     "Departamentos":              (models.CatDepartamento,           ["codigo", "nombre", "activo"]),
@@ -25,7 +25,7 @@ _CATALOGOS_RTS = {
 def _consultar_catalogo_df(db, modelo, columnas: list) -> pd.DataFrame:
     """
     Consulta todas las filas de un catálogo global y las devuelve como DataFrame.
-    Reutilizable para cualquier catálogo de `_CATALOGOS_RTS` — evita repetir la
+    Reutilizable para cualquier catálogo de `_CATALOGOS_RTS`: evita repetir la
     misma lógica de consulta/serialización por cada tabla.
     """
     filas = db.query(modelo).order_by(modelo.codigo).all()
@@ -36,7 +36,7 @@ def _actualizar_estado_catalogo(db, modelo, codigo: str, activo: bool) -> bool:
     """
     Activa o inactiva una entrada de catálogo por su `codigo` (clave primaria).
     Validación explícita: si el registro no existe, no hace nada y retorna False
-    — evita depender de que la fila exista de forma implícita.
+   : evita depender de que la fila exista de forma implícita.
     Reutilizable para cualquier catálogo de `_CATALOGOS_RTS`.
     """
     registro = db.get(modelo, codigo)
@@ -68,7 +68,7 @@ def _validar_retencion(fecha_registro, anos_retencion: int = _RETENCION_MINIMA_A
 def mostrar(_DEFAULTS):
     st.markdown("""
     <div class="info-box">
-        <strong>CONFIGURACIÓN DE REGLAS AML</strong> — Parámetros de detección y ponderación del motor de riesgo.
+        <strong>CONFIGURACIÓN DE REGLAS AML</strong>: Parámetros de detección y ponderación del motor de riesgo.
         Administre umbrales, reglas de detección y clasificación de riesgo.
         Los ajustes se integran en tiempo real al análisis.
     </div>
@@ -106,13 +106,13 @@ def mostrar(_DEFAULTS):
 
         st.markdown("---")
 
-        # ── Regla 1 — Monto Alto Absoluto ──────────────────────────────
+        # ── Regla 1: Monto Alto Absoluto ──────────────────────────────
         col_on, col_title = st.columns([1, 9])
         with col_on:
             c["regla_absoluto"] = st.toggle("", value=c["regla_absoluto"], key="tog_abs")
         with col_title:
             estado_abs = "ACTIVA" if c["regla_absoluto"] else "DESACTIVADA"
-            st.markdown(f'<div class="section-title">Regla 1 — Monto Alto Absoluto &nbsp;<span class="section-badge">{estado_abs}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">Regla 1: Monto Alto Absoluto &nbsp;<span class="section-badge">{estado_abs}</span></div>', unsafe_allow_html=True)
 
         col_desc1, col_ctrl1 = st.columns([3, 2])
         with col_desc1:
@@ -152,13 +152,13 @@ def mostrar(_DEFAULTS):
 
         st.markdown("---")
 
-        # ── Regla 2 — Acumulado Mensual ────────────────────────────────
+        # ── Regla 2: Acumulado Mensual ────────────────────────────────
         col_on2, col_title2 = st.columns([1, 9])
         with col_on2:
             c["regla_acumulado"] = st.toggle("", value=c["regla_acumulado"], key="tog_acum")
         with col_title2:
             estado_acum = "ACTIVA" if c["regla_acumulado"] else "DESACTIVADA"
-            st.markdown(f'<div class="section-title">Regla 2 — Acumulado Mensual &nbsp;<span class="section-badge">{estado_acum}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">Regla 2: Acumulado Mensual &nbsp;<span class="section-badge">{estado_acum}</span></div>', unsafe_allow_html=True)
 
         col_desc2, col_ctrl2 = st.columns([3, 2])
         with col_desc2:
@@ -206,13 +206,13 @@ def mostrar(_DEFAULTS):
 
         st.markdown("---")
 
-        # ── Regla 3 — Tolerancia sobre Perfil ──────────────────────────
+        # ── Regla 3: Tolerancia sobre Perfil ──────────────────────────
         col_on3, col_title3 = st.columns([1, 9])
         with col_on3:
             c["regla_perfil"] = st.toggle("", value=c["regla_perfil"], key="tog_perf")
         with col_title3:
             estado_perf = "ACTIVA" if c["regla_perfil"] else "DESACTIVADA"
-            st.markdown(f'<div class="section-title">Regla 3 — Exceso sobre Perfil &nbsp;<span class="section-badge">{estado_perf}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">Regla 3: Exceso sobre Perfil &nbsp;<span class="section-badge">{estado_perf}</span></div>', unsafe_allow_html=True)
 
         col_desc3, col_ctrl3 = st.columns([3, 2])
         with col_desc3:
@@ -252,13 +252,13 @@ def mostrar(_DEFAULTS):
 
         st.markdown("---")
 
-        # ── Regla 4 — Frecuencia Alta ───────────────────────────────────
+        # ── Regla 4: Frecuencia Alta ───────────────────────────────────
         col_on4, col_title4 = st.columns([1, 9])
         with col_on4:
             c["regla_frecuencia"] = st.toggle("", value=c["regla_frecuencia"], key="tog_frec")
         with col_title4:
             estado_frec = "ACTIVA" if c["regla_frecuencia"] else "DESACTIVADA"
-            st.markdown(f'<div class="section-title">Regla 4 — Frecuencia Alta &nbsp;<span class="section-badge">{estado_frec}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">Regla 4: Frecuencia Alta &nbsp;<span class="section-badge">{estado_frec}</span></div>', unsafe_allow_html=True)
 
         col_desc4, col_ctrl4 = st.columns([3, 2])
         with col_desc4:
@@ -298,13 +298,13 @@ def mostrar(_DEFAULTS):
 
         st.markdown("---")
 
-        # ── Regla 5 — Smurfing ──────────────────────────────────────────
+        # ── Regla 5: Smurfing ──────────────────────────────────────────
         col_on5, col_title5 = st.columns([1, 9])
         with col_on5:
             c["regla_smurfing"] = st.toggle("", value=c["regla_smurfing"], key="tog_smurf")
         with col_title5:
             estado_smurf = "ACTIVA" if c["regla_smurfing"] else "DESACTIVADA"
-            st.markdown(f'<div class="section-title">Regla 5 — Smurfing (Fragmentación) &nbsp;<span class="section-badge">{estado_smurf}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">Regla 5: Smurfing (Fragmentación) &nbsp;<span class="section-badge">{estado_smurf}</span></div>', unsafe_allow_html=True)
 
         col_desc5, col_ctrl5 = st.columns([3, 2])
         with col_desc5:
@@ -344,14 +344,14 @@ def mostrar(_DEFAULTS):
 
         st.markdown("---")
 
-        # ── Regla 6 — Pico Anómalo ──────────────────────────────────────
+        # ── Regla 6: Pico Anómalo ──────────────────────────────────────
 
         col_on6, col_title6 = st.columns([1, 9])
         with col_on6:
             c["regla_pico"] = st.toggle("", value=c["regla_pico"], key="tog_pico")
         with col_title6:
             estado_pico = "ACTIVA" if c["regla_pico"] else "DESACTIVADA"
-            st.markdown(f'<div class="section-title">Regla 6 — Pico Anómalo Estadístico &nbsp;<span class="section-badge">{estado_pico}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">Regla 6: Pico Anómalo Estadístico &nbsp;<span class="section-badge">{estado_pico}</span></div>', unsafe_allow_html=True)
 
         col_desc6, col_ctrl6 = st.columns([3, 2])
         with col_desc6:
@@ -391,14 +391,14 @@ def mostrar(_DEFAULTS):
 
         st.markdown("---")
 
-        # ── Regla 7 — Verificación FEIS → FEIC ─────────────────────────
+        # ── Regla 7: Verificación FEIS → FEIC ─────────────────────────
         col_on7, col_title7 = st.columns([1, 9])
         with col_on7:
             c["regla_feic"] = st.toggle("", value=c.get("regla_feic", True), key="tog_feic")
         with col_title7:
             estado_feic = "ACTIVA" if c.get("regla_feic", True) else "DESACTIVADA"
             st.markdown(
-                f'<div class="section-title">Regla 7 — Verificación FEIS → FEIC &nbsp;'
+                f'<div class="section-title">Regla 7: Verificación FEIS → FEIC &nbsp;'
                 f'<span class="section-badge">{estado_feic}</span></div>',
                 unsafe_allow_html=True
             )
@@ -419,11 +419,11 @@ def mostrar(_DEFAULTS):
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                     <div style="background:#1b2027; border-radius:0px; padding:12px; border:1px solid rgba(168,85,247,0.2);">
                         <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Formulario origen</div>
-                        <div style="color:#a855f7; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">FEIS — Simplificado</div>
+                        <div style="color:#a855f7; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">FEIS: Simplificado</div>
                     </div>
                     <div style="background:#1b2027; border-radius:0px; padding:12px; border:1px solid rgba(168,85,247,0.2);">
                         <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Formulario objetivo</div>
-                        <div style="color:#a855f7; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">FEIC — Completo</div>
+                        <div style="color:#a855f7; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">FEIC: Completo</div>
                     </div>
                 </div>
                 <div style="margin-top:12px; padding:10px; background:#1b2027; border-left:2px solid #a855f7;">
@@ -455,7 +455,7 @@ def mostrar(_DEFAULTS):
     with tab2:
         st.markdown("""
         <div class="info-box">
-            <strong>PONDERACIÓN DE SCORE</strong> — Distribución de criticidad analítica.
+            <strong>PONDERACIÓN DE SCORE</strong>: Distribución de criticidad analítica.
             El Score de Riesgo resulta de la agregación ponderada de vectores activos.
             Configure los pesos para priorizar las tipologías más relevantes según la política institucional.
         </div>""", unsafe_allow_html=True)
@@ -466,12 +466,12 @@ def mostrar(_DEFAULTS):
                 <span class="pulse-dot"></span> MATRIZ DE PONDERACIÓN
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; font-size:12px; color:#a08e7a; line-height:1.8;">
-                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>CORRECCIÓN MONTO</span> — Penalización escalar por volumen transaccional directo.</div>
-                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>VOLUMEN CICLO</span> — Priorización de acumulación económica persistente.</div>
-                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>DESVIACIÓN PERFIL</span> — Sensibilidad ante cambios de nivel declarado.</div>
-                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>FRECUENCIA</span> — Control de densidad operativa en el período.</div>
-                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>FRAGMENTACIÓN</span> — Defensa contra técnicas de ocultamiento (Smurfing).</div>
-                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>SIGMA ANOMALÍA</span> — Ponderación de rareza estadística histórica.</div>
+                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>CORRECCIÓN MONTO</span>: Penalización escalar por volumen transaccional directo.</div>
+                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>VOLUMEN CICLO</span>: Priorización de acumulación económica persistente.</div>
+                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>DESVIACIÓN PERFIL</span>: Sensibilidad ante cambios de nivel declarado.</div>
+                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>FRECUENCIA</span>: Control de densidad operativa en el período.</div>
+                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>FRAGMENTACIÓN</span>: Defensa contra técnicas de ocultamiento (Smurfing).</div>
+                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>SIGMA ANOMALÍA</span>: Ponderación de rareza estadística histórica.</div>
             </div>
         </div>""", unsafe_allow_html=True)
 
@@ -484,10 +484,10 @@ def mostrar(_DEFAULTS):
                 Defina la importancia relativa de cada pilar en el Score Total. La suma de estos pesos determinará el núcleo del motor.
             </div>""", unsafe_allow_html=True)
             
-            c["w_st"] = st.slider("w1 — Transaccional (S_T)", 0.0, 1.0, float(c["w_st"]), 0.05, help="Importancia de las reglas de detección de montos y frecuencias.")
-            c["w_sc"] = st.slider("w2 — Contextual (S_C)", 0.0, 1.0, float(c["w_sc"]), 0.05, help="Importancia de la naturaleza del cliente (PEP, CPE, Ubicación).")
-            c["w_sb"] = st.slider("w3 — Conductual (S_B)", 0.0, 1.0, float(c["w_sb"]), 0.05, help="Importancia de las desviaciones del perfil histórico.")
-            c["w_sn"] = st.slider("w4 — Red (S_N)", 0.0, 1.0, float(c["w_sn"]), 0.05, help="Importancia de la interconexión y flujos en la red.")
+            c["w_st"] = st.slider("w1: Transaccional (S_T)", 0.0, 1.0, float(c["w_st"]), 0.05, help="Importancia de las reglas de detección de montos y frecuencias.")
+            c["w_sc"] = st.slider("w2: Contextual (S_C)", 0.0, 1.0, float(c["w_sc"]), 0.05, help="Importancia de la naturaleza del cliente (PEP, CPE, Ubicación).")
+            c["w_sb"] = st.slider("w3: Conductual (S_B)", 0.0, 1.0, float(c["w_sb"]), 0.05, help="Importancia de las desviaciones del perfil histórico.")
+            c["w_sn"] = st.slider("w4: Red (S_N)", 0.0, 1.0, float(c["w_sn"]), 0.05, help="Importancia de la interconexión y flujos en la red.")
             
             suma_w = c["w_st"] + c["w_sc"] + c["w_sb"] + c["w_sn"]
             if abs(suma_w - 1.0) > 0.001:
@@ -502,12 +502,12 @@ def mostrar(_DEFAULTS):
                 Ajusta el peso individual de cada regla que alimenta al pilar Transaccional. (0 = off, 10 = max).
             </div>""", unsafe_allow_html=True)
             
-            c["peso_absoluto"]   = st.number_input("Peso — Monto Alto Absoluto",   0, 10, int(c["peso_absoluto"]),   key="p1")
-            c["peso_acumulado"]  = st.number_input("Peso — Acumulado Mensual",      0, 10, int(c["peso_acumulado"]),  key="p2")
-            c["peso_perfil"]     = st.number_input("Peso — Exceso sobre Perfil",    0, 10, int(c["peso_perfil"]),     key="p3")
-            c["peso_frecuencia"] = st.number_input("Peso — Frecuencia Alta",        0, 10, int(c["peso_frecuencia"]), key="p4")
-            c["peso_smurfing"]   = st.number_input("Peso — Smurfing",               0, 10, int(c["peso_smurfing"]),   key="p5")
-            c["peso_pico"]       = st.number_input("Peso — Pico Anómalo",           0, 10, int(c["peso_pico"]),       key="p6")
+            c["peso_absoluto"]   = st.number_input("Peso: Monto Alto Absoluto",   0, 10, int(c["peso_absoluto"]),   key="p1")
+            c["peso_acumulado"]  = st.number_input("Peso: Acumulado Mensual",      0, 10, int(c["peso_acumulado"]),  key="p2")
+            c["peso_perfil"]     = st.number_input("Peso: Exceso sobre Perfil",    0, 10, int(c["peso_perfil"]),     key="p3")
+            c["peso_frecuencia"] = st.number_input("Peso: Frecuencia Alta",        0, 10, int(c["peso_frecuencia"]), key="p4")
+            c["peso_smurfing"]   = st.number_input("Peso: Smurfing",               0, 10, int(c["peso_smurfing"]),   key="p5")
+            c["peso_pico"]       = st.number_input("Peso: Pico Anómalo",           0, 10, int(c["peso_pico"]),       key="p6")
 
         with col_p2:
             score_max_teorico = (
@@ -551,7 +551,7 @@ def mostrar(_DEFAULTS):
     with tab3:
         st.markdown("""
         <div class="info-box">
-            <strong>CLASIFICACIÓN DE RIESGO</strong> — Calibración de niveles de alerta.
+            <strong>CLASIFICACIÓN DE RIESGO</strong>: Calibración de niveles de alerta.
             Determine los umbrales de score y volumen para la segmentación del universo transaccional.
             Los cambios afectan la distribución táctica de recursos de investigación.
         </div>""", unsafe_allow_html=True)
@@ -562,10 +562,10 @@ def mostrar(_DEFAULTS):
                 <span class="pulse-dot"></span> LÓGICA DE SEGMENTACIÓN
             </div>
             <div style="font-size:12px; color:#a08e7a; line-height:2;">
-                <span style='color:#ef4444; font-weight:700;'>NIVEL CRÍTICO</span> — Clientes en zona de reporte regulatorio inmediato.<br>
-                <span style='color:#f97316; font-weight:700;'>NIVEL ALTO</span> — Objetivos de debida diligencia ampliada (EDD).<br>
-                <span style='color:#eab308; font-weight:700;'>NIVEL MEDIO</span> — Monitoreo preventivo y actualización de perfil.<br>
-                <span style='color:#10b981; font-weight:700;'>NIVEL BAJO</span> — Actividad dentro de parámetros normales establecidos.
+                <span style='color:#ef4444; font-weight:700;'>NIVEL CRÍTICO</span>: Clientes en zona de reporte regulatorio inmediato.<br>
+                <span style='color:#f97316; font-weight:700;'>NIVEL ALTO</span>: Objetivos de debida diligencia ampliada (EDD).<br>
+                <span style='color:#eab308; font-weight:700;'>NIVEL MEDIO</span>: Monitoreo preventivo y actualización de perfil.<br>
+                <span style='color:#10b981; font-weight:700;'>NIVEL BAJO</span>: Actividad dentro de parámetros normales establecidos.
             </div>
         </div>""", unsafe_allow_html=True)
 
@@ -600,7 +600,7 @@ def mostrar(_DEFAULTS):
 
             st.markdown("""
             <div class="info-box" style="margin-top:12px;">
-                <strong>Nivel Bajo</strong> — Se asigna automáticamente a todo cliente cuyo score
+                <strong>Nivel Bajo</strong>: Se asigna automáticamente a todo cliente cuyo score
                 sea menor al umbral Medio y cuyo total mensual no supere el monto crítico.
                 Son clientes sin señales de alerta significativas en el período.
             </div>""", unsafe_allow_html=True)
@@ -726,12 +726,12 @@ def mostrar(_DEFAULTS):
             use_container_width=True
         )
 
-    # ── TAB 5: Catálogos IVE (RTS) — solo lectura ────────────────────────
+    # ── TAB 5: Catálogos IVE (RTS): solo lectura ────────────────────────
     with tab5:
         st.markdown("""
         <div class="info-box">
-            <strong>CATÁLOGOS GLOBALES DEL RTS</strong> — Datos de referencia oficiales del
-            Oficio IVE Núm. 19-2025 (Anexo 2), compartidos por todas las licencias. El código
+            <strong>CATÁLOGOS GLOBALES DEL RTS</strong>: Datos de referencia oficiales del
+            normativa IVE vigente, compartidos por todas las licencias. El código
             y nombre son de solo lectura; puede activar o inactivar entradas según la necesidad
             de su institución.
         </div>
@@ -770,7 +770,7 @@ def mostrar(_DEFAULTS):
                 st.markdown("<br>", unsafe_allow_html=True)
                 st.markdown("**Activar / Inactivar entrada**")
                 opciones_entrada = [
-                    f"{fila['codigo']} — {fila['nombre']}" for _, fila in df_catalogo.iterrows()
+                    f"{fila['codigo']}: {fila['nombre']}" for _, fila in df_catalogo.iterrows()
                 ]
                 col_sel, col_estado, col_btn = st.columns([3, 1, 1], vertical_alignment="center")
                 with col_sel:
@@ -778,7 +778,7 @@ def mostrar(_DEFAULTS):
                         "Entrada", options=opciones_entrada, key="entrada_catalogo_sel",
                         label_visibility="collapsed",
                     )
-                codigo_sel = entrada_sel.split(" — ", 1)[0]
+                codigo_sel = entrada_sel.split(": ", 1)[0]
                 activo_actual = bool(
                     df_catalogo.loc[df_catalogo["codigo"] == codigo_sel, "activo"].iloc[0]
                 )
@@ -812,12 +812,12 @@ def mostrar(_DEFAULTS):
         "por un mínimo de **5 años** desde la fecha de la transacción o finalización de la relación comercial."
     )
 
-    RETENCION_MINIMA_ANOS = 5  # Art. 34 — no modificable por el usuario
+    RETENCION_MINIMA_ANOS = 5  # Art. 34: no modificable por el usuario
 
     col_ret1, col_ret2 = st.columns(2)
     with col_ret1:
         st.metric("Retención mínima obligatoria", f"{RETENCION_MINIMA_ANOS} años",
-                  help="Art. 34 Ley 6593 — no configurable")
+                  help="Art. 34 Ley 6593: no configurable")
     with col_ret2:
         retencion_config = st.number_input(
             "Retención configurada por la institución (años)",

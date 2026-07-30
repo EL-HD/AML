@@ -3,7 +3,7 @@ import streamlit as st
 def mostrar(casos):
     st.markdown("""
     <div class="info-box">
-        <strong>CASOS DE ALERTA</strong> — Consolidado analítico de identidades con vectores de riesgo activos.
+        <strong>CASOS DE ALERTA</strong>: Consolidado analítico de identidades con vectores de riesgo activos.
         Los perfiles críticos son priorizados por el <strong>Motor Sentinel</strong> para procesos de Debida Diligencia Ampliada (EDD).
     </div>
     """, unsafe_allow_html=True)

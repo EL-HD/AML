@@ -3,7 +3,7 @@ import streamlit as st
 def mostrar(casos):
     st.markdown("""
     <div class="info-box">
-        <strong>CASOS DE ALERTA</strong> — Consolida los clientes que activaron señales de riesgo durante el período analizado.
+        <strong>CASOS DE ALERTA</strong>: Consolida los clientes que activaron señales de riesgo durante el período analizado.
         Esta vista prioriza sujetos con exposición relevante, resume factores activados y facilita la selección de expedientes para revisión, escalamiento y debida diligencia ampliada.
     </div>
     """, unsafe_allow_html=True)

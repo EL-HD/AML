@@ -1,5 +1,5 @@
 -- =============================================================
--- MIGRACIÓN 002 — Administración de Riesgo Institucional de LD/FT
+-- MIGRACIÓN 002: Administración de Riesgo Institucional de LD/FT
 -- Propósito : Tablas de Segmentación, Eventos de riesgo, Controles
 --             (mitigadores) y Planes de Acción, conforme al modelo
 --             GAFILAT / IVE (GERILAFT App) y Art. 8-11 Decreto 15-2026.
@@ -100,8 +100,8 @@ CREATE TABLE IF NOT EXISTS public."RiesgoPlanesAccion" (
 CREATE INDEX IF NOT EXISTS idx_riesgoplanesaccion_licenciaid ON public."RiesgoPlanesAccion"(licenciaid);
 CREATE INDEX IF NOT EXISTS idx_riesgoplanesaccion_evento_id  ON public."RiesgoPlanesAccion"(evento_id);
 
-COMMENT ON TABLE public."RiesgoSegmentos"    IS 'Identificación — Factor/Segmento/Variable (Art. 9 Decreto 15-2026)';
-COMMENT ON TABLE public."RiesgoEventos"      IS 'Identificación/Medición — eventos de riesgo LD/FT (Art. 9-10 Decreto 15-2026)';
-COMMENT ON TABLE public."RiesgoControles"    IS 'Control — mitigadores de riesgo y su ponderación (Art. 11 Decreto 15-2026)';
+COMMENT ON TABLE public."RiesgoSegmentos"    IS 'Identificación: Factor/Segmento/Variable (Art. 9 Decreto 15-2026)';
+COMMENT ON TABLE public."RiesgoEventos"      IS 'Identificación/Medición: eventos de riesgo LD/FT (Art. 9-10 Decreto 15-2026)';
+COMMENT ON TABLE public."RiesgoControles"    IS 'Control: mitigadores de riesgo y su ponderación (Art. 11 Decreto 15-2026)';
 COMMENT ON TABLE public."RiesgoEventoControl" IS 'Vínculo N:M entre eventos de riesgo y controles mitigadores';
-COMMENT ON TABLE public."RiesgoPlanesAccion" IS 'Monitoreo — planes de acción para riesgo residual Medio Alto/Alto';
+COMMENT ON TABLE public."RiesgoPlanesAccion" IS 'Monitoreo: planes de acción para riesgo residual Medio Alto/Alto';

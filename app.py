@@ -37,7 +37,7 @@ from frontend import (
 from frontend.mod_sesion import _registrar_acceso_auditoria
 
 def _auditar(modulo: str, accion: str = "VISUALIZACION") -> None:
-    """Registra acceso de sesión activa — Art. 19 Ley 6593."""
+    """Registra acceso de sesión activa: Art. 19 Ley 6593."""
     ud = st.session_state.get("user_data") or {}
     usuario    = ud.get("user", "desconocido")
     licenciaid = ud.get("licence_id")
@@ -1301,7 +1301,7 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
             st.markdown("""
             <div style="background:#171c23; border-left:3px solid #f59e0b; padding:16px;
                         font-size:14px; color:#a08e7a; margin-bottom:18px; font-family:'IBM Plex Mono',monospace;">
-                <strong style='color:#f0f6fc;'>Formato .saml</strong> — Sovereign AML Session File.<br>
+                <strong style='color:#f0f6fc;'>Formato .saml</strong>: Sovereign AML Session File.<br>
                 Contiene las transacciones originales y la configuración usada en el análisis previo.
                 Al cargarlo, el motor reprocesa todo automáticamente restaurando el estado completo.
             </div>
@@ -1361,7 +1361,7 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
                 <div style="background:#171c23; border-left:3px solid #f59e0b; padding:12px 16px;
                             font-family:'IBM Plex Mono',monospace; font-size:12px; color:#a08e7a;">
                     <span style="color:#f59e0b; font-weight:700;">SESIÓN RESTAURADA</span>
-                    &nbsp;—&nbsp; {nombre}
+                    &nbsp;·&nbsp; {nombre}
                     &nbsp;·&nbsp; {filas} registros
                     &nbsp;·&nbsp; Exportada: {exportado}
                 </div>""", unsafe_allow_html=True)

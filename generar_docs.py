@@ -1,5 +1,5 @@
 """
-generar_docs.py  —  AML Intelligence Platform
+generar_docs.py :  AML Intelligence Platform
 Genera documentacion_tecnica.docx en el directorio de trabajo actual.
 
 Uso:
@@ -124,7 +124,7 @@ def build_document(output_path: Path):
 
     subtitle = doc.add_paragraph()
     subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run2 = subtitle.add_run("Analytical Intelligence Platform — Documentación Técnica")
+    run2 = subtitle.add_run("Analytical Intelligence Platform: Documentación Técnica")
     run2.font.size = Pt(14)
     run2.font.color.rgb = RGBColor(0x34, 0x5E, 0x8A)
 

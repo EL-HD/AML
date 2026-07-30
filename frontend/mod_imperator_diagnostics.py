@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout, render_html_table
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# IMPERATOR DIAGNOSTICS — Centro de Validación del Motor y Aseguramiento de Riesgo
+# IMPERATOR DIAGNOSTICS: Centro de Validación del Motor y Aseguramiento de Riesgo
 # Diseñado por Ing. Hobéd Díaz M.A. M.A.F.I.
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -105,7 +105,7 @@ def _risk_density(casos):
 def mostrar(df, casos, cfg):
     st.markdown("""
     <div class="info-box">
-        <strong>IMPERATOR DIAGNOSTICS</strong> — Centro de validación del motor y aseguramiento de riesgo.<br>
+        <strong>IMPERATOR DIAGNOSTICS</strong>: Centro de validación del motor y aseguramiento de riesgo.<br>
         Módulo de gobernanza analítica: valida efectividad de reglas, explica composición de puntajes,
         estima falsos positivos y simula cambios de configuración.
     </div>
@@ -135,7 +135,7 @@ def mostrar(df, casos, cfg):
         with col_k1:
             st.markdown(_card("Total de Alertas Generadas", total_alertas_dom, "Suma de todas las reglas activas"), unsafe_allow_html=True)
         with col_k2:
-            regla_top = dominancia.iloc[0]["Regla"] if not dominancia.empty else "—"
+            regla_top = dominancia.iloc[0]["Regla"] if not dominancia.empty else "N/D"
             cnt_top = int(dominancia.iloc[0]["Alertas"]) if not dominancia.empty else 0
             st.markdown(_card("Regla Dominante", regla_top, f"{cnt_top} alertas activadas", "red"), unsafe_allow_html=True)
         with col_k3:
@@ -169,7 +169,7 @@ def mostrar(df, casos, cfg):
 
     # ── TAB 2: Motor de Explicabilidad ──────────────────────────────────────
     with tab2:
-        _section("Motor de Explicabilidad — Composición del Puntaje")
+        _section("Motor de Explicabilidad: Composición del Puntaje")
         st.markdown("""
         <div style="background:#171c23; border-left:3px solid #3b82f6; padding:14px; margin-bottom:16px; font-size:12px; color:#a08e7a;">
             Muestra cómo se construyó el puntaje por nivel de riesgo. Analiza qué pilares
@@ -208,7 +208,7 @@ def mostrar(df, casos, cfg):
             # Radar del cliente más crítico
             top_cliente = casos.sort_values("Score_Max", ascending=False).iloc[0] if not casos.empty else None
             if top_cliente is not None:
-                st.markdown(f"**Radar de componentes — Cliente de mayor riesgo: `{top_cliente['Cliente']}`**")
+                st.markdown(f"**Radar de componentes: Cliente de mayor riesgo: `{top_cliente['Cliente']}`**")
                 vals_radar = [
                     top_cliente.get("ST_Max", 0), top_cliente.get("SC_Max", 0),
                     top_cliente.get("SB_Max", 0), top_cliente.get("SN_Max", 0),
@@ -279,7 +279,7 @@ def mostrar(df, casos, cfg):
 
     # ── TAB 4: Motor de Pruebas de Estrés ───────────────────────────────────
     with tab4:
-        _section("Motor de Pruebas de Estrés — Simulación de Configuración")
+        _section("Motor de Pruebas de Estrés: Simulación de Configuración")
         st.markdown("""
         <div style="background:#171c23; border-left:3px solid #a855f7; padding:14px; margin-bottom:16px; font-size:12px; color:#a08e7a;">
             Simula el impacto de modificar un parámetro clave sin reprocesar todo el motor.

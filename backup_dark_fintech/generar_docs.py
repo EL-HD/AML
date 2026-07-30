@@ -1,5 +1,5 @@
 """
-generar_docs.py  —  AML Intelligence Platform
+generar_docs.py :  AML Intelligence Platform
 Genera documentacion_tecnica.docx en el directorio de trabajo actual.
 
 Uso:
@@ -135,7 +135,7 @@ def build_document(output_path: Path):
 
     author_p = doc.add_paragraph()
     author_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_a = author_p.add_run("Ing. Hobéd Díaz — Msc. M.A.F.I")
+    run_a = author_p.add_run("Ing. Hobéd Díaz: Msc. M.A.F.I")
     run_a.font.size = Pt(10)
     run_a.font.color.rgb = RGBColor(0x55, 0x5E, 0x6D)
 
@@ -330,21 +330,21 @@ def build_document(output_path: Path):
     heading(doc, "8. Guía de Uso Paso a Paso", 1)
 
     pasos = [
-        ("Paso 1 — Preparar el archivo Excel",
+        ("Paso 1: Preparar el archivo Excel",
          "Verificar que el archivo .xlsx tenga las columnas: Cliente, Monto, Perfil, Fecha. "
          "Los nombres son case-sensitive. Las fechas deben estar en formato compatible con pandas."),
-        ("Paso 2 — Subir el archivo",
+        ("Paso 2: Subir el archivo",
          "En la sección '📁 Cargar Datos', hacer clic en el área de carga y seleccionar el archivo. "
          "El sistema procesará automáticamente todas las reglas AML."),
-        ("Paso 3 — Revisar el Resumen Ejecutivo",
+        ("Paso 3: Revisar el Resumen Ejecutivo",
          "La primera vista muestra los indicadores clave. Pasar el cursor sobre los gráficos "
          "para ver los valores exactos mediante tooltips interactivos."),
-        ("Paso 4 — Analizar Casos Críticos",
+        ("Paso 4: Analizar Casos Críticos",
          "Ir a '🚨 Casos de Alerta', filtrar por nivel 'Crítico' y exportar si es necesario."),
-        ("Paso 5 — Investigar Clientes",
+        ("Paso 5: Investigar Clientes",
          "En '👤 Análisis por Cliente', seleccionar el cliente y usar el botón '🤖 Generar Resumen con IA' "
          "(requiere conexión a internet y API key configurada en el código)."),
-        ("Paso 6 — Ajustar Parámetros",
+        ("Paso 6: Ajustar Parámetros",
          "Si los umbrales no se adaptan al perfil de la institución, ir a '⚙️ Configuración de Reglas' "
          "y ajustar. Luego volver a cargar el archivo para reprocesar con nuevos parámetros."),
     ]
@@ -363,7 +363,7 @@ def build_document(output_path: Path):
             ["Pico Anómalo",     "Transacción cuyo monto supera la media histórica del cliente más 2 desviaciones estándar."],
             ["Perfil de Riesgo", "Nivel de actividad transaccional esperado para un cliente según su tipo de negocio."],
             ["Score_Max",        "Máximo score obtenido por cualquier transacción individual de un cliente en el período."],
-            ["UIF",              "Unidad de Información Financiera — entidad receptora de reportes de operaciones sospechosas."],
+            ["UIF",              "Unidad de Información Financiera: entidad receptora de reportes de operaciones sospechosas."],
             ["Session State",    "Mecanismo de Streamlit para mantener variables persistentes entre reruns de la aplicación."],
             ["Hover Tooltip",    "Información emergente que aparece al posicionar el cursor sobre un punto del gráfico Plotly."],
         ],

@@ -3,7 +3,7 @@ import streamlit as st
 def mostrar():
     st.markdown("""
     <div class="info-box">
-        <strong>Manual de Usuario</strong> — Documentación técnica integrada de ejecución y uso.
+        <strong>Manual de Usuario</strong>: Documentación técnica integrada de ejecución y uso.
         Explica el funcionamiento de cada módulo, reglas, y la fórmula de Scoring de la plataforma AML.
     </div>
     """, unsafe_allow_html=True)
@@ -50,5 +50,5 @@ def mostrar():
 
     ---
     **AML Intelligence Platform v2.5 (BI Edition)**  
-    *Ing. Hobéd Díaz — Msc. M.A.F.I*
+    *Ing. Hobéd Díaz: Msc. M.A.F.I*
     """)

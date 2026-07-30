@@ -54,7 +54,7 @@ def _convertir_a_bool(valor):
     return val_str in ["si", "sí", "s", "yes", "y", "true", "1", "pep", "persona expuesta", "x", "checked", "on"]
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# MOTOR DE SCORING IMPERATOR — Modelo ISO 31000 / GAFI / RBA
+# MOTOR DE SCORING IMPERATOR: Modelo ISO 31000 / GAFI / RBA
 # Score_Final = 0.40·S_T + 0.25·S_C + 0.20·S_B + 0.15·S_N  (escala 0–10)
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -221,7 +221,7 @@ def procesar_transacciones(df, cfg):
     df = df.merge(stats)
     df["Pico"] = (df["Monto"] > (df["Media"] + cfg["mult_std_pico"] * df["Std"])) & cfg["regla_pico"]
 
-    # ── MODELO IMPERATOR — 4 COMPONENTES (ISO 31000) ────────────────────────
+    # ── MODELO IMPERATOR: 4 COMPONENTES (ISO 31000) ────────────────────────
     # Paso 1: calcular S_T, S_C, S_B (S_N requiere casos parciales)
     df["_ST"] = _calcular_st(df, cfg)
     df["_SC"] = _calcular_sc(df)
@@ -241,7 +241,7 @@ def procesar_transacciones(df, cfg):
     df["Score_Total"] = w1 * df["_ST"] + w2 * df["_SC"] + w3 * df["_SB"] + w4 * df["_SN"]
 
     # ── Paso 5: Factor de mitigación (riesgo residual) ─────────────────────
-    # Control_eff ∈ [0, 0.5] — se puede ampliar en cfg en el futuro
+    # Control_eff ∈ [0, 0.5]: se puede ampliar en cfg en el futuro
     control_eff = cfg.get("control_efectividad", 0.0)  # default 0 = sin reducción
     df["Score_Residual"] = df["Score_Total"] * (1.0 - control_eff)
 
@@ -321,7 +321,7 @@ def procesar_transacciones(df, cfg):
                 "Tipo de Alerta": "Asociado PEP",
                 "Cantidad": pep_cpe_info["pep_count"],
                 "Nivel de Impacto": "Crítico",
-                "Descripción": "Persona Expuesta Políticamente — Relaciones políticas de alto riesgo (GAFI)",
+                "Descripción": "Persona Expuesta Políticamente: Relaciones políticas de alto riesgo (GAFI)",
                 "Peso en Score": cfg.get("peso_pep_cpe", 2)
             })
         if pep_cpe_info["has_cpe"]:

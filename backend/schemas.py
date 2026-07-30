@@ -57,7 +57,7 @@ class TokenData(BaseModel):
 # ═══════════════════════════════════════════════════════════════════════════
 # ADMINISTRACIÓN DE RIESGO INSTITUCIONAL DE LD/FT (Art. 8-11 Decreto 15-2026 /
 # modelo GAFILAT-IVE). Listas cerradas (Literal) para evitar valores arbitrarios
-# en campos que alimentan el motor de cálculo — validación explícita (OWASP A03).
+# en campos que alimentan el motor de cálculo: validación explícita (OWASP A03).
 # ═══════════════════════════════════════════════════════════════════════════
 
 FactorLDFT = Literal[

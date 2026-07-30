@@ -48,7 +48,7 @@ def _nodos_en_hops(G, foco, profundidad):
 def mostrar(df, casos):
     st.markdown("""
     <div class="info-box">
-        <strong>RED TRANSACCIONAL</strong> — Grafo dirigido de flujos entre clientes.
+        <strong>RED TRANSACCIONAL</strong>: Grafo dirigido de flujos entre clientes.
         Nodo = Cliente · Arista = Transacción (Origen → Destino).
         Detecta rutas multi-hop y clústeres de riesgo interconectados.
         Requiere la columna <code style="color:#f59e0b;">Cliente_Destino</code> en el Excel.
@@ -362,7 +362,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
         <span style="color:#ef4444; font-weight:700;">● Crítico</span> &nbsp;
         <span style="color:#f97316; font-weight:700;">● Alto</span> &nbsp;
         <span style="color:#eab308; font-weight:700;">● Medio</span> &nbsp;
-        <span style="color:#22c55e; font-weight:700;">● Bajo</span> &nbsp; — &nbsp;
+        <span style="color:#22c55e; font-weight:700;">● Bajo</span> &nbsp;: &nbsp;
         El <b>tamaño del nodo</b> refleja el score. El <b>grosor de la arista</b> representa el monto transado.
         Las <b>flechas</b> indican la dirección del flujo (Origen → Destino).
         Las <b>etiquetas de arista</b> se ocultan automáticamente cuando la red tiene demasiadas relaciones para evitar saturación visual.
@@ -420,7 +420,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
     st.markdown("""
     <div class="info-box">
         La <b>centralidad de intermediario (betweenness)</b> identifica nodos que actúan como puente en la red.
-        Un valor alto indica que el cliente está en el camino de muchas rutas de flujo — señal de posible <em>cuenta puente</em>.
+        Un valor alto indica que el cliente está en el camino de muchas rutas de flujo: señal de posible <em>cuenta puente</em>.
     </div>
     """, unsafe_allow_html=True)
 
@@ -429,7 +429,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
         {
             "Cliente": n,
             "Centralidad": f"{v:.4f}",
-            "Nivel Riesgo": nivel_map.get(n, "—"),
+            "Nivel Riesgo": nivel_map.get(n, "N/D"),
             "Score": f"{score_map.get(n, 0):.2f}",
             "Grado Entrada": G.in_degree(n),
             "Grado Salida": G.out_degree(n),

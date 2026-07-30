@@ -878,10 +878,10 @@ def mostrar(df, casos, matriz_alertas, cfg):
         doc.build(story, onFirstPage=_hf, onLaterPages=_hf)
         return buf.getvalue()
 
-    # ── GENERADORES RTS / RTE (Arts. 30-31 Ley 6593) — Platypus SOVEREIGN AML ──
+    # ── GENERADORES RTS / RTE (Arts. 30-31 Ley 6593): Platypus SOVEREIGN AML ──
 
     def generar_pdf_rts_completo(caso_rts_sel: str, sujeto_info: dict) -> bytes:
-        """RTS completo con identidad visual SOVEREIGN AML — Art. 30 Ley 6593 / GAFI Rec. 20."""
+        """RTS completo con identidad visual SOVEREIGN AML: Art. 30 Ley 6593 / GAFI Rec. 20."""
         fecha_gen = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
         S = make_styles()
         buf = io.BytesIO()
@@ -893,26 +893,26 @@ def mostrar(df, casos, matriz_alertas, cfg):
         )
 
         def _hf(c, d):
-            page_header_footer(c, d, "RTS — Art. 30 Ley 6593", fecha_gen)
+            page_header_footer(c, d, "RTS: Art. 30 Ley 6593", fecha_gen)
 
         story = []
 
         fila     = casos[casos["Cliente"] == caso_rts_sel].iloc[0]
         df_cli   = df[df["Cliente"] == caso_rts_sel].copy()
         score    = int(fila.get("Score_Max", 0))
-        nivel    = nivel_label(str(fila.get("Nivel_Riesgo", "—")))
+        nivel    = nivel_label(str(fila.get("Nivel_Riesgo", "N/D")))
         total_txs = int(fila.get("Transacciones", len(df_cli)))
         monto_cli = df_cli["Monto"].sum() if "Monto" in df_cli.columns else 0.0
 
         # ── Portada ──
         cover_data = [
             [Paragraph("REPORTE DE TRANSACCIÓN SOSPECHOSA", S["cover_title"])],
-            [Paragraph("RTS — Intendencia de Verificación Especial (IVE) · SIB Guatemala", S["cover_sub"])],
+            [Paragraph("RTS: Intendencia de Verificación Especial (IVE) · SIB Guatemala", S["cover_sub"])],
             [Paragraph("Art. 30 Ley Integral contra LD/FT/FPADM (Ley 6593) / GAFI Rec. 20", S["cover_meta"])],
             [Paragraph(f"Cliente reportado: <b>{caso_rts_sel}</b>",
                 ParagraphStyle("cov_cl", fontSize=11, textColor=C_WHITE,
                     fontName="Helvetica-Bold", alignment=TA_CENTER, spaceAfter=4))],
-            [Paragraph(f"Generado: {fecha_gen} · CONFIDENCIAL — USO EXCLUSIVO IVE/SIB", S["cover_meta"])],
+            [Paragraph(f"Generado: {fecha_gen} · CONFIDENCIAL: USO EXCLUSIVO IVE/SIB", S["cover_meta"])],
         ]
         cover_tbl = Table(cover_data, colWidths=[7.0 * inch])
         cover_tbl.setStyle(TableStyle([
@@ -935,12 +935,12 @@ def mostrar(df, casos, matriz_alertas, cfg):
         story.append(Spacer(1, 16))
 
         # ── I. Sujeto Obligado ──
-        story.append(header_band("I. SUJETO OBLIGADO", "Institución reportante — Art. 28 Ley 6593"))
+        story.append(header_band("I. SUJETO OBLIGADO", "Institución reportante: Art. 28 Ley 6593"))
         story.append(Spacer(1, 6))
         for label, value in [
-            ("Institución:",            sujeto_info.get("Institucion", "—")),
-            ("Oficial de Cumplimiento:", sujeto_info.get("Oficial_Cumplimiento", "—")),
-            ("NIT / Licencia:",          sujeto_info.get("NIT_DPI", "—")),
+            ("Institución:",            sujeto_info.get("Institucion", "N/D")),
+            ("Oficial de Cumplimiento:", sujeto_info.get("Oficial_Cumplimiento", "N/D")),
+            ("NIT / Licencia:",          sujeto_info.get("NIT_DPI", "N/D")),
             ("Fecha del reporte:",       fecha_gen),
         ]:
             story.append(Paragraph(f"<b>{label}</b> {value}", S["body"]))
@@ -961,35 +961,35 @@ def mostrar(df, casos, matriz_alertas, cfg):
             S["body"]
         ))
         story.append(Paragraph(
-            "<b>Estado de la alerta:</b> Sospechosa_Confirmada — requiere envío a IVE (Art. 30 Ley 6593).",
+            "<b>Estado de la alerta:</b> Sospechosa_Confirmada: requiere envío a IVE (Art. 30 Ley 6593).",
             S["body"]
         ))
         story.append(Spacer(1, 10))
 
         # ── III. Datos del Reportado ──
-        story.append(header_band("III. DATOS DEL REPORTADO", "Información del cliente — Ley 6593 / GAFI Rec. 10"))
+        story.append(header_band("III. DATOS DEL REPORTADO", "Información del cliente: Ley 6593 / GAFI Rec. 10"))
         story.append(Spacer(1, 6))
         es_pep   = bool(fila.get("EsPEP",   False))
         es_cpe   = bool(fila.get("EsCPE",   False))
         es_fpadm = bool(fila.get("EsFPADM", False))
-        ubo      = str(fila.get("Beneficiario_Final", "—"))
+        ubo      = str(fila.get("Beneficiario_Final", "N/D"))
         ubo_pep  = bool(fila.get("EsPEP_UBO", False))
         porc_ubo = fila.get("Porcentaje_Participacion", None)
 
         reportado = [
             ("Cliente / Nombre:",  caso_rts_sel),
-            ("NIT / DPI:",         sujeto_info.get("NIT_DPI", "—")),
-            ("Tipo de cliente:",   str(fila.get("Tipo_Cliente", "—"))),
-            ("EsPEP:",  "SÍ ⚠ (Art. 25a Ley 6593 — DDA Obligatoria)" if es_pep else "No"),
+            ("NIT / DPI:",         sujeto_info.get("NIT_DPI", "N/D")),
+            ("Tipo de cliente:",   str(fila.get("Tipo_Cliente", "N/D"))),
+            ("EsPEP:",  "SÍ ⚠ (Art. 25a Ley 6593: DDA Obligatoria)" if es_pep else "No"),
             ("EsCPE:",  "SÍ ⚠" if es_cpe else "No"),
-            ("EsFPADM:", "SÍ ⚠ (GAFI Rec. 7 / Art. 2 Ley 6593 — Acción R-03)" if es_fpadm else "No"),
+            ("EsFPADM:", "SÍ ⚠ (GAFI Rec. 7 / Art. 2 Ley 6593: Acción R-03)" if es_fpadm else "No"),
             ("Beneficiario Final (UBO):", ubo),
         ]
-        if ubo not in ("—", "", "nan"):
+        if ubo not in ("N/D", "", "nan"):
             if porc_ubo is not None:
                 reportado.append(("Porcentaje participación UBO:", f"{porc_ubo}%"))
             if ubo_pep:
-                reportado.append(("EsPEP_UBO:", "SÍ ⚠ — DDA Obligatoria (Art. 21 / GAFI Rec. 12)"))
+                reportado.append(("EsPEP_UBO:", "SÍ ⚠: DDA Obligatoria (Art. 21 / GAFI Rec. 12)"))
         for label, value in reportado:
             story.append(Paragraph(f"<b>{label}</b> {value}", S["body"]))
         story.append(Spacer(1, 10))
@@ -1010,17 +1010,17 @@ def mostrar(df, casos, matriz_alertas, cfg):
         for col_orig, col_name in alerta_map.items():
             if col_orig in df_cli.columns:
                 n_a = int(df_cli[col_orig].astype(int).sum())
-                alert_rows.append([col_name, str(n_a), "Activa" if n_a > 0 else "—"])
+                alert_rows.append([col_name, str(n_a), "Activa" if n_a > 0 else "N/D"])
         if alert_rows:
             story.append(df_to_table(
                 pd.DataFrame(alert_rows, columns=["Regla", "N° Alertas", "Estado"]),
                 col_widths=[3.5*inch, 1.5*inch, 2.0*inch]
             ))
         story.append(Spacer(1, 8))
-        st_v = fila.get("S_T", "—"); sc_v = fila.get("S_C", "—")
-        sb_v = fila.get("S_B", "—"); sn_v = fila.get("S_N", "—")
+        st_v = fila.get("S_T", "N/D"); sc_v = fila.get("S_C", "N/D")
+        sb_v = fila.get("S_B", "N/D"); sn_v = fila.get("S_N", "N/D")
         story.append(Paragraph(
-            f"<b>Score IMPERATOR {score}</b> — Composición: "
+            f"<b>Score IMPERATOR {score}</b>: Composición: "
             f"S_T (Transaccional): <b>{st_v}</b> · "
             f"S_C (Contextual): <b>{sc_v}</b> · "
             f"S_B (Conductual): <b>{sb_v}</b> · "
@@ -1039,7 +1039,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
             df_tx_show = df_cli[tx_present].copy()
             if "Monto" in df_tx_show.columns:
                 df_tx_show["Monto"] = df_tx_show["Monto"].apply(
-                    lambda x: f"Q{x:,.2f}" if pd.notna(x) else "—")
+                    lambda x: f"Q{x:,.2f}" if pd.notna(x) else "N/D")
             df_tx_show = df_tx_show.rename(columns={
                 "TipoOperacion": "Canal", "Tipo_Instrumento": "Instrumento"})
             story.append(df_to_table(df_tx_show))
@@ -1048,10 +1048,10 @@ def mostrar(df, casos, matriz_alertas, cfg):
         story.append(Spacer(1, 10))
 
         # ── VI. Fundamento del Examen ──
-        story.append(header_band("VI. FUNDAMENTO DEL EXAMEN", "Art. 29 Ley 6593 — Documentación del análisis"))
+        story.append(header_band("VI. FUNDAMENTO DEL EXAMEN", "Art. 29 Ley 6593: Documentación del análisis"))
         story.append(Spacer(1, 6))
         fundamento = str(fila.get("Fundamento_Examen", ""))
-        if not fundamento or fundamento in ("nan", "—", ""):
+        if not fundamento or fundamento in ("nan", "N/D", ""):
             fundamento = (
                 "Sin fundamento registrado. El analista debe completar este campo en el módulo "
                 "de Casos de Alerta antes de emitir el RTS formal."
@@ -1071,7 +1071,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
                 "Pico Anómalo: Incremento estadístico atípico sobre el perfil histórico del cliente (ISO 31000)")
         if es_pep or es_cpe:
             tipologias.append(
-                "PEP/CPE: Persona Expuesta Políticamente o Contratista/Proveedor del Estado — "
+                "PEP/CPE: Persona Expuesta Políticamente o Contratista/Proveedor del Estado: "
                 "riesgo elevado (GAFI Rec. 12)")
         if es_fpadm:
             tipologias.append(
@@ -1079,22 +1079,22 @@ def mostrar(df, casos, matriz_alertas, cfg):
                 "(GAFI Rec. 7 / Art. 2 Ley 6593)")
         if fila.get("Alerta_Acumulado", False):
             tipologias.append(
-                "Acumulación: Volumen mensual excede el perfil esperado del cliente — "
+                "Acumulación: Volumen mensual excede el perfil esperado del cliente: "
                 "posible estructuración")
         if not tipologias:
             tipologias.append(
-                "Patrón combinado de indicadores de riesgo — "
+                "Patrón combinado de indicadores de riesgo: "
                 "Ver sección IV para detalle de alertas activas")
         for i, tip in enumerate(tipologias, 1):
             story.append(Paragraph(f"<b>{i}.</b> {tip}", S["body"]))
         story.append(Spacer(1, 12))
 
         # ── VIII. Declaración y Firma ──
-        story.append(header_band("VIII. DECLARACIÓN DEL SUJETO OBLIGADO", "Certificación del reporte — Art. 28 Ley 6593"))
+        story.append(header_band("VIII. DECLARACIÓN DEL SUJETO OBLIGADO", "Certificación del reporte: Art. 28 Ley 6593"))
         story.append(Spacer(1, 6))
         story.append(Paragraph(
             f"El suscrito Oficial de Cumplimiento de "
-            f"<b>{sujeto_info.get('Institucion', '—')}</b> certifica que la presente operación "
+            f"<b>{sujeto_info.get('Institucion', 'N/D')}</b> certifica que la presente operación "
             "fue analizada conforme al Manual de Prevención LD/FT/FPADM de la institución, al motor de "
             "riesgo IMPERATOR (ISO 31000 / COSO ERM) y a las disposiciones de la "
             "<b>Ley Integral contra el Lavado de Dinero u Otros Activos y el Financiamiento del "
@@ -1124,7 +1124,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         story.append(Spacer(1, 8))
         story.append(Paragraph(
             f"SOVEREIGN AML · Powered by IMPERATOR · {fecha_gen} · "
-            "Ing. Hobéd Díaz M.A. M.A.F.I. · CONFIDENCIAL — IVE/SIB",
+            "Ing. Hobéd Díaz M.A. M.A.F.I. · CONFIDENCIAL: IVE/SIB",
             S["footer_txt"]
         ))
 
@@ -1132,7 +1132,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         return buf.getvalue()
 
     def generar_pdf_rte_completo(sujeto_info: dict) -> bytes:
-        """RTE completo con identidad visual SOVEREIGN AML — Art. 31 Ley 6593."""
+        """RTE completo con identidad visual SOVEREIGN AML: Art. 31 Ley 6593."""
         fecha_gen = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
         S = make_styles()
         buf = io.BytesIO()
@@ -1144,7 +1144,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         )
 
         def _hf(c, d):
-            page_header_footer(c, d, "RTE — Art. 31 Ley 6593", fecha_gen)
+            page_header_footer(c, d, "RTE: Art. 31 Ley 6593", fecha_gen)
 
         story = []
 
@@ -1156,10 +1156,10 @@ def mostrar(df, casos, matriz_alertas, cfg):
         # ── Portada ──
         cover_data = [
             [Paragraph("REPORTE DE TRANSACCIÓN EN EFECTIVO", S["cover_title"])],
-            [Paragraph("RTE — Intendencia de Verificación Especial (IVE) · SIB Guatemala", S["cover_sub"])],
+            [Paragraph("RTE: Intendencia de Verificación Especial (IVE) · SIB Guatemala", S["cover_sub"])],
             [Paragraph("Art. 31 Ley Integral contra LD/FT/FPADM (Ley 6593) · Umbral: USD 10,000 o equivalente",
                 S["cover_meta"])],
-            [Paragraph(f"Generado: {fecha_gen} · CONFIDENCIAL — USO EXCLUSIVO IVE/SIB", S["cover_meta"])],
+            [Paragraph(f"Generado: {fecha_gen} · CONFIDENCIAL: USO EXCLUSIVO IVE/SIB", S["cover_meta"])],
         ]
         cover_tbl = Table(cover_data, colWidths=[7.0 * inch])
         cover_tbl.setStyle(TableStyle([
@@ -1201,8 +1201,8 @@ def mostrar(df, casos, matriz_alertas, cfg):
         story.append(header_band("II. SUJETO OBLIGADO", "Institución reportante"))
         story.append(Spacer(1, 6))
         for label, value in [
-            ("Institución:",            sujeto_info.get("Institucion", "—")),
-            ("Oficial de Cumplimiento:", sujeto_info.get("Oficial_Cumplimiento", "—")),
+            ("Institución:",            sujeto_info.get("Institucion", "N/D")),
+            ("Oficial de Cumplimiento:", sujeto_info.get("Oficial_Cumplimiento", "N/D")),
             ("Fecha del reporte:",       fecha_gen),
         ]:
             story.append(Paragraph(f"<b>{label}</b> {value}", S["body"]))
@@ -1211,7 +1211,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         # ── III. Transacciones en efectivo ──
         story.append(header_band(
             "III. TRANSACCIONES EN EFECTIVO REPORTABLES",
-            f"{n_rte} transacciones — Art. 31 Ley 6593"
+            f"{n_rte} transacciones: Art. 31 Ley 6593"
         ))
         story.append(Spacer(1, 6))
         if n_rte == 0:
@@ -1223,7 +1223,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
             df_rte_show = df_rte[tx_present].copy()
             if "Monto" in df_rte_show.columns:
                 df_rte_show["Monto"] = df_rte_show["Monto"].apply(
-                    lambda x: f"Q{x:,.2f}" if pd.notna(x) else "—")
+                    lambda x: f"Q{x:,.2f}" if pd.notna(x) else "N/D")
             df_rte_show = df_rte_show.rename(columns={"TipoOperacion": "Canal"})
             cw = 7.0 / len(df_rte_show.columns) * inch
             story.append(df_to_table(df_rte_show, col_widths=[cw] * len(df_rte_show.columns)))
@@ -1233,7 +1233,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         story.append(Spacer(1, 8))
         story.append(Paragraph(
             f"SOVEREIGN AML · Powered by IMPERATOR · {fecha_gen} · "
-            "Ing. Hobéd Díaz M.A. M.A.F.I. · CONFIDENCIAL — IVE/SIB",
+            "Ing. Hobéd Díaz M.A. M.A.F.I. · CONFIDENCIAL: IVE/SIB",
             S["footer_txt"]
         ))
 
@@ -1242,8 +1242,8 @@ def mostrar(df, casos, matriz_alertas, cfg):
 
     st.markdown("""
     <div class="info-box">
-        <strong>INFORMES Y REPORTES PDF</strong> — Documentación formal bajo estándares IMPERATOR.
-        Genera instrumentos analíticos de alta fidelidad para procesos de auditoría y reporte regulatorio (RTS a la IVE — Art. 30 Ley 6593).
+        <strong>INFORMES Y REPORTES PDF</strong>: Documentación formal bajo estándares IMPERATOR.
+        Genera instrumentos analíticos de alta fidelidad para procesos de auditoría y reporte regulatorio (RTS a la IVE: Art. 30 Ley 6593).
         Utilice la <strong>Ficha Individual</strong> para expedientes específicos o el <strong>Informe Ejecutivo</strong> para visión de junta directiva.
     </div>
     """, unsafe_allow_html=True)
@@ -1258,7 +1258,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
     tab_ind, tab_gen, tab_rts_rte = st.tabs([
         "Reporte Individual por Cliente",
         "Informe Ejecutivo General",
-        "RTS / RTE — IVE (Ley 6593)",
+        "RTS / RTE: IVE (Ley 6593)",
     ])
 
     with tab_ind:
@@ -1398,14 +1398,14 @@ def mostrar(df, casos, matriz_alertas, cfg):
     with tab_rts_rte:
         st.markdown("""
         <div class="warning-box">
-            <strong>Reportes Regulatorios IVE — Ley 6593</strong> —
+            <strong>Reportes Regulatorios IVE: Ley 6593</strong>:
             Genera PDFs estructurados compatibles con la Intendencia de Verificación Especial (IVE) de la SIB.
             <br>• <strong>RTS</strong>: Reporte de Transacción Sospechosa (Art. 30 Ley 6593 / GAFI Rec. 20)
             <br>• <strong>RTE</strong>: Reporte de Transacción en Efectivo ≥ USD 10,000 (Art. 31 Ley 6593)
         </div>
         """, unsafe_allow_html=True)
 
-        sub_rts, sub_rte = st.tabs(["RTS — Sospechosa", "RTE — Efectivo"])
+        sub_rts, sub_rte = st.tabs(["RTS: Sospechosa", "RTE: Efectivo"])
 
         with sub_rts:
             sospechosos = (
@@ -1449,7 +1449,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
                             unsafe_allow_html=True)
                     with col_p4:
                         fund = str(fila_prev.get("Fundamento_Examen", ""))
-                        estado_fund = "Registrado" if fund and fund not in ("nan", "—", "") else "Pendiente"
+                        estado_fund = "Registrado" if fund and fund not in ("nan", "N/D", "") else "Pendiente"
                         color_fund  = "green" if estado_fund == "Registrado" else "red"
                         st.markdown(
                             f'<div class="metric-card {color_fund}">'
@@ -1465,7 +1465,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
                 with col_i2:
                     nit = st.text_input("NIT / Licencia de la institución", key="rts_nit")
 
-                if st.button("Generar PDF RTS — Identidad SOVEREIGN AML", type="primary", key="btn_rts"):
+                if st.button("Generar PDF RTS: Identidad SOVEREIGN AML", type="primary", key="btn_rts"):
                     with st.spinner(f"Generando RTS para {caso_rts}..."):
                         try:
                             sujeto_info = {
@@ -1533,7 +1533,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
                     with col_rte2:
                         oficial_rte = st.text_input("Oficial de Cumplimiento", key="rte_oficial")
 
-                    if st.button("Generar PDF RTE — Identidad SOVEREIGN AML", type="primary", key="btn_rte"):
+                    if st.button("Generar PDF RTE: Identidad SOVEREIGN AML", type="primary", key="btn_rte"):
                         with st.spinner("Generando RTE..."):
                             try:
                                 sujeto_rte = {

@@ -3,14 +3,14 @@
 scripts/seed_catalogos_globales.py
 
 Seed idempotente de los catalogos GLOBALES usados por el modulo de Reportes
-Regulatorios IVE (RTS/RTE), segun el Oficio IVE Num. 19-2025 y sus Anexos 1 y 2.
+Regulatorios IVE (RTS/RTE), segun la normativa vigente de la IVE.
 
 Estos catalogos son compartidos por TODAS las licencias (no llevan licenciaid):
 departamentos, municipios, paises, monedas, tipo de canal, tipo de instrumento,
 tipo de producto/servicio oficial, tipo de identificacion, motivo de
 involucramiento y tipo de reporte generado por el sistema.
 
-Fuente de los datos: Anexo 2 del Oficio IVE Num. 19-2025 (transcrito 2026-07-29).
+Fuente de los datos: catalogos oficiales publicados por la IVE (transcritos 2026-07-29).
 Antes de usarlo en produccion, verificar los conteos impresos al final contra
 el documento fuente.
 
@@ -54,7 +54,7 @@ def _parse_csv(texto):
     return [tuple(c.strip() for c in fila) for fila in lector if fila]
 
 
-# ─── Catalogos pequenos (Anexo 1 y 2) ────────────────────────────────────────
+# ─── Catalogos pequenos (catalogos oficiales IVE) ────────────────────────────────────────
 
 TIPO_CANAL = [
     ("AGE", "Agencia"), ("AGT", "Agentes"), ("MOV", "Aplicacion movil"),
@@ -104,7 +104,7 @@ DEPARTAMENTOS = [
     ("19", "ZACAPA"), ("20", "CHIQUIMULA"), ("21", "JALAPA"), ("22", "JUTIAPA"),
 ]
 
-# ─── Municipios (340) — codigo,nombre,departamento_codigo ───────────────────
+# ─── Municipios (340): codigo,nombre,departamento_codigo ───────────────────
 MUNICIPIOS_CSV = """
 0101,GUATEMALA,01
 0102,SANTA CATARINA PINULA,01
@@ -448,7 +448,7 @@ MUNICIPIOS_CSV = """
 2217,QUEZADA,22
 """
 
-# ─── Paises (Anexo 2) ────────────────────────────────────────────────────────
+# ─── Paises (catalogo oficial IVE) ────────────────────────────────────────────────────────
 PAISES_CSV = """
 GT,GUATEMALA
 US,ESTADOS UNIDOS
@@ -703,7 +703,7 @@ ZM,ZAMBIA
 ZW,ZIMBABWE
 """
 
-# ─── Monedas (Anexo 2) ───────────────────────────────────────────────────────
+# ─── Monedas (catalogo oficial IVE) ───────────────────────────────────────────────────────
 MONEDAS_CSV = """
 GTQ,QUETZAL
 USD,DOLAR ESTADOUNIDENSE
@@ -914,7 +914,7 @@ def main():
         print("Catalogos globales sembrados (filas nuevas insertadas por tabla):")
         for nombre, cantidad in resultados.items():
             print(f"  {nombre}: {cantidad}")
-        print(f"Total municipios en el CSV embebido: {len(_parse_csv(MUNICIPIOS_CSV))} (verificar contra Anexo 2 = 340)")
+        print(f"Total municipios en el CSV embebido: {len(_parse_csv(MUNICIPIOS_CSV))} (verificar contra catalogo oficial = 340)")
         print(f"Total paises en el CSV embebido: {len(_parse_csv(PAISES_CSV))}")
         print(f"Total monedas en el CSV embebido: {len(_parse_csv(MONEDAS_CSV))}")
     finally:

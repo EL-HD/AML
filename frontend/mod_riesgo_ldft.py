@@ -1,5 +1,5 @@
 """
-mod_riesgo_ldft.py — Administración de Riesgo Institucional de LD/FT
+mod_riesgo_ldft.py: Administración de Riesgo Institucional de LD/FT
 
 Módulo operativo/administrativo alineado al modelo GAFILAT / IVE (GERILAFT
 App) y al Art. 8-11 del Decreto 15-2026 (enfoque basado en riesgo):
@@ -8,7 +8,7 @@ Control (mitigadores + riesgo residual) -> Monitoreo (Plan de acción,
 Resultados, Reportes).
 
 Persistencia: PostgreSQL vía SQLAlchemy (backend.crud_riesgo), siempre
-aislada por `licenciaid` (una Persona Obligada por licencia — Art. 19
+aislada por `licenciaid` (una Persona Obligada por licencia: Art. 19
 Ley 6593 / control de acceso). Este módulo abre su propia sesión de base
 de datos dentro del proceso de Streamlit, replicando el patrón ya usado
 por frontend/mod_sesion.py para la bitácora de auditoría; no se expone
@@ -16,7 +16,7 @@ vía auth_api.py.
 
 Seguridad (validaciones explícitas, sin atajos que oculten comportamiento):
   * `licenciaid` se obtiene únicamente de `st.session_state.user_data`,
-    poblado por el backend tras autenticación JWT — nunca de un campo de
+    poblado por el backend tras autenticación JWT: nunca de un campo de
     texto editable por el usuario.
   * Toda entrada de formulario se valida con los esquemas Pydantic de
     `backend.schemas` (listas cerradas, rangos 1-4, longitudes máximas)
@@ -47,8 +47,8 @@ def _sesion_usuario():
 def _sanear_celda_csv(valor):
     """
     Neutraliza inyección de fórmulas (CSV/Excel Formula Injection) anteponiendo
-    un apóstrofo cuando el valor —potencialmente ingresado por el usuario,
-    como el nombre de un evento— comienza con un carácter que Excel/Sheets
+    un apóstrofo cuando el valor, potencialmente ingresado por el usuario,
+    como el nombre de un evento, comienza con un carácter que Excel/Sheets
     interpretaría como inicio de fórmula (=, +, -, @).
     """
     texto = str(valor)
@@ -70,7 +70,7 @@ def _badge_nivel(nivel: int) -> str:
 def mostrar():
     st.markdown("""
     <div class="info-box">
-        <strong>ADMINISTRACIÓN DE RIESGO INSTITUCIONAL DE LD/FT</strong> — Modelo GAFILAT / IVE
+        <strong>ADMINISTRACIÓN DE RIESGO INSTITUCIONAL DE LD/FT</strong>: Modelo GAFILAT / IVE
         (Art. 8-11 Decreto 15-2026). Identificación, medición, control y monitoreo del riesgo de
         Lavado de Dinero y Financiamiento del Terrorismo a nivel de Persona Obligada.
     </div>
@@ -150,13 +150,13 @@ def _tab_segmentacion(db, licenciaid, username):
 def _tab_eventos(db, licenciaid, username):
     st.markdown('<div class="section-title">Nuevo evento de riesgo</div>', unsafe_allow_html=True)
     segmentos = crud.listar_segmentos(db, licenciaid)
-    opciones_segmento = {"— Sin segmentar —": None}
+    opciones_segmento = {"Sin segmentar": None}
     opciones_segmento.update({f"{s.factor} · {s.segmento} · {s.variable}": s.id for s in segmentos})
 
     with st.form("form_nuevo_evento", clear_on_submit=True):
         nombre = st.text_input("Nombre del evento", placeholder="Ej. Falsedad en el documento de identificación")
         descripcion = st.text_area(
-            "Descripción — ¿qué podría ocurrir? ¿por qué podría ocurrir? ¿qué consecuencia generaría?",
+            "Descripción: ¿qué podría ocurrir? ¿por qué podría ocurrir? ¿qué consecuencia generaría?",
             max_chars=1000,
         )
         col1, col2 = st.columns(2)
@@ -184,7 +184,7 @@ def _tab_eventos(db, licenciaid, username):
                 st.error(f"Datos inválidos: {e.errors()[0]['msg']}")
             else:
                 evento = crud.crear_evento(db, licenciaid, data, username)
-                st.success(f"Evento {evento.codigo} creado — Riesgo inherente: {logic.descripcion_nivel(evento.nivel_inherente)}.")
+                st.success(f"Evento {evento.codigo} creado: Riesgo inherente: {logic.descripcion_nivel(evento.nivel_inherente)}.")
                 st.rerun()
 
     st.markdown("---")
@@ -209,12 +209,12 @@ def _tab_eventos(db, licenciaid, username):
         c3.markdown(f"Residual<br>{_badge_nivel(e.nivel_residual)}", unsafe_allow_html=True)
         c4.markdown("Plan requerido<br>" + ("🔴 Sí" if e.requiere_plan_accion else "🟢 No"), unsafe_allow_html=True)
 
-        with st.expander(f"Detalle y controles — {e.codigo}"):
+        with st.expander(f"Detalle y controles: {e.codigo}"):
             if e.descripcion:
                 st.caption(e.descripcion)
             st.write(
                 f"Probabilidad: {e.probabilidad} · Impacto: {e.impacto} "
-                f"(máximo entre riesgos asociados — Operacional {e.riesgo_operacional}, "
+                f"(máximo entre riesgos asociados: Operacional {e.riesgo_operacional}, "
                 f"Legal {e.riesgo_legal}, Reputacional {e.riesgo_reputacional}, Contagio {e.riesgo_contagio})"
             )
 
@@ -232,7 +232,7 @@ def _tab_eventos(db, licenciaid, username):
                         crud.vincular_control(db, licenciaid, e.id, cid)
                     for cid in ids_vinculados - seleccionados_ids:
                         crud.desvincular_control(db, licenciaid, e.id, cid)
-                    st.success("Vínculos actualizados — riesgo residual recalculado.")
+                    st.success("Vínculos actualizados: riesgo residual recalculado.")
                     st.rerun()
             else:
                 st.info("Registre controles en la pestaña 'Controles' para poder vincularlos a este evento.")
@@ -277,7 +277,7 @@ def _tab_controles(db, licenciaid, username):
             else:
                 control = crud.crear_control(db, licenciaid, data, username)
                 nivel_txt = logic.NIVELES_CONTROL[control.nivel_ponderacion]
-                st.success(f"Control creado — Ponderación: {control.ponderacion}/100 ({nivel_txt}).")
+                st.success(f"Control creado: Ponderación: {control.ponderacion}/100 ({nivel_txt}).")
                 st.rerun()
 
     st.markdown("---")
@@ -358,7 +358,7 @@ def _tab_planes(db, licenciaid, username):
         evento = mapa_eventos.get(p.evento_id)
         nombre_evento = f"{evento.codigo} · {evento.nombre}" if evento else "(evento no disponible)"
         estado = logic.estado_plan_accion(p.porcentaje_avance)
-        with st.expander(f"{nombre_evento} — {estado} ({p.porcentaje_avance}%)"):
+        with st.expander(f"{nombre_evento}: {estado} ({p.porcentaje_avance}%)"):
             st.write(p.medida_propuesta)
             st.caption(
                 f"Responsable: {p.responsable} · Inicio: {p.fecha_inicio.strftime('%d/%m/%Y')} · "
@@ -379,8 +379,8 @@ def _render_tabla_conteo(eventos):
         inherente = sum(1 for e in eventos if e.nivel_inherente == nivel)
         residual = sum(1 for e in eventos if e.nivel_residual == nivel)
         filas.append({
-            "Cantidad de eventos — riesgo inherente": inherente,
-            "Cantidad de eventos — riesgo residual": residual,
+            "Cantidad de eventos: riesgo inherente": inherente,
+            "Cantidad de eventos: riesgo residual": residual,
             "Descripción del riesgo": logic.descripcion_nivel(nivel),
         })
     df = pd.DataFrame(filas)
@@ -434,7 +434,7 @@ def _tab_resultados(db, licenciaid):
     c4.metric("Controles sin evento vinculado", len(controles_libres))
 
     st.markdown("---")
-    st.markdown('<div class="section-title">Mapa de calor — Riesgo inherente de la Persona Obligada</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Mapa de calor: Riesgo inherente de la Persona Obligada</div>', unsafe_allow_html=True)
     eventos = crud.listar_eventos(db, licenciaid)
     if not eventos:
         st.info("Registre eventos de riesgo para visualizar el mapa de calor.")

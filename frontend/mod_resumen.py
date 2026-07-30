@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout, render_html_table
 
 def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
-    st.markdown("""<div class="info-box"><strong>RESUMEN EJECUTIVO</strong> — Análisis de alto nivel IMPERATOR Intelligence. Muestra indicadores críticos y distribución de riesgo detectada. Optimizado para supervisión operativa mediante capas tonales.</div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="info-box"><strong>RESUMEN EJECUTIVO</strong>: Análisis de alto nivel IMPERATOR Intelligence. Muestra indicadores críticos y distribución de riesgo detectada. Optimizado para supervisión operativa mediante capas tonales.</div>""", unsafe_allow_html=True)
 
     # KPIs
     total_clientes = len(casos)
@@ -326,7 +326,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
         st.markdown('<div class="section-title">Asociados PEP / CPE Detectados</div>', unsafe_allow_html=True)
         st.markdown("""
         <div class="info-box" style="border-left-color: #ef4444;">
-            <strong>GAFI — Personas Expuestas Políticamente (PEP) y Contratista o Proveedor del Estado (CPE).</strong>
+            <strong>GAFI: Personas Expuestas Políticamente (PEP) y Contratista o Proveedor del Estado (CPE).</strong>
             Estos clientes requieren Debida Diligencia Ampliada (EDD) según las recomendaciones 12 y 22 del GAFI.
             Su presencia eleva automáticamente el score contextual (S_C) del modelo IMPERATOR.
         </div>

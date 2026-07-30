@@ -1,12 +1,12 @@
 """
-riesgo_ldft_logic.py — Motor de cálculo puro para la Administración de Riesgo
+riesgo_ldft_logic.py: Motor de cálculo puro para la Administración de Riesgo
 Institucional de LD/FT (Lavado de Dinero y Financiamiento del Terrorismo).
 
 Basado en el modelo GAFILAT / IVE Guatemala (Decreto 15-2026, Art. 8-11) y en
 los ejemplos numéricos de la guía "Administración de Riesgos de LD/FT 2026"
 (GERILAFT App) publicada por la Intendencia de Verificación Especial (IVE).
 
-Supuestos de ingeniería explícitos — la norma deja la metodología concreta a
+Supuestos de ingeniería explícitos: la norma deja la metodología concreta a
 criterio de cada Persona Obligada (la propia guía lo indica: "La PO debe
 definir en su metodología los criterios..."). Estos supuestos fueron
 reconstruidos y validados exactamente contra los ejemplos numéricos de la

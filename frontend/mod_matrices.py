@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout, render_html_table
 
 def mostrar(casos, matriz_alertas):
-    st.markdown("""<div class="info-box"><strong>MATRICES DE RIESGO</strong> — Arquitectura de decisión IMPERATOR. Clasificación técnica por perfiles de riesgo y tipologías de alerta analitica. Optimizado para calibración de umbrales y priorización táctica.</div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="info-box"><strong>MATRICES DE RIESGO</strong>: Arquitectura de decisión IMPERATOR. Clasificación técnica por perfiles de riesgo y tipologías de alerta analitica. Optimizado para calibración de umbrales y priorización táctica.</div>""", unsafe_allow_html=True)
 
     st.markdown('<div class="section-title">Matriz de Riesgo por Cliente</div>', unsafe_allow_html=True)
     st.markdown("""
@@ -44,7 +44,7 @@ def mostrar(casos, matriz_alertas):
     st.markdown('<div class="section-title">Matriz de Tipos de Alerta</div>', unsafe_allow_html=True)
     st.markdown("""<div class="glossary"><div class="glossary-title">DICCIONARIO DE REGLAS</div><div class="glossary-item"><span class="glossary-key">Tipo de Alerta</span><span>Regla IMPERATOR aplicada.</span></div><div class="glossary-item"><span class="glossary-key">Cantidad</span><span>Detecciones activas.</span></div><div class="glossary-item"><span class="glossary-key">Nivel de Impacto</span><span>Magnitud de severidad.</span></div><div class="glossary-item"><span class="glossary-key">Peso en Score</span><span>Ponderación analítica.</span></div><div class="glossary-item"><span class="glossary-key">Descripción</span><span>Lógica de detección técnica.</span></div></div>""", unsafe_allow_html=True)
 
-    # ── Tabla limpia HTML — texto blanco garantizado ──
+    # ── Tabla limpia HTML: texto blanco garantizado ──
     filas_html = ""
     for _, row in matriz_alertas.iterrows():
         imp = row["Nivel de Impacto"]

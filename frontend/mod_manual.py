@@ -3,7 +3,7 @@ import streamlit as st
 def mostrar():
     st.markdown("""
     <div class="info-box">
-        <strong>Manual de Prevención LD/FT/FPADM — Versión 3.1</strong> — Documentación técnica integrada de ejecución y uso. (Art. 12 Ley 6593)
+        <strong>Manual de Prevención LD/FT/FPADM: Versión 3.1</strong>: Documentación técnica integrada de ejecución y uso. (Art. 12 Ley 6593)
         Explica el funcionamiento de cada módulo, el modelo de Scoring IMPERATOR (ISO 31000), la gestión de sesión y las capacidades de análisis transaccional.
     </div>
     """, unsafe_allow_html=True)
@@ -14,14 +14,14 @@ def mostrar():
 
     ## 1.1. Marco Normativo y Tríada de Riesgo
     El motor **IMPERATOR** opera bajo una cuádruple referencia normativa:
-    * **RBA (GAFI) — Núcleo Operativo:** Define *cómo se evalúa el riesgo*. Clasifica clientes y transacciones con enfoque proporcional.
-    * **COSO ERM — Integración Estratégica:** Define *cómo se gobierna el riesgo*. Alinea detección de alertas con objetivos institucionales.
-    * **ISO 31000 — Metodología Estructural:** Define *cómo se implementa*. Marco sistemático para identificar, analizar y tratar riesgos.
-    * **Ley 6593 (Guatemala) — Trazabilidad IVE:** Provee la base legal nacional para los reportes RTS, RTE y el ciclo Inusual → Sospechosa.
+    * **RBA (GAFI): Núcleo Operativo:** Define *cómo se evalúa el riesgo*. Clasifica clientes y transacciones con enfoque proporcional.
+    * **COSO ERM: Integración Estratégica:** Define *cómo se gobierna el riesgo*. Alinea detección de alertas con objetivos institucionales.
+    * **ISO 31000: Metodología Estructural:** Define *cómo se implementa*. Marco sistemático para identificar, analizar y tratar riesgos.
+    * **Ley 6593 (Guatemala): Trazabilidad IVE:** Provee la base legal nacional para los reportes RTS, RTE y el ciclo Inusual → Sospechosa.
 
     ### Dimensiones del Score IMPERATOR:
-    1. **S_T (Riesgo Transaccional):** Reglas de detección — montos, picos, smurfing, frecuencia.
-    2. **S_C (Riesgo Contextual):** Naturaleza del cliente — PEP, CPE, Ubicación de Riesgo, **Beneficiario Final (UBO)**.
+    1. **S_T (Riesgo Transaccional):** Reglas de detección: montos, picos, smurfing, frecuencia.
+    2. **S_C (Riesgo Contextual):** Naturaleza del cliente: PEP, CPE, Ubicación de Riesgo, **Beneficiario Final (UBO)**.
     3. **S_B (Riesgo Conductual):** Desviaciones estadísticas sobre el perfil histórico del cliente.
     4. **S_N (Riesgo de Red):** Importancia del cliente en la red de flujos monetarios.
 
@@ -38,7 +38,7 @@ def mostrar():
     ### Columnas opcionales para cumplimiento Ley 6593:
     * **Tipo_Instrumento**: Instrumento de pago (Efectivo, Transferencia, Cheque…). Activa la detección automática de **RTE** (Art. 31) cuando el valor es `EFECTIVO` y el monto ≥ USD 10,000.
     * **Beneficiario_Final / EsPEP_UBO / Porcentaje_Participacion**: Datos del titular real (UBO). Activan penalización de SC y alerta de DDA Obligatoria (Art. 21 Ley 6593 / GAFI Rec. 12).
-    * **Tipo_Cliente**: Categoría jurídica del cliente — `Persona Individual`, `Persona Jurídica`, `Estructura Jurídica` (Art. 3 Ley 6593).
+    * **Tipo_Cliente**: Categoría jurídica del cliente: `Persona Individual`, `Persona Jurídica`, `Estructura Jurídica` (Art. 3 Ley 6593).
     * **EsFPADM**: (Booleano) Marca al cliente con riesgo de Financiamiento de Proliferación de Armas de Destrucción Masiva. Activa la acción **R-03** (GAFI Rec. 7 / Art. 2 Ley 6593).
 
     ## 2.1. Inicio, Sesión y Persistencia Temporal
@@ -50,23 +50,23 @@ def mostrar():
     * **Sesiones guardadas (.saml):** El usuario puede exportar una sesión `.saml` para retomarla manualmente en sesiones futuras.
     * **Auditoría de accesos (Art. 19 Ley 6593):** Cada acceso a módulos sensibles queda registrado en la bitácora de sesión (`auditoria_sesion`).
 
-    ## 3. Ciclo de Vida de Alertas — Inusual → Sospechosa (Arts. 28-30 Ley 6593)
+    ## 3. Ciclo de Vida de Alertas: Inusual → Sospechosa (Arts. 28-30 Ley 6593)
     El módulo **Casos de Alerta** implementa el flujo legal de dos fases:
 
     | Estado | Significado |
     |--------|-------------|
     | `Inusual_Pendiente` | Detectado por IMPERATOR, pendiente de revisión del analista |
     | `Inusual_Examinada` | Analista revisó y descartó escalamiento |
-    | `Sospechosa_Confirmada` | Analista confirmó — **requiere RTS ante la IVE (Art. 30)** |
+    | `Sospechosa_Confirmada` | Analista confirmó: **requiere RTS ante la IVE (Art. 30)** |
     | `Descartada` | Falso positivo documentado |
 
     El analista selecciona el caso, registra el **Fundamento del Examen** (Art. 29) y guarda la clasificación. Al marcar `Sospechosa_Confirmada`, el sistema activa el generador de **RTS** en el módulo de Reportes.
 
     ## 4. Reportes Regulatorios IVE (Ley 6593)
-    El módulo **Reportes** incluye una pestaña dedicada **RTS / RTE — IVE**:
+    El módulo **Reportes** incluye una pestaña dedicada **RTS / RTE: IVE**:
 
-    * **RTS — Reporte de Transacción Sospechosa (Art. 30):** Se genera para casos clasificados como `Sospechosa_Confirmada`. Incluye datos del sujeto obligado, cliente, score IMPERATOR y fundamento del examen. Formato compatible con la IVE-SIB.
-    * **RTE — Reporte de Transacción en Efectivo (Art. 31):** Se genera automáticamente para transacciones con `Tipo_Instrumento = EFECTIVO` y `Monto ≥ USD 10,000`. El sistema alerta en el módulo de Transacciones cuando existen casos pendientes.
+    * **RTS: Reporte de Transacción Sospechosa (Art. 30):** Se genera para casos clasificados como `Sospechosa_Confirmada`. Incluye datos del sujeto obligado, cliente, score IMPERATOR y fundamento del examen. Formato compatible con la IVE-SIB.
+    * **RTE: Reporte de Transacción en Efectivo (Art. 31):** Se genera automáticamente para transacciones con `Tipo_Instrumento = EFECTIVO` y `Monto ≥ USD 10,000`. El sistema alerta en el módulo de Transacciones cuando existen casos pendientes.
 
     ## 5. Inteligencia de Red Transaccional
     El módulo de **Red Transaccional** visualiza el flujo de capital mediante grafos. Patrones detectados:
@@ -96,16 +96,16 @@ def mostrar():
 
     **Niveles de riesgo (1-4):** Bajo, Medio Bajo, Medio Alto, Alto. Un riesgo residual de nivel 3 o 4 **exige** Plan de Acción (`requiere_plan_accion`).
 
-    **Aislamiento de datos:** todas las tablas (`RiesgoSegmentos`, `RiesgoEventos`, `RiesgoControles`, `RiesgoEventoControl`, `RiesgoPlanesAccion`) se segmentan por `licenciaid` — una Persona Obligada solo ve su propia información, incluso en el mismo servidor.
+    **Aislamiento de datos:** todas las tablas (`RiesgoSegmentos`, `RiesgoEventos`, `RiesgoControles`, `RiesgoEventoControl`, `RiesgoPlanesAccion`) se segmentan por `licenciaid`: una Persona Obligada solo ve su propia información, incluso en el mismo servidor.
 
     ## 6. Acciones de Mitigación (RBA / GAFI / ISO 31000)
     El sistema asigna automáticamente acciones proporcionales al nivel de alerta:
     * **Preventivas (P):** Bloqueo temporal (P-01), Rechazo de operación (P-02), Limitación de montos (P-03).
     * **Correctivas (C):** DDA Ampliada (C-01), Documentación (C-02), Revisión manual (C-03).
     * **Regulatorias (R):**
-        * **R-01** — Generación de RTS (GAFI Rec. 20 / Art. 30 Ley 6593)
-        * **R-02** — Escalamiento a Cumplimiento (ISO 31000 §6.6)
-        * **R-03** — Verificación sanciones FPADM / proliferación (GAFI Rec. 7 / Art. 2 Ley 6593) — se activa en nivel Crítico o cuando `EsFPADM = True`
+        * **R-01**: Generación de RTS (GAFI Rec. 20 / Art. 30 Ley 6593)
+        * **R-02**: Escalamiento a Cumplimiento (ISO 31000 §6.6)
+        * **R-03**: Verificación sanciones FPADM / proliferación (GAFI Rec. 7 / Art. 2 Ley 6593): se activa en nivel Crítico o cuando `EsFPADM = True`
     * **Estratégicas (E):** Ajuste de perfil (E-01), Reclasificación de segmento (E-02), Restricción de productos (E-03).
     * **Formularios KYC (F):** Actualización de FEIS a FEIC (F-01 / GAFI Rec. 10).
 
@@ -124,14 +124,14 @@ def mostrar():
     * **Medio:** Vigilancia reforzada. Revisión manual (C-03).
     * **Bajo:** Sin alertas críticas. Diligencia estándar.
 
-    ## 9. Beneficiario Final (UBO) — Art. 21 Ley 6593
+    ## 9. Beneficiario Final (UBO): Art. 21 Ley 6593
     El módulo **Análisis por Cliente** incluye un panel expandible de **Beneficiario Final (UBO)**:
     * Muestra el nombre del titular real, porcentaje de participación y fuente de verificación.
     * Si el UBO tiene perfil PEP (`EsPEP_UBO = True`), se activa una alerta de **DDA Obligatoria** (GAFI Rec. 12 / Art. 25a Ley 6593) y se aplica un incremento al Score Contextual (S_C).
     * Tipos de cliente soportados: `Persona Individual`, `Persona Jurídica`, `Estructura Jurídica` (trusts, fundaciones).
-    * Personas Obligadas incluyen: Bancos, Cooperativas, Casas de Cambio, Aseguradoras, Emisoras de Tarjetas y **PSAV** (Proveedores de Servicios de Activos Virtuales — Art. 3 c)1 vii) Ley 6593).
+    * Personas Obligadas incluyen: Bancos, Cooperativas, Casas de Cambio, Aseguradoras, Emisoras de Tarjetas y **PSAV** (Proveedores de Servicios de Activos Virtuales: Art. 3 c)1 vii) Ley 6593).
 
-    ## 10. Retención de Datos — Art. 34 Ley 6593
+    ## 10. Retención de Datos: Art. 34 Ley 6593
     La plataforma fuerza un **mínimo de 5 años** de retención de registros. Esta política está visible y configurable en el módulo de **Configuración** (sección Política de Retención de Datos):
     * La retención mínima legal es **5 años** (no reducible).
     * La institución puede configurar un período mayor (hasta 20 años).
@@ -157,11 +157,11 @@ def mostrar():
     * Cierre sesión al terminar el análisis, especialmente en equipos compartidos.
     * Use la exportación `.saml` solo cuando necesite conservar el análisis fuera de la sesión.
     * Proteja los archivos `.saml`; contienen transacciones originales y configuración.
-    * Los `Fundamento_Examen` y datos UBO son campos sensibles — trátelos con confidencialidad.
+    * Los `Fundamento_Examen` y datos UBO son campos sensibles: trátelos con confidencialidad.
     * El acceso a módulos de Reportes y Alertas queda registrado en la bitácora de sesión.
     * Revise periódicamente dependencias del entorno Python y mantenga versiones fijadas.
 
     ---
-    **SOVEREIGN AML v3.1 — Adecuado a Ley 6593 / GAFI 40 Recomendaciones**
+    **SOVEREIGN AML v3.1: Adecuado a Ley 6593 / GAFI 40 Recomendaciones**
     *Ing. Hobéd Díaz M.A. M.A.F.I. | 2026*
     """)

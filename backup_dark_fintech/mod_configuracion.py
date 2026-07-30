@@ -5,7 +5,7 @@ from frontend.mod_utils import apply_dark_style
 def mostrar(_DEFAULTS):
     st.markdown("""
     <div class="info-box">
-        <strong>CONFIGURACIÓN DE REGLAS SENTINEL</strong> — Arquitectura de decisión soberana.
+        <strong>CONFIGURACIÓN DE REGLAS SENTINEL</strong>: Arquitectura de decisión soberana.
         Administre los parámetros de detección, calibración de umbrales y ponderación de score.
         Los ajustes se integran en tiempo real al motor analítico.
     </div>
@@ -42,13 +42,13 @@ def mostrar(_DEFAULTS):
 
         st.markdown("---")
 
-        # ── Regla 1 — Monto Alto Absoluto ──────────────────────────────
+        # ── Regla 1: Monto Alto Absoluto ──────────────────────────────
         col_on, col_title = st.columns([1, 9])
         with col_on:
             c["regla_absoluto"] = st.toggle("", value=c["regla_absoluto"], key="tog_abs")
         with col_title:
             estado_abs = "🟢 ACTIVA" if c["regla_absoluto"] else "🔴 DESACTIVADA"
-            st.markdown(f'<div class="section-title">💰 Regla 1 — Monto Alto Absoluto &nbsp;<span class="section-badge">{estado_abs}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">💰 Regla 1: Monto Alto Absoluto &nbsp;<span class="section-badge">{estado_abs}</span></div>', unsafe_allow_html=True)
 
         col_desc1, col_ctrl1 = st.columns([3, 2])
         with col_desc1:
@@ -88,13 +88,13 @@ def mostrar(_DEFAULTS):
 
         st.markdown("---")
 
-        # ── Regla 2 — Acumulado Mensual ────────────────────────────────
+        # ── Regla 2: Acumulado Mensual ────────────────────────────────
         col_on2, col_title2 = st.columns([1, 9])
         with col_on2:
             c["regla_acumulado"] = st.toggle("", value=c["regla_acumulado"], key="tog_acum")
         with col_title2:
             estado_acum = "🟢 ACTIVA" if c["regla_acumulado"] else "🔴 DESACTIVADA"
-            st.markdown(f'<div class="section-title">📦 Regla 2 — Acumulado Mensual &nbsp;<span class="section-badge">{estado_acum}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">📦 Regla 2: Acumulado Mensual &nbsp;<span class="section-badge">{estado_acum}</span></div>', unsafe_allow_html=True)
 
         col_desc2, col_ctrl2 = st.columns([3, 2])
         with col_desc2:
@@ -142,13 +142,13 @@ def mostrar(_DEFAULTS):
 
         st.markdown("---")
 
-        # ── Regla 3 — Tolerancia sobre Perfil ──────────────────────────
+        # ── Regla 3: Tolerancia sobre Perfil ──────────────────────────
         col_on3, col_title3 = st.columns([1, 9])
         with col_on3:
             c["regla_perfil"] = st.toggle("", value=c["regla_perfil"], key="tog_perf")
         with col_title3:
             estado_perf = "🟢 ACTIVA" if c["regla_perfil"] else "🔴 DESACTIVADA"
-            st.markdown(f'<div class="section-title">📐 Regla 3 — Exceso sobre Perfil &nbsp;<span class="section-badge">{estado_perf}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">📐 Regla 3: Exceso sobre Perfil &nbsp;<span class="section-badge">{estado_perf}</span></div>', unsafe_allow_html=True)
 
         col_desc3, col_ctrl3 = st.columns([3, 2])
         with col_desc3:
@@ -188,13 +188,13 @@ def mostrar(_DEFAULTS):
 
         st.markdown("---")
 
-        # ── Regla 4 — Frecuencia Alta ───────────────────────────────────
+        # ── Regla 4: Frecuencia Alta ───────────────────────────────────
         col_on4, col_title4 = st.columns([1, 9])
         with col_on4:
             c["regla_frecuencia"] = st.toggle("", value=c["regla_frecuencia"], key="tog_frec")
         with col_title4:
             estado_frec = "🟢 ACTIVA" if c["regla_frecuencia"] else "🔴 DESACTIVADA"
-            st.markdown(f'<div class="section-title">🔄 Regla 4 — Frecuencia Alta &nbsp;<span class="section-badge">{estado_frec}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">🔄 Regla 4: Frecuencia Alta &nbsp;<span class="section-badge">{estado_frec}</span></div>', unsafe_allow_html=True)
 
         col_desc4, col_ctrl4 = st.columns([3, 2])
         with col_desc4:
@@ -234,13 +234,13 @@ def mostrar(_DEFAULTS):
 
         st.markdown("---")
 
-        # ── Regla 5 — Smurfing ──────────────────────────────────────────
+        # ── Regla 5: Smurfing ──────────────────────────────────────────
         col_on5, col_title5 = st.columns([1, 9])
         with col_on5:
             c["regla_smurfing"] = st.toggle("", value=c["regla_smurfing"], key="tog_smurf")
         with col_title5:
             estado_smurf = "🟢 ACTIVA" if c["regla_smurfing"] else "🔴 DESACTIVADA"
-            st.markdown(f'<div class="section-title">🧩 Regla 5 — Smurfing (Fragmentación) &nbsp;<span class="section-badge">{estado_smurf}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">🧩 Regla 5: Smurfing (Fragmentación) &nbsp;<span class="section-badge">{estado_smurf}</span></div>', unsafe_allow_html=True)
 
         col_desc5, col_ctrl5 = st.columns([3, 2])
         with col_desc5:
@@ -280,13 +280,13 @@ def mostrar(_DEFAULTS):
 
         st.markdown("---")
 
-        # ── Regla 6 — Pico Anómalo ──────────────────────────────────────
+        # ── Regla 6: Pico Anómalo ──────────────────────────────────────
         col_on6, col_title6 = st.columns([1, 9])
         with col_on6:
             c["regla_pico"] = st.toggle("", value=c["regla_pico"], key="tog_pico")
         with col_title6:
             estado_pico = "🟢 ACTIVA" if c["regla_pico"] else "🔴 DESACTIVADA"
-            st.markdown(f'<div class="section-title">📈 Regla 6 — Pico Anómalo Estadístico &nbsp;<span class="section-badge">{estado_pico}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">📈 Regla 6: Pico Anómalo Estadístico &nbsp;<span class="section-badge">{estado_pico}</span></div>', unsafe_allow_html=True)
 
         col_desc6, col_ctrl6 = st.columns([3, 2])
         with col_desc6:
@@ -328,7 +328,7 @@ def mostrar(_DEFAULTS):
     with tab2:
         st.markdown("""
         <div class="info-box">
-            <strong>PONDERACIÓN SENTINEL</strong> — Distribución de criticidad analítica.
+            <strong>PONDERACIÓN SENTINEL</strong>: Distribución de criticidad analítica.
             El Score de Riesgo es el producto de la agregación de vectores activos.
             Configure los pesos para priorizar las tipologías más relevantes según la política institucional.
         </div>""", unsafe_allow_html=True)
@@ -339,12 +339,12 @@ def mostrar(_DEFAULTS):
                 <span class="pulse-dot"></span> MATRIZ DE PONDERACIÓN
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; font-size:12px; color:#a08e7a; line-height:1.8;">
-                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>CORRECCIÓN MONTO</span> — Penalización escalar por volumen transaccional directo.</div>
-                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>VOLUMEN CICLO</span> — Priorización de acumulación económica persistente.</div>
-                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>DESVIACIÓN PERFIL</span> — Sensibilidad ante cambios de nivel declarado.</div>
-                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>FRECUENCIA</span> — Control de densidad operativa en el período.</div>
-                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>FRAGMENTACIÓN</span> — Defensa contra técnicas de ocultamiento (Smurfing).</div>
-                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>SIGMA ANOMALÍA</span> — Ponderación de rareza estadística histórica.</div>
+                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>CORRECCIÓN MONTO</span>: Penalización escalar por volumen transaccional directo.</div>
+                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>VOLUMEN CICLO</span>: Priorización de acumulación económica persistente.</div>
+                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>DESVIACIÓN PERFIL</span>: Sensibilidad ante cambios de nivel declarado.</div>
+                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>FRECUENCIA</span>: Control de densidad operativa en el período.</div>
+                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>FRAGMENTACIÓN</span>: Defensa contra técnicas de ocultamiento (Smurfing).</div>
+                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>SIGMA ANOMALÍA</span>: Ponderación de rareza estadística histórica.</div>
             </div>
         </div>""", unsafe_allow_html=True)
 
@@ -352,12 +352,12 @@ def mostrar(_DEFAULTS):
 
         with col_p1:
             st.markdown("**Ajusta los pesos (0 = sin impacto, 10 = máximo)**")
-            c["peso_absoluto"]   = st.number_input("💰 Peso — Monto Alto Absoluto",   0, 10, int(c["peso_absoluto"]),   key="p1")
-            c["peso_acumulado"]  = st.number_input("📦 Peso — Acumulado Mensual",      0, 10, int(c["peso_acumulado"]),  key="p2")
-            c["peso_perfil"]     = st.number_input("📐 Peso — Exceso sobre Perfil",    0, 10, int(c["peso_perfil"]),     key="p3")
-            c["peso_frecuencia"] = st.number_input("🔄 Peso — Frecuencia Alta",        0, 10, int(c["peso_frecuencia"]), key="p4")
-            c["peso_smurfing"]   = st.number_input("🧩 Peso — Smurfing",               0, 10, int(c["peso_smurfing"]),   key="p5")
-            c["peso_pico"]       = st.number_input("📈 Peso — Pico Anómalo",           0, 10, int(c["peso_pico"]),       key="p6")
+            c["peso_absoluto"]   = st.number_input("💰 Peso: Monto Alto Absoluto",   0, 10, int(c["peso_absoluto"]),   key="p1")
+            c["peso_acumulado"]  = st.number_input("📦 Peso: Acumulado Mensual",      0, 10, int(c["peso_acumulado"]),  key="p2")
+            c["peso_perfil"]     = st.number_input("📐 Peso: Exceso sobre Perfil",    0, 10, int(c["peso_perfil"]),     key="p3")
+            c["peso_frecuencia"] = st.number_input("🔄 Peso: Frecuencia Alta",        0, 10, int(c["peso_frecuencia"]), key="p4")
+            c["peso_smurfing"]   = st.number_input("🧩 Peso: Smurfing",               0, 10, int(c["peso_smurfing"]),   key="p5")
+            c["peso_pico"]       = st.number_input("📈 Peso: Pico Anómalo",           0, 10, int(c["peso_pico"]),       key="p6")
 
         with col_p2:
             score_max_teorico = (
@@ -401,7 +401,7 @@ def mostrar(_DEFAULTS):
     with tab3:
         st.markdown("""
         <div class="info-box">
-            <strong>TAXONOMÍA DE RIESGO</strong> — Calibración de niveles soberanos.
+            <strong>TAXONOMÍA DE RIESGO</strong>: Calibración de niveles soberanos.
             Determine los umbrales de score y volumen para la segmentación del universo transaccional.
             Los cambios afectan la distribución táctica de recursos de investigación.
         </div>""", unsafe_allow_html=True)
@@ -412,10 +412,10 @@ def mostrar(_DEFAULTS):
                 <span class="pulse-dot"></span> LOGICA DE SEGMENTACIÓN
             </div>
             <div style="font-size:12px; color:#a08e7a; line-height:2;">
-                <span style='color:#ef4444; font-weight:700;'>VECTOR CRÍTICO</span> — Clientes en zona de reporte regulatorio inmediato.<br>
-                <span style='color:#f97316; font-weight:700;'>VECTOR ALTO</span> — Objetivos de debida diligencia ampliada (EDD).<br>
-                <span style='color:#eab308; font-weight:700;'>VECTOR MEDIO</span> — Monitoreo preventivo y actualización de perfil.<br>
-                <span style='color:#10b981; font-weight:700;'>VECTOR BAJO</span> — Actividad dentro de parámetros soberanos normales.
+                <span style='color:#ef4444; font-weight:700;'>VECTOR CRÍTICO</span>: Clientes en zona de reporte regulatorio inmediato.<br>
+                <span style='color:#f97316; font-weight:700;'>VECTOR ALTO</span>: Objetivos de debida diligencia ampliada (EDD).<br>
+                <span style='color:#eab308; font-weight:700;'>VECTOR MEDIO</span>: Monitoreo preventivo y actualización de perfil.<br>
+                <span style='color:#10b981; font-weight:700;'>VECTOR BAJO</span>: Actividad dentro de parámetros soberanos normales.
             </div>
         </div>""", unsafe_allow_html=True)
 
@@ -450,7 +450,7 @@ def mostrar(_DEFAULTS):
 
             st.markdown("""
             <div class="info-box" style="margin-top:12px;">
-                <strong>🟢 Nivel Bajo</strong> — Se asigna automáticamente a todo cliente cuyo score
+                <strong>🟢 Nivel Bajo</strong>: Se asigna automáticamente a todo cliente cuyo score
                 sea menor al umbral Medio y cuyo total mensual no supere el monto crítico.
                 Son clientes sin señales de alerta significativas en el período.
             </div>""", unsafe_allow_html=True)

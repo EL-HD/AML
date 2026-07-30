@@ -1,5 +1,5 @@
 """
-mod_sesion.py — Sovereign AML Session Snapshot
+mod_sesion.py: Sovereign AML Session Snapshot
 Exporta e importa análisis completos en formato .saml (ZIP interno).
 """
 import io
@@ -29,7 +29,7 @@ def _registrar_acceso_auditoria(usuario: str, licenciaid, modulo: str, accion: s
         "accion":    accion,
     })
 
-    # 2. Persistencia en BD — Art. 19 Ley 6593
+    # 2. Persistencia en BD: Art. 19 Ley 6593
     if licenciaid is None:
         return
     try:
@@ -122,7 +122,7 @@ def importar_sesion(archivo_saml) -> tuple:
     except zipfile.BadZipFile:
         raise ValueError("El archivo no es un .saml válido (formato ZIP corrupto).")
     except KeyError as e:
-        raise ValueError(f"Archivo .saml incompleto — falta: {e}")
+        raise ValueError(f"Archivo .saml incompleto: falta: {e}")
 
 
 # ─── helpers privados ────────────────────────────────────────────────────────

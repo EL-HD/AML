@@ -6,7 +6,7 @@ import streamlit as st
 from frontend.mod_utils import plotly_dark_layout
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# CATÁLOGO DE ACCIONES DE MITIGACIÓN — RBA (GAFI) + ISO 31000 + COSO ERM
+# CATÁLOGO DE ACCIONES DE MITIGACIÓN: RBA (GAFI) + ISO 31000 + COSO ERM
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _CATALOGO = {
@@ -48,7 +48,7 @@ _COLOR_CAT = {
 def _texto_seguro(valor):
     """Escapa texto dinámico para evitar que el HTML se renderice como contenido."""
     if pd.isna(valor):
-        return "—"
+        return "N/D"
     return html.escape(str(valor))
 
 def _determinar_acciones(row, cfg=None):
@@ -117,13 +117,13 @@ def _buscar_accion(codigo):
         for item in items:
             if item["codigo"] == codigo:
                 return {**item, "categoria": cat}
-    return {"accion": codigo, "codigo": codigo, "norma": "—", "categoria": "—"}
+    return {"accion": codigo, "codigo": codigo, "norma": "N/D", "categoria": "N/D"}
 
 
 def mostrar(df, casos):
     st.markdown("""
     <div class="info-box">
-        <strong>ACCIONES DE MITIGACIÓN</strong> — Motor RBA (GAFI) + ISO 31000 + COSO ERM.
+        <strong>ACCIONES DE MITIGACIÓN</strong>: Motor RBA (GAFI) + ISO 31000 + COSO ERM.
         Define automáticamente acciones estandarizadas según nivel de riesgo, score IMPERATOR y factores agravantes.
         Incluye acciones Preventivas, Correctivas, Regulatorias y Estratégicas por cliente.
     </div>
@@ -133,7 +133,7 @@ def mostrar(df, casos):
     st.markdown('<div class="section-title">Marco Normativo Aplicado</div>', unsafe_allow_html=True)
     col_n1, col_n2, col_n3 = st.columns(3)
     marcos = [
-        ("RBA — GAFI", "Núcleo operativo", "Evalúa el riesgo de cada cliente con enfoque basado en riesgo. Activa acciones proporcionales al nivel detectado.", "#ef4444"),
+        ("RBA: GAFI", "Núcleo operativo", "Evalúa el riesgo de cada cliente con enfoque basado en riesgo. Activa acciones proporcionales al nivel detectado.", "#ef4444"),
         ("COSO ERM", "Integración estratégica", "Gobierna el riesgo alineando las acciones a los objetivos institucionales del programa de cumplimiento.", "#3b82f6"),
         ("ISO 31000", "Metodología estructural", "Implementa la gestión del riesgo de forma sistemática: identificar, evaluar, tratar y monitorear.", "#22c55e"),
     ]

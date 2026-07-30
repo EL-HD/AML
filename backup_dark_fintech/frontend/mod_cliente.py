@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout
 
 def mostrar(df, casos, cfg):
-    st.markdown("""<div class="info-box"><strong>ANÁLISIS POR CLIENTE</strong> — Perfil detallado de comportamiento transaccional IMPERATOR. Identifica vectores de riesgo individuales, picos de actividad estadística y patrones de fragmentación técnica (smurfing).</div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="info-box"><strong>ANÁLISIS POR CLIENTE</strong>: Perfil detallado de comportamiento transaccional IMPERATOR. Identifica vectores de riesgo individuales, picos de actividad estadística y patrones de fragmentación técnica (smurfing).</div>""", unsafe_allow_html=True)
 
     cliente = st.selectbox("Selecciona un cliente para analizar", df["Cliente"].unique())
     datos = df[df["Cliente"] == cliente].sort_values("Fecha")

@@ -29,7 +29,7 @@ class BitacoraSesions(Base):
 
 
 class BitacoraAuditoria(Base):
-    """Auditoría de accesos a módulos sensibles — Art. 19 Ley 6593."""
+    """Auditoría de accesos a módulos sensibles: Art. 19 Ley 6593."""
     __tablename__ = "BitacoraAuditoria"
     __table_args__ = {"schema": "public"}
 
@@ -43,13 +43,13 @@ class BitacoraAuditoria(Base):
 
 # ═══════════════════════════════════════════════════════════════════════════
 # ADMINISTRACIÓN DE RIESGO INSTITUCIONAL DE LD/FT
-# Base legal: Art. 8-11 Decreto 15-2026 (Guatemala) — enfoque basado en riesgo
-# Modelo: GAFILAT / IVE (GERILAFT App) — Identificación, Medición, Control, Monitoreo
+# Base legal: Art. 8-11 Decreto 15-2026 (Guatemala): enfoque basado en riesgo
+# Modelo: GAFILAT / IVE (GERILAFT App): Identificación, Medición, Control, Monitoreo
 # Todas las tablas se segmentan por licenciaid (multi-tenant: una PO por licencia).
 # ═══════════════════════════════════════════════════════════════════════════
 
 class RiesgoSegmento(Base):
-    """Etapa de Identificación — Factor -> Segmento -> Variable."""
+    """Etapa de Identificación: Factor -> Segmento -> Variable."""
     __tablename__ = "RiesgoSegmentos"
     __table_args__ = {"schema": "public"}
 
@@ -63,7 +63,7 @@ class RiesgoSegmento(Base):
 
 
 class RiesgoEvento(Base):
-    """Etapa de Identificación/Medición — evento de riesgo con probabilidad/impacto."""
+    """Etapa de Identificación/Medición: evento de riesgo con probabilidad/impacto."""
     __tablename__ = "RiesgoEventos"
     __table_args__ = {"schema": "public"}
 
@@ -89,7 +89,7 @@ class RiesgoEvento(Base):
 
 
 class RiesgoControl(Base):
-    """Etapa de Control — mitigador de riesgo y su ponderación (0-100)."""
+    """Etapa de Control: mitigador de riesgo y su ponderación (0-100)."""
     __tablename__ = "RiesgoControles"
     __table_args__ = {"schema": "public"}
 
@@ -125,7 +125,7 @@ class RiesgoEventoControl(Base):
 
 
 class RiesgoPlanAccion(Base):
-    """Etapa de Monitoreo — plan de acción para riesgo residual Medio Alto/Alto."""
+    """Etapa de Monitoreo: plan de acción para riesgo residual Medio Alto/Alto."""
     __tablename__ = "RiesgoPlanesAccion"
     __table_args__ = {"schema": "public"}
 
@@ -143,8 +143,8 @@ class RiesgoPlanAccion(Base):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# CATÁLOGOS GLOBALES — REPORTES REGULATORIOS IVE (RTS/RTE)
-# Base legal: Oficio IVE Núm. 19-2025 y sus Anexos 1 y 2 (RTS), Art. 30-31 Ley 6593.
+# CATÁLOGOS GLOBALES: REPORTES REGULATORIOS IVE (RTS/RTE)
+# Base legal: normativa IVE vigente para el RTS, Art. 30-31 Ley 6593.
 # Tablas de referencia compartidas por TODAS las licencias (sin licenciaid):
 # el código oficial es la clave primaria, son de solo lectura para las PO y
 # solo se actualizan cuando la IVE publica un catálogo nuevo o revisado.
@@ -162,7 +162,7 @@ class CatalogoActivoMixin:
 
 
 class CatDepartamento(CatalogoActivoMixin, Base):
-    """Departamentos de Guatemala (Anexo 2)."""
+    """Departamentos de Guatemala (catálogo oficial IVE)."""
     __tablename__ = "CatDepartamentos"
     __table_args__ = {"schema": "public"}
 
@@ -171,7 +171,7 @@ class CatDepartamento(CatalogoActivoMixin, Base):
 
 
 class CatMunicipio(CatalogoActivoMixin, Base):
-    """Municipios de Guatemala, vinculados a su departamento (Anexo 2)."""
+    """Municipios de Guatemala, vinculados a su departamento (catálogo oficial IVE)."""
     __tablename__ = "CatMunicipios"
     __table_args__ = {"schema": "public"}
 
@@ -181,7 +181,7 @@ class CatMunicipio(CatalogoActivoMixin, Base):
 
 
 class CatPais(CatalogoActivoMixin, Base):
-    """Catálogo de países (Anexo 2)."""
+    """Catálogo de países (catálogo oficial IVE)."""
     __tablename__ = "CatPaises"
     __table_args__ = {"schema": "public"}
 
@@ -190,7 +190,7 @@ class CatPais(CatalogoActivoMixin, Base):
 
 
 class CatMoneda(CatalogoActivoMixin, Base):
-    """Catálogo de monedas (Anexo 2)."""
+    """Catálogo de monedas (catálogo oficial IVE)."""
     __tablename__ = "CatMonedas"
     __table_args__ = {"schema": "public"}
 
@@ -199,7 +199,7 @@ class CatMoneda(CatalogoActivoMixin, Base):
 
 
 class CatTipoCanal(CatalogoActivoMixin, Base):
-    """Tipo de canal transaccional — Módulo 4 del RTS (Anexo 2)."""
+    """Tipo de canal transaccional: Módulo 4 del RTS."""
     __tablename__ = "CatTipoCanal"
     __table_args__ = {"schema": "public"}
 
@@ -208,7 +208,7 @@ class CatTipoCanal(CatalogoActivoMixin, Base):
 
 
 class CatTipoInstrumento(CatalogoActivoMixin, Base):
-    """Tipo de instrumento de integración — Módulo 4 del RTS (Anexo 2)."""
+    """Tipo de instrumento de integración: Módulo 4 del RTS."""
     __tablename__ = "CatTipoInstrumento"
     __table_args__ = {"schema": "public"}
 
@@ -217,7 +217,7 @@ class CatTipoInstrumento(CatalogoActivoMixin, Base):
 
 
 class CatTipoProductoOficial(CatalogoActivoMixin, Base):
-    """Tipo de producto o servicio según nomenclatura oficial IVE — Módulo 2 del RTS (Anexo 2)."""
+    """Tipo de producto o servicio según nomenclatura oficial IVE: Módulo 2 del RTS."""
     __tablename__ = "CatTipoProductoOficial"
     __table_args__ = {"schema": "public"}
 
@@ -226,7 +226,7 @@ class CatTipoProductoOficial(CatalogoActivoMixin, Base):
 
 
 class CatTipoIdentificacion(CatalogoActivoMixin, Base):
-    """Tipo de identificación de persona — Módulo 2 del RTS (Anexo 1)."""
+    """Tipo de identificación de persona: Módulo 2 del RTS."""
     __tablename__ = "CatTipoIdentificacion"
     __table_args__ = {"schema": "public"}
 
@@ -235,7 +235,7 @@ class CatTipoIdentificacion(CatalogoActivoMixin, Base):
 
 
 class CatMotivoInvolucramiento(CatalogoActivoMixin, Base):
-    """Motivo de involucramiento de una persona en el RTS — Módulo 2 (Anexo 1)."""
+    """Motivo de involucramiento de una persona en el RTS: Módulo 2."""
     __tablename__ = "CatMotivoInvolucramiento"
     __table_args__ = {"schema": "public"}
 
