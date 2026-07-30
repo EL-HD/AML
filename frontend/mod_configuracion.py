@@ -755,7 +755,7 @@ def mostrar(_DEFAULTS):
 
     # ── POLÍTICA DE RETENCIÓN DE DATOS (Art. 34 Ley 6593) ─────────────────────
     st.markdown("---")
-    st.markdown("### 🗄️ Política de Retención de Datos")
+    st.markdown("### Política de Retención de Datos")
     st.markdown(
         "**Art. 34 Ley 6593:** Los sujetos obligados deben conservar todos los registros y documentos "
         "por un mínimo de **5 años** desde la fecha de la transacción o finalización de la relación comercial."
