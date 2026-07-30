@@ -18,3 +18,4 @@ aml_env/
 
 # Claude worktrees
 .claude/
+.DS_Store

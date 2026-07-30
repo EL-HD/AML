@@ -99,7 +99,7 @@ def mostrar(_DEFAULTS):
     with tab1:
         st.markdown("""
         <div class="info-box" style="background-color: #1b2027; border-left-color: #f59e0b;">
-            <strong>⚠️ CALIBRACIÓN TÉCNICA:</strong> La alteración de umbrales impacta directamente en la sensibilidad del motor.
+            <strong>CALIBRACIÓN TÉCNICA:</strong> La alteración de umbrales impacta directamente en la sensibilidad del motor.
             Un umbral bajo incrementa la densidad de alertas. Ajuste según el apetito de riesgo institucional.
         </div>
         """, unsafe_allow_html=True)
