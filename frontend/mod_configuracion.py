@@ -9,16 +9,16 @@ from frontend.mod_utils import apply_dark_style, render_html_table
 # Catálogos globales del RTS disponibles para verificación (Oficio IVE 19-2025, Anexo 2).
 # Un solo diccionario de configuración evita repetir la misma consulta 10 veces.
 _CATALOGOS_RTS = {
-    "Departamentos":              (models.CatDepartamento,           ["codigo", "nombre"]),
-    "Municipios":                 (models.CatMunicipio,               ["codigo", "nombre", "departamento_codigo"]),
-    "Países":                     (models.CatPais,                    ["codigo", "nombre"]),
-    "Monedas":                    (models.CatMoneda,                  ["codigo", "nombre"]),
-    "Tipo de Canal":               (models.CatTipoCanal,               ["codigo", "nombre"]),
-    "Tipo de Instrumento":         (models.CatTipoInstrumento,         ["codigo", "nombre"]),
-    "Tipo de Producto (oficial)":  (models.CatTipoProductoOficial,     ["codigo", "nombre"]),
-    "Tipo de Identificación":      (models.CatTipoIdentificacion,      ["codigo", "nombre"]),
-    "Motivo de Involucramiento":   (models.CatMotivoInvolucramiento,   ["codigo", "nombre"]),
-    "Tipo de Reporte":             (models.CatTipoReporte,             ["codigo", "nombre", "es_regulatorio", "articulo_legal"]),
+    "Departamentos":              (models.CatDepartamento,           ["codigo", "nombre", "activo"]),
+    "Municipios":                 (models.CatMunicipio,               ["codigo", "nombre", "departamento_codigo", "activo"]),
+    "Países":                     (models.CatPais,                    ["codigo", "nombre", "activo"]),
+    "Monedas":                    (models.CatMoneda,                  ["codigo", "nombre", "activo"]),
+    "Tipo de Canal":               (models.CatTipoCanal,               ["codigo", "nombre", "activo"]),
+    "Tipo de Instrumento":         (models.CatTipoInstrumento,         ["codigo", "nombre", "activo"]),
+    "Tipo de Producto (oficial)":  (models.CatTipoProductoOficial,     ["codigo", "nombre", "activo"]),
+    "Tipo de Identificación":      (models.CatTipoIdentificacion,      ["codigo", "nombre", "activo"]),
+    "Motivo de Involucramiento":   (models.CatMotivoInvolucramiento,   ["codigo", "nombre", "activo"]),
+    "Tipo de Reporte":             (models.CatTipoReporte,             ["codigo", "nombre", "es_regulatorio", "articulo_legal", "activo"]),
 }
 
 
@@ -30,6 +30,21 @@ def _consultar_catalogo_df(db, modelo, columnas: list) -> pd.DataFrame:
     """
     filas = db.query(modelo).order_by(modelo.codigo).all()
     return pd.DataFrame([{col: getattr(fila, col) for col in columnas} for fila in filas], columns=columnas)
+
+
+def _actualizar_estado_catalogo(db, modelo, codigo: str, activo: bool) -> bool:
+    """
+    Activa o inactiva una entrada de catálogo por su `codigo` (clave primaria).
+    Validación explícita: si el registro no existe, no hace nada y retorna False
+    — evita depender de que la fila exista de forma implícita.
+    Reutilizable para cualquier catálogo de `_CATALOGOS_RTS`.
+    """
+    registro = db.get(modelo, codigo)
+    if registro is None:
+        return False
+    registro.activo = activo
+    db.commit()
+    return True
 
 _RETENCION_MINIMA_ANOS = 5  # Art. 34 Ley 6593
 
@@ -716,8 +731,9 @@ def mostrar(_DEFAULTS):
         st.markdown("""
         <div class="info-box">
             <strong>CATÁLOGOS GLOBALES DEL RTS</strong> — Datos de referencia oficiales del
-            Oficio IVE Núm. 19-2025 (Anexo 2), compartidos por todas las licencias. Vista de
-            solo lectura; para cambios contacte a soporte técnico.
+            Oficio IVE Núm. 19-2025 (Anexo 2), compartidos por todas las licencias. El código
+            y nombre son de solo lectura; puede activar o inactivar entradas según la necesidad
+            de su institución.
         </div>
         """, unsafe_allow_html=True)
 
@@ -750,6 +766,36 @@ def mostrar(_DEFAULTS):
                 st.info("Este catálogo aún no tiene datos. Contacte a soporte técnico.")
             else:
                 render_html_table(df_catalogo, table_id="tabla_catalogos_rts")
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.markdown("**Activar / Inactivar entrada**")
+                opciones_entrada = [
+                    f"{fila['codigo']} — {fila['nombre']}" for _, fila in df_catalogo.iterrows()
+                ]
+                col_sel, col_estado, col_btn = st.columns([3, 1, 1])
+                with col_sel:
+                    entrada_sel = st.selectbox(
+                        "Entrada", options=opciones_entrada, key="entrada_catalogo_sel",
+                        label_visibility="collapsed",
+                    )
+                codigo_sel = entrada_sel.split(" — ", 1)[0]
+                activo_actual = bool(
+                    df_catalogo.loc[df_catalogo["codigo"] == codigo_sel, "activo"].iloc[0]
+                )
+                with col_estado:
+                    st.metric("Estado actual", "Activo" if activo_actual else "Inactivo")
+                with col_btn:
+                    st.markdown("<div style='height:1.8rem'></div>", unsafe_allow_html=True)
+                    etiqueta_boton = "Inactivar" if activo_actual else "Activar"
+                    if st.button(etiqueta_boton, key="btn_toggle_catalogo", use_container_width=True):
+                        actualizado = _actualizar_estado_catalogo(
+                            db, modelo_sel, codigo_sel, not activo_actual
+                        )
+                        if actualizado:
+                            st.success(f"'{codigo_sel}' ahora está {'activo' if not activo_actual else 'inactivo'}.")
+                            st.rerun()
+                        else:
+                            st.error(f"No se encontró el código '{codigo_sel}' en el catálogo.")
         finally:
             db.close()
 

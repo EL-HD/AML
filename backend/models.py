@@ -150,7 +150,18 @@ class RiesgoPlanAccion(Base):
 # solo se actualizan cuando la IVE publica un catálogo nuevo o revisado.
 # ═══════════════════════════════════════════════════════════════════════════
 
-class CatDepartamento(Base):
+class CatalogoActivoMixin:
+    """
+    Columna compartida por todos los catálogos globales del RTS: permite
+    inactivar una entrada (p. ej. una moneda o país retirado del catálogo
+    oficial) sin eliminarla, preservando la integridad referencial con
+    datos históricos que ya la usaron. Se reutiliza vía mixin para no
+    repetir la misma columna en las 10 tablas.
+    """
+    activo = Column("activo", Boolean, nullable=False, default=True, server_default=text("true"))
+
+
+class CatDepartamento(CatalogoActivoMixin, Base):
     """Departamentos de Guatemala (Anexo 2)."""
     __tablename__ = "CatDepartamentos"
     __table_args__ = {"schema": "public"}
@@ -159,7 +170,7 @@ class CatDepartamento(Base):
     nombre = Column("nombre", String(100), nullable=False)
 
 
-class CatMunicipio(Base):
+class CatMunicipio(CatalogoActivoMixin, Base):
     """Municipios de Guatemala, vinculados a su departamento (Anexo 2)."""
     __tablename__ = "CatMunicipios"
     __table_args__ = {"schema": "public"}
@@ -169,7 +180,7 @@ class CatMunicipio(Base):
     departamento_codigo  = Column("departamento_codigo",  String(2), nullable=False, index=True)
 
 
-class CatPais(Base):
+class CatPais(CatalogoActivoMixin, Base):
     """Catálogo de países (Anexo 2)."""
     __tablename__ = "CatPaises"
     __table_args__ = {"schema": "public"}
@@ -178,7 +189,7 @@ class CatPais(Base):
     nombre = Column("nombre", String(150), nullable=False)
 
 
-class CatMoneda(Base):
+class CatMoneda(CatalogoActivoMixin, Base):
     """Catálogo de monedas (Anexo 2)."""
     __tablename__ = "CatMonedas"
     __table_args__ = {"schema": "public"}
@@ -187,7 +198,7 @@ class CatMoneda(Base):
     nombre = Column("nombre", String(100), nullable=False)
 
 
-class CatTipoCanal(Base):
+class CatTipoCanal(CatalogoActivoMixin, Base):
     """Tipo de canal transaccional — Módulo 4 del RTS (Anexo 2)."""
     __tablename__ = "CatTipoCanal"
     __table_args__ = {"schema": "public"}
@@ -196,7 +207,7 @@ class CatTipoCanal(Base):
     nombre = Column("nombre", String(100), nullable=False)
 
 
-class CatTipoInstrumento(Base):
+class CatTipoInstrumento(CatalogoActivoMixin, Base):
     """Tipo de instrumento de integración — Módulo 4 del RTS (Anexo 2)."""
     __tablename__ = "CatTipoInstrumento"
     __table_args__ = {"schema": "public"}
@@ -205,7 +216,7 @@ class CatTipoInstrumento(Base):
     nombre = Column("nombre", String(100), nullable=False)
 
 
-class CatTipoProductoOficial(Base):
+class CatTipoProductoOficial(CatalogoActivoMixin, Base):
     """Tipo de producto o servicio según nomenclatura oficial IVE — Módulo 2 del RTS (Anexo 2)."""
     __tablename__ = "CatTipoProductoOficial"
     __table_args__ = {"schema": "public"}
@@ -214,7 +225,7 @@ class CatTipoProductoOficial(Base):
     nombre = Column("nombre", String(100), nullable=False)
 
 
-class CatTipoIdentificacion(Base):
+class CatTipoIdentificacion(CatalogoActivoMixin, Base):
     """Tipo de identificación de persona — Módulo 2 del RTS (Anexo 1)."""
     __tablename__ = "CatTipoIdentificacion"
     __table_args__ = {"schema": "public"}
@@ -223,7 +234,7 @@ class CatTipoIdentificacion(Base):
     nombre = Column("nombre", String(100), nullable=False)
 
 
-class CatMotivoInvolucramiento(Base):
+class CatMotivoInvolucramiento(CatalogoActivoMixin, Base):
     """Motivo de involucramiento de una persona en el RTS — Módulo 2 (Anexo 1)."""
     __tablename__ = "CatMotivoInvolucramiento"
     __table_args__ = {"schema": "public"}
@@ -232,7 +243,7 @@ class CatMotivoInvolucramiento(Base):
     nombre = Column("nombre", String(150), nullable=False)
 
 
-class CatTipoReporte(Base):
+class CatTipoReporte(CatalogoActivoMixin, Base):
     """Tipos de reporte/informe que puede generar el sistema (alimenta ReporteGenerado, fase 2)."""
     __tablename__ = "CatTipoReporte"
     __table_args__ = {"schema": "public"}
