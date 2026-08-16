@@ -47,11 +47,15 @@ def plotly_dark_layout(**kwargs):
     return base
 
 
-def render_html_table(df, max_height=420, table_id=None):
+def render_html_table(df, max_height=420, table_id=None, column_tooltips=None):
     """
     Renderiza una tabla HTML estática y nítida con la paleta de Sovereign AML.
     Útil para evitar el blur que puede aparecer con st.dataframe en columnas.
+
+    column_tooltips: dict opcional {nombre_columna: texto_explicativo}. Las columnas
+    incluidas muestran un ícono "i" en el encabezado con tooltip al pasar el mouse.
     """
+    column_tooltips = column_tooltips or {}
     css = """
         <style>
             .sovereign-table-wrap {
@@ -109,11 +113,68 @@ def render_html_table(df, max_height=420, table_id=None):
             .sovereign-table tbody tr:last-child td {
                 border-bottom: none;
             }
+            .sov-th-help {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                margin-left: 6px;
+                width: 15px;
+                height: 15px;
+                border-radius: 50%;
+                background: #f59e0b;
+                color: #171c23;
+                font-size: 10px;
+                font-weight: 800;
+                font-style: normal;
+                line-height: 1;
+                cursor: help;
+                position: relative;
+                vertical-align: middle;
+            }
+            .sov-th-help:hover .sov-th-help-box,
+            .sov-th-help:focus .sov-th-help-box {
+                visibility: visible;
+                opacity: 1;
+            }
+            .sov-th-help-box {
+                visibility: hidden;
+                opacity: 0;
+                position: absolute;
+                bottom: 135%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #1b2027;
+                color: #dee2ed;
+                border: 1px solid #f59e0b;
+                border-radius: 6px;
+                padding: 8px 10px;
+                font-size: 12px;
+                font-weight: 500;
+                white-space: normal;
+                width: 230px;
+                z-index: 10;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+                transition: opacity 0.15s ease;
+                text-transform: none;
+                line-height: 1.4;
+            }
         </style>
     """
 
+    def _header_cell(col):
+        label = escape(str(col))
+        tooltip = column_tooltips.get(col)
+        if not tooltip:
+            return f"<th>{label}</th>"
+        return (
+            f"<th>{label}"
+            f'<span class="sov-th-help" tabindex="0">i'
+            f'<span class="sov-th-help-box">{escape(str(tooltip))}</span>'
+            f"</span></th>"
+        )
+
     attrs = f' id="{escape(str(table_id))}"' if table_id else ""
-    headers = "".join(f"<th>{escape(str(col))}</th>" for col in df.columns)
+    headers = "".join(_header_cell(col) for col in df.columns)
     rows = []
     for _, row in df.iterrows():
         cells = "".join(f"<td>{escape(str(value))}</td>" for value in row)
