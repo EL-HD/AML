@@ -439,13 +439,4 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
         }
         for n, v in sorted(centralidad.items(), key=lambda x: -x[1])
     ])
-    tooltips_centralidad = {
-        "Centralidad": "Centralidad de intermediario (betweenness): mide qué tan seguido el cliente actúa como puente entre otros nodos de la red.",
-        "Score": "Score de riesgo del cliente (0 a 10) calculado por el modelo de scoring.",
-        "Grado Entrada": "Número de clientes distintos que envían fondos hacia este cliente (conexiones entrantes).",
-        "Grado Salida": "Número de clientes distintos que reciben fondos de este cliente (conexiones salientes).",
-    }
-    st.markdown(
-        render_html_table(df_central, max_height=420, column_tooltips=tooltips_centralidad),
-        unsafe_allow_html=True,
-    )
+    st.markdown(render_html_table(df_central, max_height=420), unsafe_allow_html=True)
