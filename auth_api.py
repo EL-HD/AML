@@ -117,6 +117,18 @@ async def log_requests(request, call_next):
         logger.error(f"Error procesando solicitud: {e}", exc_info=True)
         raise e
 
+# --- Cabeceras de seguridad (hallazgo DAST: ausentes en todas las respuestas) ---
+@app.middleware("http")
+async def security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    if request.url.scheme == "https":
+        response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
+    return response
+
 # --- Endpoint para obtener Token ---
 
 @app.post("/token", response_model=schemas.Token)
@@ -204,4 +216,4 @@ def validate_user(auth: schemas.AuthRequest, request: Request, db: Session = Dep
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host=os.getenv("AUTH_API_HOST", "127.0.0.1"), port=8000)
