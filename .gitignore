@@ -19,3 +19,8 @@ aml_env/
 # Claude worktrees
 .claude/
 .DS_Store
+
+# aml (orquestador local)
+backups/
+.aml/
+_to_delete/

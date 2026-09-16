@@ -88,11 +88,28 @@ Implementación del enfoque basado en riesgo institucional (Art. 8-11 Decreto 15
 | A07: Identification & Auth Failures | Rate limiting en `/auth/validate` (5 intentos / 5 min por IP); control de sesión única vía `BitacoraSesions`. |
 | A09: Security Logging | `BitacoraAuditoria` registra accesos a módulos sensibles (Art. 19 Ley 6593). |
 
+## 7. Levantar el sistema en local (comando `aml`)
+
+Requiere: Postgres local ya corriendo (Homebrew/DBeaver/pgAdmin, base `AML` en `localhost:5432`), Python 3.10+.
+
+```bash
+./aml up             # 1ra vez: crea .env (edítalo con tus credenciales) y venv; luego migra y levanta API+Streamlit
+./aml migrate         # aplica migrations/*.sql + tablas ORM sin levantar servicios
+./aml seed            # catálogos globales + licencia de prueba
+./aml dump            # backup de la base local -> backups/
+./aml restore <file>  # restaura un .dump en la base local
+./aml railway-pull    # dump de producción (Railway) -> backups/ (requiere proxy TCP temporal, ver script)
+./aml status | down   # estado / detener API+Streamlit (Postgres no se toca, es tuyo)
+```
+
+`.env`, `backups/` y `.aml/` (logs/pids) quedan fuera de git. Detalle en `scripts/`.
+
 ## 6. Historial de cambios recientes
 
 * **2026-07**: Módulo de Riesgo Institucional LD/FT/FPADM (GAFILAT/IVE) agregado end-to-end.
 * **2026-07**: Fix: `pandas.DataFrame.applymap` eliminado en pandas 3.0 → migrado a `.map()`; `requirements.txt` fija piso `pandas>=2.1.0`.
 * **2026-07**: Fix: `StreamlitDuplicateElementId` en mapa de calor (gráficos duplicados por renderizado de `st.tabs`): `key` explícito por pestaña.
+* **2026-09**: Comando `aml` (orquestador local): levanta Postgres/migraciones/API/Streamlit con un solo comando; `aml dump`/`aml restore`/`aml railway-pull` para respaldos.
 * **2026-07**: Firma institucional estandarizada: "Ing. Hobéd Díaz M.A. M.A.F.I." (M.A. = Magíster Artium, término correcto en Guatemala: no equivalente a "Msc.").
 
 ---
