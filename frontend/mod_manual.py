@@ -108,6 +108,12 @@ def mostrar():
     * **Bandeja de coincidencias:** toda coincidencia nace `Pendiente` y debe **Descartarse** o **Confirmarse** con un fundamento obligatorio; cada decisión queda en un historial inmutable y en la bitácora de auditoría. Una coincidencia confirmada de un cliente del lote se vincula a su Caso de Alerta. El Analista y el Auditor consultan en modo lectura.
     * **Señal en la ficha del cliente:** Análisis por Cliente muestra si el cliente tiene coincidencias pendientes o confirmadas; la columna `Screening_Sanciones` se agrega al DataFrame de casos.
 
+    ## 5.4. Integridad de la Bitácora de Auditoría (Art. 19 Ley 6593, GAFI R.11)
+    Vista **Administración > Integridad de Bitácora**, disponible para el Administrador y el Auditor. Cada registro de la bitácora es un eslabón: lleva un correlativo por licencia (`seq`), el hash del registro anterior (`hash_prev`) y su propio hash SHA-256 (o HMAC-SHA256 cuando la aplicación tiene configurada la clave `AUDIT_HMAC_KEY`). La base de datos rechaza cualquier modificación o borrado de la bitácora.
+    * **Verificar cadena ahora:** recorre todos los eslabones de la licencia y reporta si la cadena está **íntegra** o **rota**, el primer eslabón roto y el motivo (campo alterado, hueco por borrado, inserción fuera de orden, retroceso de algoritmo). La verificación queda registrada en la propia bitácora.
+    * **Registros pre-cadena:** los eventos anteriores a la activación de la cadena no tienen hash; se cuentan de forma informativa y quedan protegidos contra cambios desde ese momento.
+    * **Exportar reporte:** CSV con el resumen y el estado de cada eslabón (saneado contra fórmulas). Se recomienda conservar el último hash de cada verificación para compararlo en la siguiente.
+
     ## 6. Acciones de Mitigación (RBA / GAFI / ISO 31000)
     El sistema asigna automáticamente acciones proporcionales al nivel de alerta:
     * **Preventivas (P):** Bloqueo temporal (P-01), Rechazo de operación (P-02), Limitación de montos (P-03).

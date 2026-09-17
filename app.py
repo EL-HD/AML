@@ -47,7 +47,7 @@ from frontend import (
     mod_cliente, mod_matrices, mod_manual,
     mod_configuracion, mod_reportes, mod_ubicaciones,
     mod_mitigacion, mod_red_transaccional,
-    mod_imperator_diagnostics, mod_sesion, mod_riesgo_ldft, mod_screening
+    mod_imperator_diagnostics, mod_sesion, mod_riesgo_ldft, mod_screening, mod_integridad
 )
 from frontend.mod_sesion import _registrar_acceso_auditoria
 from frontend import cache_analisis, casos_persistencia, exportacion, navegacion, permisos, theme, ui_components
@@ -795,6 +795,10 @@ elif vista == "Informes y Reportes":
 elif vista == "Configuración":
     _auditar("Configuración")
     mod_configuracion.mostrar(_DEFAULTS)
+
+elif vista == "Integridad de Bitácora":
+    _auditar("Integridad de Bitácora")
+    mod_integridad.mostrar()
 
 elif vista == "Manual de Usuario":
     mod_manual.mostrar()

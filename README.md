@@ -99,6 +99,7 @@ Implementación del enfoque basado en riesgo institucional (Art. 8-11 Decreto 15
 | `JWT_ISSUER`, `JWT_AUDIENCE` | Recomendadas | Claims `iss`/`aud` del JWT (por defecto `sovereign-aml-auth` / `sovereign-aml-app`). |
 | `AUTH_API_URL` | Sí (Streamlit) | URL interna de la API (`http://localhost:8000` en Railway). |
 | `CORS_ALLOWED_ORIGINS` | Recomendada | Orígenes permitidos por la API. |
+| `AUDIT_HMAC_KEY` | No (recomendada en producción) | Clave secreta para firmar con HMAC-SHA256 cada eslabón de la bitácora de auditoría encadenada (`BitacoraAuditoria.hash`). Sin ella se usa SHA-256 puro: la cadena detecta alteraciones, pero quien tenga acceso de escritura a la base y logre desactivar los triggers podría recalcularla. Al definirla, los eslabones anteriores siguen verificándose con SHA-256; no debe cambiarse ni retirarse después, porque los eslabones HMAC dejarían de ser verificables. |
 | `SCREENING_AUTO_DOWNLOAD` | No (por defecto `false`) | Habilita la descarga de listas de sanciones desde las URLs oficiales fijas (OFAC, ONU) definidas en `backend/screening.py`. La carga manual por el Administrador funciona siempre. |
 
 ## 7. Pruebas y calidad

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, DateTime, Boolean, Float, Text, text
+from sqlalchemy import Column, Integer, BigInteger, String, Date, DateTime, Boolean, Float, Text, text
 from sqlalchemy import CheckConstraint, Index, UniqueConstraint, event
 from sqlalchemy import Uuid as UUID  # tipo genérico: UUID nativo en PostgreSQL, CHAR(32) en SQLite (pruebas)
 from .database import Base
@@ -38,7 +38,10 @@ class BitacoraSesions(Base):
 class BitacoraAuditoria(Base):
     """Auditoría de accesos a módulos sensibles: Art. 19 Ley 6593."""
     __tablename__ = "BitacoraAuditoria"
-    __table_args__ = {"schema": "public"}
+    __table_args__ = (
+        UniqueConstraint("licenciaid", "seq", name="uq_bitacora_licencia_seq"),
+        {"schema": "public"},
+    )
 
     id              = Column("id",              UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     licenciaid      = Column("licenciaid",      UUID(as_uuid=True), nullable=False)
@@ -46,6 +49,12 @@ class BitacoraAuditoria(Base):
     timestamp       = Column("timestamp",       DateTime,           nullable=False, default=ahora_utc)
     modulo_accedido = Column("modulo_accedido", String(100),        nullable=False)
     accion          = Column("accion",          String(100),        nullable=False, default="VISUALIZACION")
+    # Cadena de integridad (T4, migración 006). NULL en registros pre-cadena.
+    # El cálculo del hash vive únicamente en backend/auditoria.py.
+    seq             = Column("seq",             BigInteger,         nullable=True)
+    hash_prev       = Column("hash_prev",       String(64),         nullable=True)
+    hash            = Column("hash",            String(64),         nullable=True)
+    hash_alg        = Column("hash_alg",        String(16),         nullable=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -350,6 +359,16 @@ def _historial_sin_delete(mapper, connection, target):  # noqa: ARG001
 @event.listens_for(CasoAlerta, "before_delete")
 def _caso_sin_delete(mapper, connection, target):  # noqa: ARG001
     raise HistorialInmutableError("CasosAlerta tiene retención mínima de 5 años (Art. 34 Ley 6593): no se permite borrar.")
+
+
+@event.listens_for(BitacoraAuditoria, "before_update")
+def _bitacora_sin_update(mapper, connection, target):  # noqa: ARG001
+    raise HistorialInmutableError("BitacoraAuditoria es append-only (Art. 19 Ley 6593): no se permite actualizar.")
+
+
+@event.listens_for(BitacoraAuditoria, "before_delete")
+def _bitacora_sin_delete(mapper, connection, target):  # noqa: ARG001
+    raise HistorialInmutableError("BitacoraAuditoria es append-only (Art. 19 Ley 6593): no se permite borrar.")
 
 
 # ═══════════════════════════════════════════════════════════════════════════

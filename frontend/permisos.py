@@ -26,6 +26,7 @@ _MATRIZ = {
     "ver_screening": {"admin", "oficial", "analista", "auditor"},
     "exportar_datos": {"admin", "oficial", "analista"},
     "ver_configuracion": {"admin", "oficial", "analista", "auditor"},
+    "verificar_bitacora": {"admin", "auditor"},
 }
 
 ETIQUETAS = {
