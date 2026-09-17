@@ -58,8 +58,8 @@ def mostrar(df, casos, cfg):
         with col_u2:
             es_pep_ubo = info_cliente.get("EsPEP_UBO", False)
             if es_pep_ubo:
-                st.error("🔴 UBO es PEP: DDA Obligatoria (GAFI Rec. 12 / Art. 25a Ley 6593)")
-                st.caption(f"⚠️ SC incluye penalización adicional por Beneficiario Final PEP (Art. 25a)")
+                st.error("UBO es PEP: DDA Obligatoria (GAFI Rec. 12 / Art. 25a Ley 6593)")
+                st.caption(f"SC incluye penalización adicional por Beneficiario Final PEP (Art. 25a)")
 
             fuente_ubo = info_cliente.get("Fuente_Verificacion_UBO", "N/D")
             st.markdown(f"**Fuente de verificación:** {fuente_ubo}")
@@ -207,7 +207,7 @@ def mostrar(df, casos, cfg):
                 x=picos["Fecha_str"], y=picos["Monto"],
                 mode='markers', name=f'{len(picos)} pico(s) anómalo(s)',
                 marker=dict(size=12, color='#ef4444', line=dict(color='#fca5a5', width=1.5)),
-                hovertemplate="<b>⚠ Pico anómalo</b><br>%{x}<br>Monto: Q%{y:,.2f}<extra></extra>",
+                hovertemplate="<b>Pico anómalo</b><br>%{x}<br>Monto: Q%{y:,.2f}<extra></extra>",
             ))
         fig_picos.add_hline(y=media, line=dict(color='#a7b0bb', dash='dot', width=1),
                             annotation_text="Media", annotation_font_color='#a7b0bb')

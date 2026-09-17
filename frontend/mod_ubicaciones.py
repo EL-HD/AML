@@ -29,7 +29,7 @@ def mostrar():
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        ui_components.section_title("➕ Agregar Nueva Zona")
+        ui_components.section_title("Agregar nueva zona")
         nueva_ubic = st.text_input("Nombre de la ubicación (Departamento o Municipio):", placeholder="Ej. El Progreso")
         
         c_add, _ = st.columns([1, 2])
@@ -45,7 +45,7 @@ def mostrar():
                 st.error("Ingrese un nombre válido.")
     
     with col2:
-        ui_components.section_title("🚩 Zonas Bajo Vigilancia")
+        ui_components.section_title("Zonas bajo vigilancia")
         if not st.session_state["aml_config"]["ubicaciones_manuales"]:
             st.info("No hay ubicaciones configuradas.")
         else:

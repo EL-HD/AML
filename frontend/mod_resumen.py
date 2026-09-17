@@ -76,7 +76,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
             )
 
         if kpi_sospechosas_sin_rts > 0:
-            st.error(f"🚨 {kpi_sospechosas_sin_rts} caso(s) sospechoso(s) requieren generación urgente de RTS ante la IVE.")
+            st.error(f"{kpi_sospechosas_sin_rts} caso(s) sospechoso(s) requieren generación urgente de RTS ante la IVE.")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -320,7 +320,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
             st.markdown("""
             <div style="background:#171c23; border:1px solid #ef4444; border-top:3px solid #ef4444; padding:16px; margin-bottom:8px;">
                 <div style="color:#ef4444; font-size:12px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:8px;">
-                    ⚠ Personas Expuestas Políticamente (PEP)
+                    Personas Expuestas Políticamente (PEP)
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -342,7 +342,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
             st.markdown("""
             <div style="background:#171c23; border:1px solid #f97316; border-top:3px solid #f97316; padding:16px; margin-bottom:8px;">
                 <div style="color:#f97316; font-size:12px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:8px;">
-                    ⚠ Contratista o Proveedor del Estado (CPE)
+                    Contratista o Proveedor del Estado (CPE)
                 </div>
             </div>
             """, unsafe_allow_html=True)

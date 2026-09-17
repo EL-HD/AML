@@ -203,7 +203,7 @@ def _tab_eventos(db, licenciaid, username):
         )
         c2.markdown(f"Inherente<br>{_badge_nivel(e.nivel_inherente)}", unsafe_allow_html=True)
         c3.markdown(f"Residual<br>{_badge_nivel(e.nivel_residual)}", unsafe_allow_html=True)
-        c4.markdown("Plan requerido<br>" + ("🔴 Sí" if e.requiere_plan_accion else "🟢 No"), unsafe_allow_html=True)
+        c4.markdown("Plan requerido<br>" + ("Sí" if e.requiere_plan_accion else "No"), unsafe_allow_html=True)
 
         with st.expander(f"Detalle y controles: {e.codigo}"):
             if e.descripcion:

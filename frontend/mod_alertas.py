@@ -120,10 +120,10 @@ def mostrar(casos):
                     key="fundamento_examen",
                     help="Describe la base legal/económica que justifica o descarta la operación sospechosa."
                 )
-                if st.button("💾 Guardar clasificación", key="btn_clasificar"):
+                if st.button("Guardar clasificación", key="btn_clasificar"):
                     casos_filtrados.at[caso_idx, "Estado_Alerta"] = nuevo_estado
                     casos_filtrados.at[caso_idx, "Fundamento_Examen"] = fundamento
                     if nuevo_estado == "Sospechosa_Confirmada":
                         casos_filtrados.at[caso_idx, "Fecha_Clasificacion_Sospechosa"] = datetime.now().date()
-                        st.warning("⚠️ Caso clasificado como SOSPECHOSO. Proceder a generar RTS ante la IVE (Art. 30 Ley 6593).")
+                        st.warning("Caso clasificado como SOSPECHOSO. Proceder a generar RTS ante la IVE (Art. 30 Ley 6593).")
                     st.success("Clasificación guardada.")

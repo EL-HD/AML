@@ -983,16 +983,16 @@ def mostrar(df, casos, matriz_alertas, cfg):
             ("Cliente / Nombre:",  caso_rts_sel),
             ("NIT / DPI:",         sujeto_info.get("NIT_DPI", "N/D")),
             ("Tipo de cliente:",   str(fila.get("Tipo_Cliente", "N/D"))),
-            ("EsPEP:",  "SÍ ⚠ (Art. 25a Ley 6593: DDA Obligatoria)" if es_pep else "No"),
-            ("EsCPE:",  "SÍ ⚠" if es_cpe else "No"),
-            ("EsFPADM:", "SÍ ⚠ (GAFI Rec. 7 / Art. 2 Ley 6593: Acción R-03)" if es_fpadm else "No"),
+            ("EsPEP:",  "SÍ (Art. 25a Ley 6593: DDA Obligatoria)" if es_pep else "No"),
+            ("EsCPE:",  "SÍ" if es_cpe else "No"),
+            ("EsFPADM:", "SÍ (GAFI Rec. 7 / Art. 2 Ley 6593: Acción R-03)" if es_fpadm else "No"),
             ("Beneficiario Final (UBO):", ubo),
         ]
         if ubo not in ("N/D", "", "nan"):
             if porc_ubo is not None:
                 reportado.append(("Porcentaje participación UBO:", f"{porc_ubo}%"))
             if ubo_pep:
-                reportado.append(("EsPEP_UBO:", "SÍ ⚠: DDA Obligatoria (Art. 21 / GAFI Rec. 12)"))
+                reportado.append(("EsPEP_UBO:", "SÍ: DDA Obligatoria (Art. 21 / GAFI Rec. 12)"))
         for label, value in reportado:
             story.append(Paragraph(f"<b>{h(label)}</b> {h(value)}", S["body"]))
         story.append(Spacer(1, 10))
@@ -1419,8 +1419,8 @@ def mostrar(df, casos, matriz_alertas, cfg):
                     fila_prev = sospechosos[sospechosos["Cliente"] == caso_rts].iloc[0]
                     nivel_p   = fila_prev.get("Nivel_Riesgo", "")
                     col_p1, col_p2, col_p3, col_p4 = st.columns(4)
-                    color_p = {"🔴 Crítico": "red", "🟧 Alto": "amber",
-                               "🟡 Medio": "blue", "🟢 Bajo": "green"}.get(nivel_p, "red")
+                    color_p = {"Crítico": "red", "Alto": "amber",
+                               "Medio": "blue", "Bajo": "green"}.get(nivel_p, "red")
                     with col_p1:
                         ui_components.kpi("Nivel de Riesgo", nivel_label(str(nivel_p)), tone=color_p)
                     with col_p2:
@@ -1491,7 +1491,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
                         ui_components.kpi("Monto total efectivo", ui_components.fmt_moneda(monto_rte_prev, 0), tone="orange")
 
                     st.warning(
-                        f"⚠️ {n_rte_prev} transacción(es) requieren RTE ante la IVE (Art. 31 Ley 6593)")
+                        f"{n_rte_prev} transacción(es) requieren RTE ante la IVE (Art. 31 Ley 6593)")
                     st.markdown("<br>", unsafe_allow_html=True)
                     col_rte1, col_rte2 = st.columns(2)
                     with col_rte1:

@@ -62,7 +62,7 @@ def _validar_retencion(fecha_registro, anos_retencion: int = _RETENCION_MINIMA_A
     puede_eliminar = fecha_registro < fecha_limite
     if not puede_eliminar:
         st.error(
-            f"🚫 No se puede eliminar este registro. "
+            f"No se puede eliminar este registro. "
             f"La Ley 6593 (Art. 34) exige conservarlo hasta "
             f"{fecha_registro.replace(year=fecha_registro.year + anos_retencion)}."
         )
@@ -370,9 +370,9 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
             
             suma_w = c["w_st"] + c["w_sc"] + c["w_sb"] + c["w_sn"]
             if abs(suma_w - 1.0) > 0.001:
-                st.warning(f"⚠️ La suma de pesos es {suma_w:.2f}. Se recomienda que sea 1.00 para una escala de 0-10 estándar.")
+                st.warning(f"La suma de pesos es {suma_w:.2f}. Se recomienda que sea 1.00 para una escala de 0-10 estándar.")
             else:
-                st.success("✅ Ponderación equilibrada (Suma = 1.00)")
+                st.success("Ponderación equilibrada (Suma = 1.00)")
 
             st.markdown("---")
             st.markdown("### Componentes Técnicos (S_T)")
@@ -421,7 +421,7 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
 
             st.markdown(f"""
             <div class="warning-box" style="margin-top:12px;">
-                <strong>⚠️ Recuerda:</strong> Si cambias los pesos, ajusta también los umbrales de
+                <strong>Recuerda:</strong> Si cambias los pesos, ajusta también los umbrales de
                 clasificación en <em>Clasificación de Riesgo</em> para que Crítico/Alto/Medio
                 sigan siendo proporcionales al nuevo score máximo de <strong>{h(score_max_teorico)} pts</strong>.
             </div>""", unsafe_allow_html=True)
@@ -509,9 +509,9 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
                 </div>""", unsafe_allow_html=True)
 
             if c["score_medio"] >= c["score_alto"]:
-                st.error("⚠️ El score de Medio debe ser menor que el de Alto.")
+                st.error("El score de Medio debe ser menor que el de Alto.")
             if c["score_alto"] >= c["score_critico"]:
-                st.error("⚠️ El score de Alto debe ser menor que el de Crítico.")
+                st.error("El score de Alto debe ser menor que el de Crítico.")
 
     # ── TAB 4: Resumen y Aplicar ────────────────────────────────────────
     with tab4:
