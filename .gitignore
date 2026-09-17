@@ -24,3 +24,12 @@ aml_env/
 backups/
 .aml/
 _to_delete/
+
+# Respaldo local del diseño anterior (fuera del repositorio)
+backup_dark_fintech/
+
+# Pruebas y herramientas
+.pytest_cache/
+.coverage
+htmlcov/
+*.saml
