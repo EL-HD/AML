@@ -4,55 +4,45 @@ Exporta e importa análisis completos en formato .saml (ZIP interno).
 """
 import io
 import json
+import logging
 import zipfile
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
+
+from backend import auditoria
+from backend.config_aml import validar_config
+
+logger = logging.getLogger(__name__)
+
+# Límites de importación (S-08): tamaño comprimido, descomprimido y filas.
+MAX_BYTES_COMPRIMIDO = 25 * 1024 * 1024
+MAX_BYTES_DESCOMPRIMIDO = 100 * 1024 * 1024
+MAX_FILAS = 200_000
+MAX_BYTES_JSON = 1 * 1024 * 1024
 
 
 def _registrar_acceso_auditoria(usuario: str, licenciaid, modulo: str, accion: str = "VISUALIZACION") -> None:
     """
-    Registra acceso en bitácora para cumplimiento Art. 19 Ley 6593.
-    1) Escribe en st.session_state["auditoria_sesion"] (in-memory).
-    2) Persiste en public."BitacoraAuditoria" (PostgreSQL).
-    No interrumpe el flujo principal si la DB falla.
+    Registra un acceso para cumplimiento del Art. 19 Ley 6593:
+    1) en memoria de sesión (st.session_state["auditoria_sesion"]) y
+    2) en public."BitacoraAuditoria" mediante backend.auditoria (errores registrados, nunca silenciados).
     """
     import streamlit as st
 
-    # 1. Registro en memoria de sesión
     if "auditoria_sesion" not in st.session_state:
         st.session_state["auditoria_sesion"] = []
     st.session_state["auditoria_sesion"].append({
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "usuario":   usuario,
         "modulo":    modulo,
         "accion":    accion,
     })
-
-    # 2. Persistencia en BD: Art. 19 Ley 6593
     if licenciaid is None:
+        logger.warning("Auditoría sin licencia: usuario=%s modulo=%s accion=%s", usuario, modulo, accion)
         return
-    try:
-        import uuid as _uuid
-        from backend.database import SessionLocal
-        from backend import models as _models
-        # Normalizar licenciaid a UUID
-        lid = _uuid.UUID(str(licenciaid)) if not isinstance(licenciaid, _uuid.UUID) else licenciaid
-        db = SessionLocal()
-        try:
-            registro = _models.BitacoraAuditoria(
-                licenciaid=lid,
-                username=usuario,
-                modulo_accedido=modulo,
-                accion=accion,
-                timestamp=datetime.now(),
-            )
-            db.add(registro)
-            db.commit()
-        finally:
-            db.close()
-    except Exception:
-        pass  # auditoría no debe bloquear la UI
+    auditoria.registrar_evento_autonomo(licenciaid, usuario, modulo, accion)
+
 
 _VERSION_SAML = "1.0"
 _SAML_TRANSACTIONS = "transactions.csv"
@@ -80,7 +70,7 @@ def exportar_sesion(df_raw: pd.DataFrame, aml_config: dict, nombre_original: str
         meta = {
             "version":       _VERSION_SAML,
             "nombre_archivo": nombre_original,
-            "exportado_en":  datetime.now().isoformat(),
+            "exportado_en":  datetime.now(timezone.utc).isoformat(),
             "filas":         len(df_raw),
             "columnas":      list(df_raw.columns),
         }
@@ -94,35 +84,35 @@ def importar_sesion(archivo_saml) -> tuple:
     """
     Lee un archivo .saml (objeto file-like o UploadedFile de Streamlit).
     Retorna: (df_raw, aml_config, session_meta)
-    Lanza ValueError si el archivo no es un .saml válido.
+    Lanza ValueError si el archivo no es un .saml válido o supera los límites.
     """
+    contenido = archivo_saml.read()
+    if len(contenido) > MAX_BYTES_COMPRIMIDO:
+        raise ValueError(f"El archivo supera el máximo permitido de {MAX_BYTES_COMPRIMIDO // (1024 * 1024)} MB.")
     try:
-        buf = io.BytesIO(archivo_saml.read())
-        with zipfile.ZipFile(buf, mode="r") as zf:
-            nombres = zf.namelist()
-            _validar_estructura(nombres)
+        with zipfile.ZipFile(io.BytesIO(contenido), mode="r") as zf:
+            _validar_estructura(zf.namelist())
+            _validar_tamanos(zf.infolist())
 
-            # Transacciones
             with zf.open(_SAML_TRANSACTIONS) as f:
-                df_raw = pd.read_csv(f, encoding="utf-8")
+                df_raw = pd.read_csv(f, encoding="utf-8", nrows=MAX_FILAS + 1)
+            if len(df_raw) > MAX_FILAS:
+                raise ValueError(f"El archivo contiene más de {MAX_FILAS:,} filas.")
 
-            # Configuración
             with zf.open(_SAML_CONFIG) as f:
-                aml_config = json.loads(f.read().decode("utf-8"))
-
-            # Metadatos
+                aml_config = _leer_json(f, _SAML_CONFIG)
             with zf.open(_SAML_META) as f:
-                session_meta = json.loads(f.read().decode("utf-8"))
-
-        # Restaurar tipos correctos en config
-        aml_config = _restaurar_tipos_config(aml_config)
-
-        return df_raw, aml_config, session_meta
-
+                session_meta = _leer_json(f, _SAML_META)
     except zipfile.BadZipFile:
         raise ValueError("El archivo no es un .saml válido (formato ZIP corrupto).")
     except KeyError as e:
         raise ValueError(f"Archivo .saml incompleto: falta: {e}")
+    except (pd.errors.ParserError, UnicodeDecodeError) as e:
+        raise ValueError(f"No se pudieron leer las transacciones del .saml: {e}")
+
+    aml_config = validar_config(aml_config)
+    session_meta = _sanear_meta(session_meta, len(df_raw))
+    return df_raw, aml_config, session_meta
 
 
 # ─── helpers privados ────────────────────────────────────────────────────────
@@ -133,6 +123,44 @@ def _validar_estructura(nombres: list):
     faltantes = requeridos - set(nombres)
     if faltantes:
         raise ValueError(f"Archivo .saml incompleto. Faltan: {faltantes}")
+
+
+def _validar_tamanos(infos: list) -> None:
+    """Verifica el tamaño declarado de cada entrada antes de descomprimir (anti zip bomb)."""
+    total = 0
+    for info in infos:
+        if info.file_size < 0 or info.file_size > MAX_BYTES_DESCOMPRIMIDO:
+            raise ValueError("El archivo .saml declara un tamaño descomprimido no permitido.")
+        total += info.file_size
+        if info.compress_size and info.file_size / max(info.compress_size, 1) > 200:
+            raise ValueError("El archivo .saml tiene una tasa de compresión sospechosa.")
+    if total > MAX_BYTES_DESCOMPRIMIDO:
+        raise ValueError(f"El contenido descomprimido supera {MAX_BYTES_DESCOMPRIMIDO // (1024 * 1024)} MB.")
+
+
+def _leer_json(f, nombre: str) -> dict:
+    datos = f.read(MAX_BYTES_JSON + 1)
+    if len(datos) > MAX_BYTES_JSON:
+        raise ValueError(f"{nombre} supera el tamaño permitido.")
+    try:
+        valor = json.loads(datos.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError) as e:
+        raise ValueError(f"{nombre} no es un JSON válido: {e}")
+    if not isinstance(valor, dict):
+        raise ValueError(f"{nombre} debe ser un objeto JSON.")
+    return valor
+
+
+def _sanear_meta(meta: dict, filas: int) -> dict:
+    """Conserva solo los metadatos conocidos, con tipos y longitudes acotadas."""
+    nombre = str(meta.get("nombre_archivo", "analisis.xlsx"))[:200]
+    exportado = str(meta.get("exportado_en", ""))[:40]
+    return {
+        "version": str(meta.get("version", _VERSION_SAML))[:10],
+        "nombre_archivo": nombre,
+        "exportado_en": exportado,
+        "filas": int(filas),
+    }
 
 
 def _serializar_config(cfg: dict) -> dict:
@@ -149,38 +177,6 @@ def _serializar_config(cfg: dict) -> dict:
         else:
             resultado[k] = str(v)
     return resultado
-
-
-def _restaurar_tipos_config(cfg: dict) -> dict:
-    """
-    Asegura que los campos de tipo bool sean bool (JSON los guarda como true/false
-    pero Python los carga correctamente; esta función normaliza edge cases).
-    """
-    campos_bool = [
-        "regla_absoluto", "regla_acumulado", "regla_perfil",
-        "regla_frecuencia", "regla_smurfing", "regla_pico",
-        "regla_ubicacion", "regla_feic",
-    ]
-    campos_int = [
-        "tolerancia_perfil", "umbral_absoluto", "umbral_frecuencia",
-        "umbral_smurfing", "score_critico", "monto_critico",
-        "score_alto", "score_medio", "peso_absoluto", "peso_acumulado",
-        "peso_perfil", "peso_frecuencia", "peso_smurfing", "peso_pico",
-        "peso_pep_cpe", "peso_ubicacion", "umbral_feic",
-    ]
-    campos_float = ["mult_acumulado", "mult_std_pico", "w_st", "w_sc", "w_sb", "w_sn"]
-
-    for campo in campos_bool:
-        if campo in cfg:
-            cfg[campo] = bool(cfg[campo])
-    for campo in campos_int:
-        if campo in cfg:
-            cfg[campo] = int(cfg[campo])
-    for campo in campos_float:
-        if campo in cfg:
-            cfg[campo] = float(cfg[campo])
-
-    return cfg
 
 
 def nombre_archivo_saml(nombre_original: str) -> str:

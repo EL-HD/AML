@@ -23,7 +23,7 @@ from datetime import date, datetime, timedelta
 
 # --- Importaciones Modulares ---
 from backend.procesador import validar_columnas, procesar_transacciones
-from backend import crud, schemas, session_token
+from backend import config_aml, crud, schemas, session_token
 from backend.database import SessionLocal
 from sqlalchemy.exc import SQLAlchemyError
 import logging
@@ -1225,17 +1225,7 @@ vista = st.session_state.nav_view
 # ============================================================
 # CONFIGURACIÓN (Defaults)
 # ============================================================
-_DEFAULTS = {
-    "tolerancia_perfil": 15, "umbral_absoluto": 20000, "mult_acumulado": 2.0, "umbral_frecuencia": 5,
-    "umbral_smurfing": 5, "mult_std_pico": 2.0, "score_critico": 8, "monto_critico": 30000,
-    "score_alto": 5, "score_medio": 3, "peso_absoluto": 3, "peso_acumulado": 2, "peso_perfil": 1,
-    "peso_frecuencia": 1, "peso_smurfing": 3, "peso_pico": 2, "regla_absoluto": True, "regla_acumulado": True,
-    "regla_perfil": True, "regla_frecuencia": True, "regla_smurfing": True, "regla_pico": True,
-    "regla_ubicacion": True, "peso_pep_cpe": 2, "peso_ubicacion": 2,
-    "w_st": 0.40, "w_sc": 0.25, "w_sb": 0.20, "w_sn": 0.15,
-    "ubicaciones_manuales": ["Huehuetenango", "San Marcos", "Izabal", "Petén", "Escuintla"],
-    "regla_feic": True, "umbral_feic": 45000,
-}
+_DEFAULTS = config_aml.config_por_defecto()
 if "aml_config" not in st.session_state:
     st.session_state["aml_config"] = _DEFAULTS.copy()
 else:
@@ -1287,7 +1277,14 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
 
             if archivo:
                 with st.spinner("Procesando inteligencia AML..."):
-                    df_raw = pd.read_excel(archivo)
+                    try:
+                        df_raw = pd.read_excel(archivo, nrows=mod_sesion.MAX_FILAS + 1)
+                    except ValueError as exc:
+                        st.error(f"No se pudo leer el archivo Excel: {exc}")
+                        st.stop()
+                    if len(df_raw) > mod_sesion.MAX_FILAS:
+                        st.error(f"El archivo supera el máximo de {mod_sesion.MAX_FILAS:,} filas permitidas por análisis.")
+                        st.stop()
                     es_valido, faltantes = validar_columnas(df_raw)
                     if not es_valido:
                         st.error(f"Faltan columnas: {', '.join(faltantes)}")
@@ -1324,10 +1321,8 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
                     with st.spinner("Restaurando sesión de análisis..."):
                         df_raw, cfg_restaurado, session_meta = mod_sesion.importar_sesion(archivo_saml)
 
-                        # Restaurar configuración guardada en la sesión
+                        # Configuración ya validada contra AmlConfig (lista blanca y rangos)
                         st.session_state["aml_config"] = cfg_restaurado
-                        for k, v in cfg_restaurado.items():
-                            st.session_state["aml_config"].setdefault(k, v)
 
                         es_valido, faltantes = validar_columnas(df_raw)
                         if not es_valido:
