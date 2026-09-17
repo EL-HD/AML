@@ -8,8 +8,10 @@
 #   ./aml logs [api]          Logs en vivo de la API
 #   ./aml migrate             Aplica migraciones (ORM + SQL) sin levantar servicios
 #   ./aml seed                Carga catálogos globales y una licencia de prueba
-#   ./aml dump                Backup de la base local -> backups/
-#   ./aml restore <archivo>   Restaura un .dump en la base local (sobreescribe)
+#   ./aml dump                Backup de la base local -> backups/ (cifrado y con manifiesto
+#                             si BACKUP_ENCRYPTION_KEY está en .env; si no, .dump en claro)
+#   ./aml restore <archivo>   Restaura un .dump o .dump.enc en la base local (sobreescribe)
+#   ./aml backups             Lista los respaldos cifrados de backups/ y su validez
 #   ./aml railway-pull        Descarga un dump fresco de Railway (producción) -> backups/
 #   ./aml help                Esta ayuda
 # ============================================================================
@@ -181,10 +183,24 @@ cmd_seed() {
 
 cmd_dump() {
     load_env
+    if [ -n "${BACKUP_ENCRYPTION_KEY:-}" ]; then
+        # Respaldo cifrado con manifiesto y retención (scripts/respaldo_bd.py, T7).
+        # DATABASE_URL de .env apunta a producción: se excluye para respaldar la base local.
+        activate_venv
+        BACKUP_DIR="${BACKUP_DIR:-backups}" env -u DATABASE_URL python scripts/respaldo_bd.py "$@"
+        return
+    fi
+    warn "BACKUP_ENCRYPTION_KEY no está en .env: se genera un .dump en claro (sin cifrar)."
+    warn "Para respaldos cifrados: python scripts/respaldo_bd.py --generar-clave y añade la clave a .env."
     local file="$BACKUP_DIR/local_$(date +%Y%m%d_%H%M%S).dump"
     PGPASSWORD="${DB_PASS:-}" pg_dump -h "${DB_HOST:-localhost}" -p "${DB_PORT:-5432}" \
         -U "${DB_USER:-postgres}" -d "${DB_NAME:-AML}" -F c -f "$file"
     log "Backup guardado en $file"
+}
+
+cmd_backups() {
+    load_env; activate_venv
+    BACKUP_DIR="${BACKUP_DIR:-backups}" python scripts/respaldo_bd.py --listar
 }
 
 find_pg_restore_newest() {
@@ -202,9 +218,19 @@ find_pg_restore_newest() {
 }
 
 cmd_restore() {
-    local file="${1:?Uso: ./aml restore <archivo.dump>}"
+    local file="${1:?Uso: ./aml restore <archivo.dump|archivo.dump.enc>}"
     [ -f "$file" ] || { err "No existe: $file"; exit 1; }
     load_env
+    case "$file" in
+        *.dump.enc)
+            # Respaldo cifrado: verifica firma, hash y descifra antes de pg_restore (T7).
+            # --destino-local usa DB_* de .env (nunca DATABASE_URL) y no expone la contraseña.
+            activate_venv
+            warn "Esto sobreescribe datos existentes en ${DB_NAME:-AML}."
+            python scripts/restaurar_bd.py --archivo "$file" --destino-local --limpiar
+            return
+            ;;
+    esac
     local restore_bin
     restore_bin="$(find_pg_restore_newest)" || { err "No se encontró pg_restore en el PATH."; exit 1; }
     warn "Esto sobreescribe datos existentes en ${DB_NAME:-AML}."
@@ -215,7 +241,7 @@ cmd_restore() {
 
 cmd_railway_pull() { ./scripts/railway_pull.sh; }
 
-usage() { sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; }
 
 CMD="${1:-help}"
 case "$CMD" in
@@ -225,7 +251,8 @@ case "$CMD" in
     logs)          cmd_logs ;;
     migrate)       cmd_migrate ;;
     seed)          cmd_seed ;;
-    dump)          cmd_dump ;;
+    dump)          shift; cmd_dump "$@" ;;
+    backups)       cmd_backups ;;
     restore)       shift; cmd_restore "${1:-}" ;;
     railway-pull)  cmd_railway_pull ;;
     help|*)        usage ;;
