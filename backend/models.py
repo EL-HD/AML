@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Date, DateTime, Boolean, text
+from sqlalchemy import Column, Integer, String, Date, DateTime, Boolean, Float, text
+from sqlalchemy import CheckConstraint, Index, UniqueConstraint, event
 from sqlalchemy import Uuid as UUID  # tipo genérico: UUID nativo en PostgreSQL, CHAR(32) en SQLite (pruebas)
 from .database import Base
 import uuid
@@ -258,3 +259,94 @@ class CatTipoReporte(CatalogoActivoMixin, Base):
     nombre         = Column("nombre",         String(150), nullable=False)
     es_regulatorio = Column("es_regulatorio", Boolean, nullable=False, default=False)
     articulo_legal = Column("articulo_legal", String(100), nullable=True)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CASOS DE ALERTA PERSISTENTES (ciclo Inusual -> Sospechosa)
+# Base legal: Art. 29 (examen y fundamento), Art. 30 (RTS) y Art. 34
+# (conservación de registros, mínimo 5 años) Ley 6593. Segmentación por
+# licenciaid (multi-tenant). La clave estable del caso se documenta en
+# backend/casos_alerta.py (clave_caso = SHA-256 de licencia|lote|cliente).
+# ═══════════════════════════════════════════════════════════════════════════
+
+ESTADOS_CASO = (
+    "Inusual_Pendiente",       # Detectado por IMPERATOR, sin examinar
+    "Inusual_Examinada",       # Examinada por analista, no escalada
+    "Sospechosa_Propuesta",    # Analista propone RTS: pendiente de aprobación (cuatro ojos)
+    "Sospechosa_Confirmada",   # Aprobada por oficial/admin distinto del proponente: requiere RTS (Art. 30)
+    "Descartada",              # Falso positivo documentado
+)
+
+
+class CasoAlerta(Base):
+    """Estado vigente de un caso de alerta (cliente dentro de un lote analizado)."""
+    __tablename__ = "CasosAlerta"
+    __table_args__ = (
+        UniqueConstraint("licenciaid", "clave_caso", name="uq_casosalerta_licencia_clave"),
+        Index("idx_casosalerta_licencia_lote", "licenciaid", "hash_lote"),
+        CheckConstraint(
+            "estado IN ('Inusual_Pendiente','Inusual_Examinada','Sospechosa_Propuesta',"
+            "'Sospechosa_Confirmada','Descartada')",
+            name="casosalerta_estado_check",
+        ),
+        {"schema": "public"},
+    )
+
+    id              = Column("id",              UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    licenciaid      = Column("licenciaid",      UUID(as_uuid=True), nullable=False, index=True)
+    clave_caso      = Column("clave_caso",      String(64),  nullable=False)
+    hash_lote       = Column("hash_lote",       String(64),  nullable=False)
+    cliente         = Column("cliente",         String(200), nullable=False)
+    nombre_archivo  = Column("nombre_archivo",  String(255), nullable=True)
+    estado          = Column("estado",          String(40),  nullable=False, default="Inusual_Pendiente")
+    fundamento      = Column("fundamento",      String(4000), nullable=False, default="")
+    score_max       = Column("score_max",       Float, nullable=True)
+    nivel_riesgo    = Column("nivel_riesgo",    String(30),  nullable=True)
+    propuesto_por   = Column("propuesto_por",   String(100), nullable=True)
+    propuesto_en    = Column("propuesto_en",    DateTime, nullable=True)
+    aprobado_por    = Column("aprobado_por",    String(100), nullable=True)
+    aprobado_en     = Column("aprobado_en",     DateTime, nullable=True)
+    fecha_clasificacion_sospechosa = Column("fecha_clasificacion_sospechosa", Date, nullable=True)
+    creado_por      = Column("creado_por",      String(100), nullable=False)
+    creado_en       = Column("creado_en",       DateTime, nullable=False, default=ahora_utc)
+    actualizado_por = Column("actualizado_por", String(100), nullable=False)
+    actualizado_en  = Column("actualizado_en",  DateTime, nullable=False, default=ahora_utc, onupdate=ahora_utc)
+
+
+class CasoAlertaHistorial(Base):
+    """Historial append-only de cambios de estado (nunca se actualiza ni se borra)."""
+    __tablename__ = "CasosAlertaHistorial"
+    __table_args__ = (
+        Index("idx_casosalertahist_licencia_caso", "licenciaid", "caso_id"),
+        {"schema": "public"},
+    )
+
+    id              = Column("id",              UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    licenciaid      = Column("licenciaid",      UUID(as_uuid=True), nullable=False, index=True)
+    caso_id         = Column("caso_id",         UUID(as_uuid=True), nullable=False, index=True)
+    estado_anterior = Column("estado_anterior", String(40),  nullable=True)
+    estado_nuevo    = Column("estado_nuevo",    String(40),  nullable=False)
+    accion          = Column("accion",          String(40),  nullable=False)
+    fundamento      = Column("fundamento",      String(4000), nullable=False, default="")
+    usuario         = Column("usuario",         String(100), nullable=False)
+    rol             = Column("rol",             String(20),  nullable=False)
+    registrado_en   = Column("registrado_en",   DateTime, nullable=False, default=ahora_utc)
+
+
+class HistorialInmutableError(RuntimeError):
+    """Se lanza al intentar modificar o borrar registros protegidos por retención."""
+
+
+@event.listens_for(CasoAlertaHistorial, "before_update")
+def _historial_sin_update(mapper, connection, target):  # noqa: ARG001
+    raise HistorialInmutableError("CasosAlertaHistorial es append-only: no se permite actualizar.")
+
+
+@event.listens_for(CasoAlertaHistorial, "before_delete")
+def _historial_sin_delete(mapper, connection, target):  # noqa: ARG001
+    raise HistorialInmutableError("CasosAlertaHistorial es append-only: no se permite borrar.")
+
+
+@event.listens_for(CasoAlerta, "before_delete")
+def _caso_sin_delete(mapper, connection, target):  # noqa: ARG001
+    raise HistorialInmutableError("CasosAlerta tiene retención mínima de 5 años (Art. 34 Ley 6593): no se permite borrar.")

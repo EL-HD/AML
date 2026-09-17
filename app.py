@@ -50,7 +50,7 @@ from frontend import (
     mod_imperator_diagnostics, mod_sesion, mod_riesgo_ldft
 )
 from frontend.mod_sesion import _registrar_acceso_auditoria
-from frontend import cache_analisis, exportacion, navegacion, permisos, theme, ui_components
+from frontend import cache_analisis, casos_persistencia, exportacion, navegacion, permisos, theme, ui_components
 
 def _auditar(modulo: str, accion: str = "VISUALIZACION") -> None:
     """Registra acceso de sesión activa: Art. 19 Ley 6593."""
@@ -712,6 +712,7 @@ if vista not in navegacion.VISTAS_SIN_DATOS:
                 clear_analysis_cache()
                 for k in ["data", "data_raw", "archivo_nombre", "pep_cpe_info", "session_meta", "from_saml", "from_cache"]:
                     st.session_state.pop(k, None)
+                casos_persistencia.olvidar_hash_lote()
                 st.session_state.analysis_cache_id = str(uuid.uuid4())
                 st.rerun()
 def _sin_datos(nombre_vista: str) -> None:
@@ -727,6 +728,9 @@ def _sin_datos(nombre_vista: str) -> None:
 # ENRUTAMIENTO VISTAS
 # ============================================================
 data_ready = "data" in st.session_state
+if data_ready:
+    # Estados persistidos de casos (T1): visibles en Alertas, Resumen y Reportes
+    casos_persistencia.rehidratar_estados(st.session_state["data"][1])
 
 if vista == "Resumen Ejecutivo":
     if data_ready:

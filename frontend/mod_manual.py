@@ -57,10 +57,13 @@ def mostrar():
     |--------|-------------|
     | `Inusual_Pendiente` | Detectado por IMPERATOR, pendiente de revisión del analista |
     | `Inusual_Examinada` | Analista revisó y descartó escalamiento |
-    | `Sospechosa_Confirmada` | Analista confirmó: **requiere RTS ante la IVE (Art. 30)** |
+    | `Sospechosa_Propuesta` | Analista propone RTS; pendiente de aprobación (cuatro ojos) |
+    | `Sospechosa_Confirmada` | Oficial de Cumplimiento o Administrador (distinto del proponente) confirmó: **requiere RTS ante la IVE (Art. 30)** |
     | `Descartada` | Falso positivo documentado |
 
-    El analista selecciona el caso, registra el **Fundamento del Examen** (Art. 29) y guarda la clasificación. Al marcar `Sospechosa_Confirmada`, el sistema activa el generador de **RTS** en el módulo de Reportes.
+    El analista selecciona el caso, registra el **Fundamento del Examen** (Art. 29) y guarda la clasificación. Solo un Oficial de Cumplimiento o Administrador distinto de quien propuso puede aprobar `Sospechosa_Confirmada`; al aprobarse, el sistema activa el generador de **RTS** en el módulo de Reportes.
+
+    Los casos y su historial se guardan en la base de datos con una clave estable (licencia, hash del lote de transacciones y cliente): al volver a cargar el mismo lote se recuperan los estados. El historial es inmutable y no se admite borrado desde la aplicación (retención mínima de 5 años, Art. 34 Ley 6593).
 
     ## 4. Reportes Regulatorios IVE (Ley 6593)
     El módulo **Reportes** incluye una pestaña dedicada **RTS / RTE: IVE**:
