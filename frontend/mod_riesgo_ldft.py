@@ -123,7 +123,7 @@ def _tab_segmentacion(db, licenciaid, username):
     ui_components.section_title("Segmentos configurados")
     segmentos = crud.listar_segmentos(db, licenciaid)
     if not segmentos:
-        st.info("Aún no hay segmentos configurados.")
+        ui_components.empty_state("Sin segmentos configurados", "La segmentación agrupa clientes, productos, canales y zonas geográficas para medir el riesgo por factor.", "Use el formulario superior para agregar el primer segmento.")
         return
 
     df = pd.DataFrame([{
@@ -187,7 +187,7 @@ def _tab_eventos(db, licenciaid, username):
     ui_components.section_title("Eventos registrados")
     eventos = crud.listar_eventos(db, licenciaid)
     if not eventos:
-        st.info("Aún no hay eventos de riesgo registrados.")
+        ui_components.empty_state("Sin eventos de riesgo", "Cada evento describe una amenaza LD/FT con su probabilidad e impacto.", "Registre el primer evento con el formulario superior.")
         return
 
     controles_todos = crud.listar_controles(db, licenciaid)
@@ -280,7 +280,7 @@ def _tab_controles(db, licenciaid, username):
     ui_components.section_title("Controles registrados")
     controles = crud.listar_controles(db, licenciaid)
     if not controles:
-        st.info("Aún no hay controles registrados.")
+        ui_components.empty_state("Sin controles registrados", "Los controles mitigan los eventos de riesgo y reducen el riesgo residual.", "Registre el primer control con el formulario superior.")
         return
 
     df = pd.DataFrame([{
@@ -346,7 +346,7 @@ def _tab_planes(db, licenciaid, username):
     ui_components.section_title("Planes de acción registrados")
     planes = crud.listar_planes(db, licenciaid)
     if not planes:
-        st.info("Aún no hay planes de acción registrados.")
+        ui_components.empty_state("Sin planes de acción", "Los planes de acción atienden los eventos con riesgo residual Medio Alto o Alto.", "Cree un plan desde el formulario superior.")
         return
 
     mapa_eventos = {e.id: e for e in eventos}
@@ -433,7 +433,7 @@ def _tab_resultados(db, licenciaid):
     ui_components.section_title("Mapa de calor: Riesgo inherente de la Persona Obligada")
     eventos = crud.listar_eventos(db, licenciaid)
     if not eventos:
-        st.info("Registre eventos de riesgo para visualizar el mapa de calor.")
+        ui_components.empty_state("Mapa de calor no disponible", "Se necesita al menos un evento de riesgo medido.", "Vaya a la pestaña Eventos para registrarlo.")
         return
     _render_mapa_calor(eventos, key="mapa_calor_resultados")
     st.markdown("<br>", unsafe_allow_html=True)
@@ -446,7 +446,7 @@ def _tab_reportes(db, licenciaid):
     ui_components.section_title("Matriz de riesgo consolidada")
     eventos = crud.listar_eventos(db, licenciaid)
     if not eventos:
-        st.info("Registre eventos de riesgo para generar reportes.")
+        ui_components.empty_state("Reportes no disponibles", "Se necesita al menos un evento de riesgo medido.", "Vaya a la pestaña Eventos para registrarlo.")
         return
 
     _render_tabla_conteo(eventos)

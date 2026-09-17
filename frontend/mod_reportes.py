@@ -284,7 +284,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         story.append(kpi_row([
             ("Nivel de Riesgo",   label_c,                  color_c),
             ("Score IMPERATOR",   f"{score_c}/{score_max_teorico}", C_AMBER),
-            ("Total Transaccionado", f"Q{total_c:,.0f}",    C_BLUE),
+            ("Total Transaccionado", ui_components.fmt_moneda(total_c, 0),    C_BLUE),
             ("Num. Operaciones",  str(tx_c),                C_WHITE),
         ]))
         story.append(Spacer(1, 14))
@@ -302,7 +302,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
 
         alertas_info = [
             ("Monto Alto (Absoluto)", bool(datos_c["Alerta_Absoluto"].any()),
-             f"Umbral: Q{cfg['umbral_absoluto']:,}",  cfg["peso_absoluto"]),
+             f"Umbral: {ui_components.fmt_moneda(cfg['umbral_absoluto'])}",  cfg["peso_absoluto"]),
             ("Acumulado Mensual",     bool(datos_c["Alerta_Acumulado"].any()),
              f"Multiplicador: {cfg['mult_acumulado']}x perfil", cfg["peso_acumulado"]),
             ("Exceso sobre Perfil",   bool(datos_c["Alerta_15"].any()),
@@ -368,17 +368,17 @@ def mostrar(df, casos, matriz_alertas, cfg):
             [Paragraph("Indicador", S["tbl_head"]), Paragraph("Valor", S["tbl_head"]),
              Paragraph("Indicador", S["tbl_head"]), Paragraph("Valor", S["tbl_head"])],
             [Paragraph("Perfil esperado", S_CELL_L),
-             Paragraph(f"Q{perfil_c:,.0f}", S_CELL),
+             Paragraph(ui_components.fmt_moneda(perfil_c, 0), S_CELL),
              Paragraph("Total transaccionado", S_CELL_L),
-             Paragraph(f"Q{total_c:,.0f}", S_CELL)],
+             Paragraph(ui_components.fmt_moneda(total_c, 0), S_CELL)],
             [Paragraph("Monto promedio", S_CELL_L),
-             Paragraph(f"Q{media_c:,.0f}", S_CELL),
+             Paragraph(ui_components.fmt_moneda(media_c, 0), S_CELL),
              Paragraph("Desv. estandar", S_CELL_L),
-             Paragraph(f"Q{std_c:,.0f}", S_CELL)],
+             Paragraph(ui_components.fmt_moneda(std_c, 0), S_CELL)],
             [Paragraph("Monto maximo", S_CELL_L),
-             Paragraph(f"Q{monto_max_c:,.0f}", S_CELL),
+             Paragraph(ui_components.fmt_moneda(monto_max_c, 0), S_CELL),
              Paragraph("Monto minimo", S_CELL_L),
-             Paragraph(f"Q{monto_min_c:,.0f}", S_CELL)],
+             Paragraph(ui_components.fmt_moneda(monto_min_c, 0), S_CELL)],
             [Paragraph("N. operaciones", S_CELL_L),
              Paragraph(str(tx_c), S_CELL),
              Paragraph("Picos anomalos", S_CELL_L),
@@ -416,7 +416,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         ax.plot(datos_c["Fecha_str"], datos_c["Monto"],
                 color="#3b82f6", marker='o', markersize=4, linewidth=1.8, label="Monto")
         ax.axhline(y=perfil_c, linestyle='--', color="#f59e0b",
-                   linewidth=1.3, alpha=0.9, label=f"Perfil: Q{perfil_c:,.0f}")
+                   linewidth=1.3, alpha=0.9, label=f"Perfil: {ui_components.fmt_moneda(perfil_c, 0)}")
         above = datos_c["Monto"].values > perfil_c
         ax.fill_between(range(len(datos_c)), datos_c["Monto"].values,
                         perfil_c, where=above, alpha=0.15, color="#ef4444")
@@ -474,7 +474,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         tx_display = datos_c[["Fecha", "Monto", "Alerta_Absoluto",
                                "Alerta_15", "Smurfing", "Pico", "Score"]].copy()
         tx_display["Fecha"]   = tx_display["Fecha"].dt.strftime("%d/%m/%Y")
-        tx_display["Monto"]   = tx_display["Monto"].apply(lambda x: f"Q{x:,.0f}")
+        tx_display["Monto"]   = tx_display["Monto"].apply(lambda x: ui_components.fmt_moneda(x, 0))
         bool_cols = ["Alerta_Absoluto", "Alerta_15", "Smurfing", "Pico"]
         for bc in bool_cols:
             tx_display[bc] = tx_display[bc].apply(lambda x: "SI" if x else "\u2014")
@@ -493,7 +493,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         if "Cr\u00edtico" in nivel_c:
             concl = (f"El cliente <b>{h(cliente_sel)}</b> presenta un nivel de riesgo <b>CRITICO</b> "
                      f"con score AML de {h(score_c)}/{h(score_max_teorico)} y un volumen mensual de "
-                     f"Q{h(format(total_c, ',.0f'))}. Se recomienda iniciar una investigacion formal inmediata, "
+                     f"{h(ui_components.fmt_moneda(total_c, 0))}. Se recomienda iniciar una investigacion formal inmediata, "
                      f"documentar el expediente y evaluar la presentacion de un "
                      f"Reporte de Transaccion Sospechosa (RTS) ante la SIB (mediante la IVE).")
             accion = "ACCION INMEDIATA: Bloquear operaciones, notificar al Oficial de Cumplimiento y activar protocolo RTS."
@@ -764,7 +764,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
 
             if not pep_casos.empty:
                 pep_display = pep_casos[["Cliente", "Total_Mensual", "Score_Max", "Transacciones", "Nivel_Riesgo"]].copy()
-                pep_display["Total_Mensual"] = pep_display["Total_Mensual"].apply(lambda x: f"Q{x:,.0f}")
+                pep_display["Total_Mensual"] = pep_display["Total_Mensual"].apply(lambda x: ui_components.fmt_moneda(x, 0))
                 pep_display.columns = ["Cliente PEP", "Total Mensual", "Score", "Num. Ops", "Nivel Riesgo"]
                 story.append(Paragraph("Listado de asociados PEP", S["subsection"]))
                 story.append(df_to_table(pep_display, col_widths=[2.15*inch, 1.35*inch, 0.75*inch, 0.85*inch, 1.9*inch]))
@@ -772,7 +772,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
 
             if not cpe_casos.empty:
                 cpe_display = cpe_casos[["Cliente", "Total_Mensual", "Score_Max", "Transacciones", "Nivel_Riesgo"]].copy()
-                cpe_display["Total_Mensual"] = cpe_display["Total_Mensual"].apply(lambda x: f"Q{x:,.0f}")
+                cpe_display["Total_Mensual"] = cpe_display["Total_Mensual"].apply(lambda x: ui_components.fmt_moneda(x, 0))
                 cpe_display.columns = ["Cliente CPE", "Total Mensual", "Score", "Num. Ops", "Nivel Riesgo"]
                 story.append(Paragraph("Listado de asociados CPE", S["subsection"]))
                 story.append(df_to_table(cpe_display, col_widths=[2.15*inch, 1.35*inch, 0.75*inch, 0.85*inch, 1.9*inch]))
@@ -789,7 +789,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
             ubic_monto = df_riesgo_ubic.groupby("Ubicacion")["Monto"].sum().reset_index()
             ubic_monto.columns = ["Zona de Riesgo", "Volumen (Q)"]
             ubic_res = pd.merge(ubic_count, ubic_monto, on="Zona de Riesgo")
-            ubic_res["Volumen (Q)"] = ubic_res["Volumen (Q)"].apply(lambda x: f"Q{x:,.0f}")
+            ubic_res["Volumen (Q)"] = ubic_res["Volumen (Q)"].apply(lambda x: ui_components.fmt_moneda(x, 0))
             
             story.append(KeepTogether([
                 hb_sec_ubic, Spacer(1, 8),
@@ -807,7 +807,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
 
         top_casos = casos.sort_values("Score_Max", ascending=False).head(15).copy()
         top_casos["Nivel_Riesgo_txt"] = top_casos["Nivel_Riesgo"].apply(nivel_label)
-        top_casos["Total_Mensual"]    = top_casos["Total_Mensual"].apply(lambda x: f"Q{x:,.0f}")
+        top_casos["Total_Mensual"]    = top_casos["Total_Mensual"].apply(lambda x: ui_components.fmt_moneda(x, 0))
 
         tc_display = top_casos[["Cliente","Total_Mensual","Score_Max",
                                  "Transacciones","Nivel_Riesgo_txt"]].copy()
@@ -825,7 +825,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         sintesis = (
             f"Durante el periodo analizado se procesaron <b>{h(format(len(df), ','))} transacciones</b> "
             f"correspondientes a <b>{h(total_clientes)} clientes</b>, con un volumen total de "
-            f"<b>Q{h(format(monto_total_g, ',.0f'))}</b>. El motor IMPERATOR genero <b>{h(format(total_alertas_g, ','))} alertas</b> "
+            f"<b>{h(ui_components.fmt_moneda(monto_total_g, 0))}</b>. El motor IMPERATOR genero <b>{h(format(total_alertas_g, ','))} alertas</b> "
             f"distribuidas en {h(len(matriz_alertas))} tipos de reglas de deteccion.<br/><br/>"
             f"Se identificaron <b>{h(criticos_g)} cliente(s) en nivel CRITICO</b> "
             f"({h(format(pct_critico, '.1f'))}% del total), los cuales requieren atencion inmediata por parte "
@@ -850,7 +850,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
 
         recomendaciones = [
             f"Escalar de inmediato los {criticos_g} caso(s) CRITICO(S) al Oficial de Cumplimiento.",
-            f"Iniciar expediente formal para clientes con score >= {cfg['score_critico']} o volumen > Q{cfg['monto_critico']:,}.",
+            f"Iniciar expediente formal para clientes con score >= {cfg['score_critico']} o volumen > {ui_components.fmt_moneda(cfg['monto_critico'])}.",
             f"Revisar y actualizar el perfil KYC de los {altos_g} clientes en nivel ALTO en los proximos 5 dias habiles.",
         ]
 
@@ -858,7 +858,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
             recomendaciones.append(f"OPORTUNIDAD COMERCIAL: El canal {canal_f} lidera en uso. Se sugiere incentivar productos digitales con micro-segmentacion y notificaciones preventivas.")
         elif es_cash_g:
             recomendaciones.append(f"EFICIENCIA OPERATIVA: El alto uso de {canal_f} sugiere una oportunidad para migrar usuarios a banca digital mediante bonos de adopcion tecnologica.")
-            recomendaciones.append(f"SEGURIDAD: Reforzar la vigilancia y arqueos preventivos en los puntos que manejan {canal_f} debido al volumen detectado (Q{monto_t.max():,.0f}).")
+            recomendaciones.append(f"SEGURIDAD: Reforzar la vigilancia y arqueos preventivos en los puntos que manejan {canal_f} debido al volumen detectado ({ui_components.fmt_moneda(monto_t.max(), 0)}).")
         
         recomendaciones.extend([
             "Correlacionar picos de volumen detectados con fechas festivas, fin de mes o eventos externos relevantes.",
@@ -933,7 +933,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
             ("Nivel de Riesgo",   nivel,            nivel_color_rl(str(fila.get("Nivel_Riesgo", "")))),
             ("Score IMPERATOR",   str(score),        C_AMBER),
             ("Transacciones",     str(total_txs),    C_BLUE),
-            ("Monto Total",       f"Q{monto_cli:,.0f}", C_ORANGE),
+            ("Monto Total",       ui_components.fmt_moneda(monto_cli, 0), C_ORANGE),
         ]))
         story.append(Spacer(1, 16))
 
@@ -1042,7 +1042,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
             df_tx_show = df_cli[tx_present].copy()
             if "Monto" in df_tx_show.columns:
                 df_tx_show["Monto"] = df_tx_show["Monto"].apply(
-                    lambda x: f"Q{x:,.2f}" if pd.notna(x) else "N/D")
+                    lambda x: ui_components.fmt_moneda(x, 2) if pd.notna(x) else "N/D")
             df_tx_show = df_tx_show.rename(columns={
                 "TipoOperacion": "Canal", "Tipo_Instrumento": "Instrumento"})
             story.append(df_to_table(df_tx_show))
@@ -1179,7 +1179,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         story.append(kpi_row([
             ("Transacciones RTE",    str(n_rte),              C_RED),
             ("Clientes únicos", str(cli_unicos),          C_AMBER),
-            ("Monto total efectivo", f"Q{monto_rte:,.0f}",    C_ORANGE),
+            ("Monto total efectivo", ui_components.fmt_moneda(monto_rte, 0),    C_ORANGE),
             ("Umbral reportable",    "USD 10,000",             C_BLUE),
         ]))
         story.append(Spacer(1, 16))
@@ -1226,7 +1226,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
             df_rte_show = df_rte[tx_present].copy()
             if "Monto" in df_rte_show.columns:
                 df_rte_show["Monto"] = df_rte_show["Monto"].apply(
-                    lambda x: f"Q{x:,.2f}" if pd.notna(x) else "N/D")
+                    lambda x: ui_components.fmt_moneda(x, 2) if pd.notna(x) else "N/D")
             df_rte_show = df_rte_show.rename(columns={"TipoOperacion": "Canal"})
             cw = 7.0 / len(df_rte_show.columns) * inch
             story.append(df_to_table(df_rte_show, col_widths=[cw] * len(df_rte_show.columns)))
@@ -1296,7 +1296,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
             with col_p2:
                 ui_components.kpi("Score IMPERATOR", int(info_prev['Score_Max']), tone="amber")
             with col_p3:
-                ui_components.kpi("Total Mensual", f"Q{info_prev['Total_Mensual']:,.0f}", tone="blue")
+                ui_components.kpi("Total Mensual", ui_components.fmt_moneda(info_prev['Total_Mensual'], 0), tone="blue")
             with col_p4:
                 ui_components.kpi("Transacciones", int(info_prev['Transacciones']), tone="green")
 
@@ -1359,7 +1359,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
                     Nivel cr\u00edtico: <strong style="color:#ef4444;">{h(crit_g)}</strong> &nbsp;\u00b7&nbsp;
                     Nivel alto: <strong style="color:#f97316;">{h(alto_g)}</strong><br>
                     Alertas totales: <strong style="color:#f59e0b;">{h(format(at_g, ','))}</strong><br>
-                    Volumen: <strong style="color:#3b82f6;">Q{h(format(vol_g, ',.0f'))}</strong>
+                    Volumen: <strong style="color:#3b82f6;">{h(ui_components.fmt_moneda(vol_g, 0))}</strong>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -1427,7 +1427,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
                         ui_components.kpi("Score IMPERATOR", int(fila_prev.get("Score_Max", 0)), tone="amber")
                     with col_p3:
                         monto_p = df[df["Cliente"] == caso_rts]["Monto"].sum() if "Monto" in df.columns else 0
-                        ui_components.kpi("Monto Total", f"Q{monto_p:,.0f}", tone="blue")
+                        ui_components.kpi("Monto Total", ui_components.fmt_moneda(monto_p, 0), tone="blue")
                     with col_p4:
                         fund = str(fila_prev.get("Fundamento_Examen", ""))
                         estado_fund = "Registrado" if fund and fund not in ("nan", "N/D", "") else "Pendiente"
@@ -1488,7 +1488,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
                         ui_components.kpi("Clientes únicos", cli_u, tone="amber")
                     with col_r3:
                         monto_rte_prev = df_rte_prev["Monto"].sum() if "Monto" in df_rte_prev.columns else 0
-                        ui_components.kpi("Monto total efectivo", f"Q{monto_rte_prev:,.0f}", tone="orange")
+                        ui_components.kpi("Monto total efectivo", ui_components.fmt_moneda(monto_rte_prev, 0), tone="orange")
 
                     st.warning(
                         f"⚠️ {n_rte_prev} transacción(es) requieren RTE ante la IVE (Art. 31 Ley 6593)")

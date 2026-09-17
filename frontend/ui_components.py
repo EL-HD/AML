@@ -85,12 +85,25 @@ def empty_state(titulo: str, descripcion: str, accion: Optional[str] = None) -> 
     ))
 
 
+def moneda_actual() -> str:
+    """Código de moneda configurado (GTQ o USD)."""
+    cfg = st.session_state.get("aml_config") or {}
+    moneda = cfg.get("moneda", "GTQ") if isinstance(cfg, dict) else "GTQ"
+    return moneda if moneda in ("GTQ", "USD") else "GTQ"
+
+
+def simbolo_moneda(moneda: Optional[str] = None) -> str:
+    return "US$" if (moneda or moneda_actual()) == "USD" else "Q"
+
+
+def etiqueta_monto(texto: str = "Monto") -> str:
+    """Etiqueta de columna o eje con la moneda configurada, por ejemplo 'Monto (Q)'."""
+    return f"{texto} ({simbolo_moneda()})"
+
+
 def fmt_moneda(valor, decimales: int = 0, moneda: Optional[str] = None) -> str:
     """Formato único de moneda (U-08). Usa la moneda configurada (GTQ por defecto)."""
-    if moneda is None:
-        cfg = st.session_state.get("aml_config") or {}
-        moneda = cfg.get("moneda", "GTQ") if isinstance(cfg, dict) else "GTQ"
-    simbolo = "US$" if moneda == "USD" else "Q"
+    simbolo = simbolo_moneda(moneda)
     try:
         numero = float(valor)
     except (TypeError, ValueError):

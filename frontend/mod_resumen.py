@@ -54,7 +54,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
             ui_components.kpi("Total de Alertas", format(total_alertas, ','), f"{altos} clientes en nivel Alto", tone="amber")
         with c2:
             ui_components.kpi("Clientes Críticos", criticos, "Requieren revisión inmediata", tone="red")
-            ui_components.kpi("Volumen Total", f"Q{monto_total:,.0f}", "Monto acumulado analizado", tone="green")
+            ui_components.kpi("Volumen Total", ui_components.fmt_moneda(monto_total, 0), "Monto acumulado analizado", tone="green")
 
     # ── KPIs de gestión de alertas (Arts. 28-30 Ley 6593) ────────────────────
     if "Estado_Alerta" in casos.columns:
@@ -198,7 +198,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
         fig_tipo = go.Figure(go.Bar(
             x=flujo_tipo["TipoOperacion"], y=flujo_tipo["Monto"],
             marker=dict(color="#f97316", line=dict(color='#0d1117', width=0.5)),
-            text=[f"Q{v/1000:,.0f}k" if v >= 1000 else f"Q{v:,.0f}" for v in flujo_tipo["Monto"]],
+            text=[f"{ui_components.fmt_moneda(v/1000, 0)}k" if v >= 1000 else ui_components.fmt_moneda(v, 0) for v in flujo_tipo["Monto"]],
             textposition='auto',
             textfont=dict(color='#f8fafc', size=11),
             hovertemplate="<b>%{x}</b><br>Total: <b>Q%{y:,.0f}</b><extra></extra>"
@@ -330,7 +330,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
                 cols_existentes = [c for c in cols_mostrar if c in clientes_pep.columns]
                 df_pep_show = clientes_pep[cols_existentes].copy()
                 if "Total_Mensual" in df_pep_show.columns:
-                    df_pep_show["Total_Mensual"] = df_pep_show["Total_Mensual"].apply(lambda x: f"Q{x:,.2f}")
+                    df_pep_show["Total_Mensual"] = df_pep_show["Total_Mensual"].apply(lambda x: ui_components.fmt_moneda(x, 2))
                 if "Score_Max" in df_pep_show.columns:
                     df_pep_show["Score_Max"] = df_pep_show["Score_Max"].apply(lambda x: f"{x:.2f}")
                 df_pep_show.columns = [c.replace("_", " ") for c in df_pep_show.columns]
@@ -352,7 +352,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
                 cols_existentes = [c for c in cols_mostrar if c in clientes_cpe.columns]
                 df_cpe_show = clientes_cpe[cols_existentes].copy()
                 if "Total_Mensual" in df_cpe_show.columns:
-                    df_cpe_show["Total_Mensual"] = df_cpe_show["Total_Mensual"].apply(lambda x: f"Q{x:,.2f}")
+                    df_cpe_show["Total_Mensual"] = df_cpe_show["Total_Mensual"].apply(lambda x: ui_components.fmt_moneda(x, 2))
                 if "Score_Max" in df_cpe_show.columns:
                     df_cpe_show["Score_Max"] = df_cpe_show["Score_Max"].apply(lambda x: f"{x:.2f}")
                 df_cpe_show.columns = [c.replace("_", " ") for c in df_cpe_show.columns]

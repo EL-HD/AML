@@ -83,7 +83,7 @@ def mostrar(casos):
     """, unsafe_allow_html=True)
     tabla_casos = casos_view.copy()
     if "Total_Mensual" in tabla_casos.columns:
-        tabla_casos["Total_Mensual"] = tabla_casos["Total_Mensual"].map(lambda v: f"Q{v:,.2f}")
+        tabla_casos["Total_Mensual"] = tabla_casos["Total_Mensual"].map(lambda v: ui_components.fmt_moneda(v, 2))
     if "Score_Max" in tabla_casos.columns:
         tabla_casos["Score_Max"] = tabla_casos["Score_Max"].map(lambda v: f"{v:.2f} pts")
     for col in ["ST_Max", "SC_Max", "SB_Max", "SN_Max"]:

@@ -40,7 +40,7 @@ def mostrar(df, casos, cfg):
     with col3:
         ui_components.kpi("Transacciones", int(info_cliente['Transacciones']), tone="blue")
     with col4:
-        ui_components.kpi("Total Mensual", f"Q{info_cliente['Total_Mensual']:,.0f}", tone="green")
+        ui_components.kpi("Total Mensual", ui_components.fmt_moneda(info_cliente['Total_Mensual'], 0), tone="green")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -91,7 +91,7 @@ def mostrar(df, casos, cfg):
 
     # Construcción de resumen manual basado en reglas
     resumen_manual = f"El cliente presenta un nivel de riesgo {nivel_c} con un score acumulado de {score_max_c}/12. "
-    resumen_manual += f"En el período analizado, realizó {transac_c} transacciones por un volumen total de Q{total_c:,.2f}, frente a un perfil esperado de Q{perfil_c:,.2f}. "
+    resumen_manual += f"En el período analizado, realizó {transac_c} transacciones por un volumen total de {ui_components.fmt_moneda(total_c, 2)}, frente a un perfil esperado de {ui_components.fmt_moneda(perfil_c, 2)}. "
 
     alertas_list = []
     if picos_count > 0: alertas_list.append(f"{picos_count} pico(s) estadísticos(s)")
@@ -159,7 +159,7 @@ def mostrar(df, casos, cfg):
     ))
     fig_tend.add_trace(go.Scatter(
         x=datos["Fecha_str"], y=[perfil_val]*len(datos),
-        mode='lines', name=f'Perfil: Q{perfil_val:,.0f}',
+        mode='lines', name=f'Perfil: {ui_components.fmt_moneda(perfil_val, 0)}',
         line=dict(color='#f59e0b', width=1.5, dash='dash'),
         hovertemplate="Perfil: <b>Q%{y:,.0f}</b><extra></extra>",
     ))
@@ -172,7 +172,7 @@ def mostrar(df, casos, cfg):
         name='Exceso'
     ))
     fig_tend.update_layout(plotly_dark_layout(
-        yaxis_title="Monto (Q)", height=320,
+        yaxis_title=ui_components.etiqueta_monto("Monto"), height=320,
         xaxis=dict(tickangle=-45, gridcolor='#30353d', linecolor='#30353d', tickfont=dict(color='#d8c3ad', size=9)),
     ))
     st.plotly_chart(fig_tend, use_container_width=True)

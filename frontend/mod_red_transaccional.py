@@ -143,7 +143,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
     df_red = df_red[df_red["Monto"] >= monto_min]
 
     if df_red.empty:
-        st.info("No hay transacciones con los filtros aplicados.")
+        ui_components.empty_state("Sin transacciones para los filtros", "Ninguna operación cumple los criterios seleccionados.", "Amplíe el rango de fechas o reduzca el nivel mínimo de riesgo.")
         return
 
     # Mapa de scores por cliente
@@ -270,10 +270,10 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
             mode="markers+text",
             marker=dict(symbol="arrow", size=10, color="#f59e0b",
                         angle=math.degrees(math.atan2(y1 - y0, x1 - x0))),
-            text=[f"Q{h(format(monto_arista, ',.0f'))}<br>{h(n_tx_arista)} tx"] if mostrar_etiquetas else [""],
+            text=[f"{h(ui_components.fmt_moneda(monto_arista, 0))}<br>{h(n_tx_arista)} tx"] if mostrar_etiquetas else [""],
             textposition="top center",
             textfont=dict(color="#a7b0bb", size=9),
-            hovertemplate=f"<b>{h(u)} → {h(v)}</b><br>Monto: Q{h(format(monto_arista, ',.0f'))}<br>Transacciones: {h(n_tx_arista)}<extra></extra>",
+            hovertemplate=f"<b>{h(u)} → {h(v)}</b><br>Monto: {h(ui_components.fmt_moneda(monto_arista, 0))}<br>Transacciones: {h(n_tx_arista)}<extra></extra>",
             showlegend=False,
         ))
 
@@ -355,7 +355,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
         "Nivel_Origen": "Nivel origen",
         "Nivel_Destino": "Nivel destino",
     }).copy()
-    df_relaciones["Monto total"] = df_relaciones["Monto total"].map(lambda v: f"Q{v:,.2f}")
+    df_relaciones["Monto total"] = df_relaciones["Monto total"].map(lambda v: ui_components.fmt_moneda(v, 2))
     st.markdown(render_html_table(df_relaciones, max_height=520), unsafe_allow_html=True)
 
     # Leyenda de colores

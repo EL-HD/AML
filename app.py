@@ -460,6 +460,17 @@ def _leer_excel(contenido: bytes, nombre: str) -> pd.DataFrame:
     return pd.read_excel(io.BytesIO(contenido), nrows=mod_sesion.MAX_FILAS + 1)
 
 
+@st.cache_data(show_spinner=False)
+def _plantilla_excel() -> bytes:
+    """Plantilla descargable con las columnas requeridas y una fila de ejemplo (U-10)."""
+    ejemplo = pd.DataFrame([{
+        "Fecha": "2026-01-15", "Cliente": "Cliente Ejemplo S.A.", "EsPEP": "NO", "EsCPE": "NO",
+        "Monto": 15000.00, "Perfil": 20000.00, "Ubicacion": "Guatemala", "UbicacionRiesgo": "NO",
+        "TipoOperacion": "Depósito", "Cliente_Destino": "Proveedor Ejemplo",
+    }])
+    return exportacion.xlsx_bytes(ejemplo, hoja="Transacciones")
+
+
 def _estado_motor() -> tuple:
     """Estado real del motor para el encabezado: datos cargados y API de autenticación disponible."""
     datos_cargados = "data" in st.session_state
@@ -586,7 +597,16 @@ if vista not in navegacion.VISTAS_SIN_DATOS:
             </div>
             """, unsafe_allow_html=True)
 
-            archivo = st.file_uploader("Subir archivo Excel", type=["xlsx"], label_visibility="collapsed")
+            col_up, col_tpl = st.columns([3, 1])
+            with col_tpl:
+                exportacion.boton_descarga(
+                    "Descargar plantilla Excel", data=_plantilla_excel(), file_name="plantilla_sovereign_aml.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True, modulo="Carga de datos",
+                    help="Plantilla con las columnas requeridas y una fila de ejemplo.",
+                )
+            with col_up:
+                archivo = st.file_uploader("Archivo Excel de transacciones (.xlsx)", type=["xlsx"])
 
             if archivo:
                 with st.spinner("Procesando inteligencia AML..."):
@@ -694,6 +714,15 @@ if vista not in navegacion.VISTAS_SIN_DATOS:
                     st.session_state.pop(k, None)
                 st.session_state.analysis_cache_id = str(uuid.uuid4())
                 st.rerun()
+def _sin_datos(nombre_vista: str) -> None:
+    """Estado vacío estándar para vistas que requieren un análisis cargado (U-09)."""
+    ui_components.empty_state(
+        f"{nombre_vista}: sin datos para mostrar",
+        "Cargue un archivo Excel de transacciones o restaure una sesión .saml para activar este módulo.",
+        "Vaya a Monitoreo > Resumen Ejecutivo para iniciar un análisis.",
+    )
+
+
 # ============================================================
 # ENRUTAMIENTO VISTAS
 # ============================================================
@@ -703,34 +732,34 @@ if vista == "Resumen Ejecutivo":
     if data_ready:
         pep_cpe_info_s = st.session_state.get("pep_cpe_info", {})
         mod_resumen.mostrar(*st.session_state["data"], pep_cpe_info_s)
-    else: st.info("Sube un archivo.")
+    else: _sin_datos(vista)
 
 elif vista == "Casos de Alerta":
     _auditar("Casos de Alerta")
     if data_ready: mod_alertas.mostrar(st.session_state["data"][1])
-    else: st.info("Sube un archivo.")
+    else: _sin_datos(vista)
 
 elif vista == "Transacciones":
     if data_ready: mod_transacciones.mostrar(st.session_state["data"][0])
-    else: st.info("Sube un archivo.")
+    else: _sin_datos(vista)
 
 elif vista == "Análisis por Cliente":
     _auditar("Análisis por Cliente")
     if data_ready: mod_cliente.mostrar(st.session_state["data"][0], st.session_state["data"][1], st.session_state["aml_config"])
-    else: st.info("Sube un archivo.")
+    else: _sin_datos(vista)
 
 elif vista == "Matrices de Riesgo":
     if data_ready: mod_matrices.mostrar(st.session_state["data"][1], st.session_state["data"][2])
-    else: st.info("Sube un archivo.")
+    else: _sin_datos(vista)
 
 elif vista == "Red Transaccional":
     if data_ready: mod_red_transaccional.mostrar(st.session_state["data"][0], st.session_state["data"][1])
-    else: st.info("Sube un archivo.")
+    else: _sin_datos(vista)
 
 elif vista == "Acciones de Mitigación":
     _auditar("Acciones de Mitigación")
     if data_ready: mod_mitigacion.mostrar(st.session_state["data"][0], st.session_state["data"][1])
-    else: st.info("Sube un archivo.")
+    else: _sin_datos(vista)
 
 elif vista == "Imperator Diagnostics":
     if data_ready:
@@ -739,7 +768,7 @@ elif vista == "Imperator Diagnostics":
             st.session_state["data"][1],
             st.session_state["aml_config"]
         )
-    else: st.info("Sube un archivo para activar el módulo Imperator Diagnostics.")
+    else: _sin_datos(vista)
 
 elif vista == "Gestión de Ubicaciones":
     mod_ubicaciones.mostrar()
@@ -751,7 +780,7 @@ elif vista == "Riesgo Institucional LD/FT":
 elif vista == "Informes y Reportes":
     _auditar("Informes y Reportes")
     if data_ready: mod_reportes.mostrar(*st.session_state["data"], st.session_state["aml_config"])
-    else: st.info("Sube un archivo.")
+    else: _sin_datos(vista)
 
 elif vista == "Configuración":
     _auditar("Configuración")

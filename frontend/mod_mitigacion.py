@@ -158,7 +158,7 @@ def mostrar(df, casos):
         st.markdown(f"""
         <div style="background:#1b1027; border-left:4px solid #b47cf7; padding:14px; margin-bottom:16px; font-size:12px; color:#d8c3ad;">
             <span style="color:#b47cf7; font-weight:700; font-family:'IBM Plex Mono',monospace;">VERIFICACIÓN FEIS → FEIC ACTIVA</span>
-            &nbsp;|&nbsp; Umbral configurado: <strong>Q{h(format(umbral_feic, ','))}</strong><br>
+            &nbsp;|&nbsp; Umbral configurado: <strong>{h(ui_components.fmt_moneda(umbral_feic))}</strong><br>
             Los asociados que superen este monto mensual recibirán la acción <strong>F-01</strong>:
             actualización de FEIS a FEIC (Formulario Electrónico de Información del Cliente).
         </div>""", unsafe_allow_html=True)
@@ -198,7 +198,7 @@ def mostrar(df, casos):
     df_filtrado = casos if nivel_filtro == "Todos" else casos[casos["Nivel_Riesgo"] == nivel_filtro]
 
     if df_filtrado.empty:
-        st.info("No hay clientes con el nivel seleccionado.")
+        ui_components.empty_state("Sin clientes en este nivel", "No hay asociados clasificados con el nivel de riesgo seleccionado.", "Seleccione otro nivel en el filtro superior.")
         return
 
     # Construir tabla de acciones

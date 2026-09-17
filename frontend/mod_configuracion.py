@@ -571,6 +571,13 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
     col_btn1, col_btn2, col_btn3 = st.columns([2, 2, 2])
 
     with col_btn1:
+        c["moneda"] = st.selectbox(
+            "Moneda de presentación", options=["GTQ", "USD"],
+            index=0 if c.get("moneda", "GTQ") == "GTQ" else 1,
+            help="Moneda con la que se muestran montos y umbrales en toda la plataforma. "
+                 "El umbral RTE del Art. 31 se mantiene en USD por mandato legal.",
+            disabled=not puede_editar,
+        )
         if st.button("Aplicar Configuración", type="primary", use_container_width=True, disabled=not puede_editar):
             errores = []
             if c["score_medio"] >= c["score_alto"]:
