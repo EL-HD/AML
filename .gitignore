@@ -36,3 +36,8 @@ htmlcov/
 
 # Salida de herramienta local de grafos
 graphify-out/
+
+# Documentos y datos de prueba sin uso funcional (no son codigo ni los referencia la plataforma)
+*.docx
+*.pdf
+transacciones_prueba.xlsx
