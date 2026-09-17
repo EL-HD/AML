@@ -1,3 +1,4 @@
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from . import models, schemas
 from datetime import date, datetime
@@ -13,6 +14,30 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
     except Exception:
         return False
+
+def sesion_vigente(db: Session, session_id):
+    """
+    Devuelve la Licencia asociada a session_id solo si esa sesión es la más
+    reciente registrada para la licencia (control de sesión única). Si el
+    session_id no existe, no es UUID válido o fue desplazado por otro login,
+    devuelve None.
+    """
+    try:
+        sid = session_id if isinstance(session_id, uuid.UUID) else uuid.UUID(str(session_id))
+    except (ValueError, TypeError, AttributeError):
+        return None
+    sesion = db.query(models.BitacoraSesions).filter(models.BitacoraSesions.sessionid == sid).first()
+    if sesion is None:
+        return None
+    ultima = (
+        db.query(models.BitacoraSesions)
+        .filter(models.BitacoraSesions.licenciaid == sesion.licenciaid)
+        .order_by(desc(models.BitacoraSesions.last_activity), desc(models.BitacoraSesions.sessionid))
+        .first()
+    )
+    if ultima is None or ultima.sessionid != sesion.sessionid:
+        return None
+    return db.query(models.Licencia).filter(models.Licencia.licence_id == sesion.licenciaid).first()
 
 def get_licencia(db: Session, licencia_id: int):
     return db.query(models.Licencia).filter(models.Licencia.id == licencia_id).first()

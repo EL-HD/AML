@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Date, DateTime, Boolean, text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Uuid as UUID  # tipo genérico: UUID nativo en PostgreSQL, CHAR(32) en SQLite (pruebas)
 from .database import Base
 import uuid
 from datetime import datetime

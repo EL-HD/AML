@@ -44,6 +44,7 @@ class AuthResponse(BaseModel):
     message: str
     licencia: Optional[Licencia] = None
     access_token: Optional[str] = None
+    session_id: Optional[str] = None
 
 class Token(BaseModel):
     access_token: str

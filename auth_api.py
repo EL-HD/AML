@@ -88,23 +88,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     except jwt.PyJWTError:
         raise credentials_exception
     
-    # 1. Buscar el registro de esta sesión específica
-    current_session = db.query(models.BitacoraSesions).filter(models.BitacoraSesions.sessionid == token_data.session_id).first()
-    if current_session is None:
-        raise credentials_exception
-    
-    # 2. Verificar si es la sesión MÁS RECIENTE para esta licencia
-    # Esto permite mantener el historial pero solo autorizar al último que entró
-    latest_session = db.query(models.BitacoraSesions)\
-        .filter(models.BitacoraSesions.licenciaid == current_session.licenciaid)\
-        .order_by(desc(models.BitacoraSesions.last_activity))\
-        .first()
-    
-    if latest_session is None or latest_session.sessionid != current_session.sessionid:
-        raise credentials_exception
-    
-    # 3. Obtener el usuario asociado
-    user = db.query(models.Licencia).filter(models.Licencia.licence_id == current_session.licenciaid).first()
+    user = crud.sesion_vigente(db, token_data.session_id)
     if user is None:
         raise credentials_exception
     return user
@@ -199,7 +183,8 @@ def validate_user(auth: schemas.AuthRequest, request: Request, db: Session = Dep
         "is_active": is_active,
         "message": message,
         "licencia": licencia,
-        "access_token": token
+        "access_token": token,
+        "session_id": licencia.current_session_id if (is_active and licencia) else None,
     }
 
 if __name__ == "__main__":

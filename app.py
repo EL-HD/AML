@@ -13,9 +13,6 @@ import plotly.graph_objects as go
 import streamlit.components.v1 as components
 import requests
 import base64
-import hashlib
-import hmac
-import json
 import re
 import tempfile
 import time
@@ -27,6 +24,10 @@ from datetime import date, datetime, timedelta
 
 # --- Importaciones Modulares ---
 from backend.procesador import validar_columnas, procesar_transacciones
+from backend import crud, schemas, session_token
+from backend.database import SessionLocal
+from sqlalchemy.exc import SQLAlchemyError
+import logging
 from frontend import (
     mod_resumen, mod_alertas, mod_transacciones,
     mod_cliente, mod_matrices, mod_manual,
@@ -52,6 +53,8 @@ if "access_token" not in st.session_state:
     st.session_state.access_token = None
 if "user_data" not in st.session_state:
     st.session_state.user_data = None
+if "session_id" not in st.session_state:
+    st.session_state.session_id = None
 if "last_activity_at" not in st.session_state:
     st.session_state.last_activity_at = datetime.now()
 
@@ -154,48 +157,40 @@ def clear_analysis_cache():
             pass
 
 
-def _session_sign_key() -> bytes | None:
-    """Retorna la clave para firmar payloads de sesión, o None si no está configurada."""
-    key = os.getenv("SESSION_SIGN_KEY", "")
-    return key.encode() if key else None
+def _usuario_a_dict(usuario) -> dict:
+    """Serializa una Licencia ORM con la misma forma que devuelve la API de autenticación."""
+    return schemas.Licencia.model_validate(usuario).model_dump(mode="json")
 
 
-def _encode_session_payload(user_data) -> str:
-    """Codifica user_data en base64 y le añade firma HMAC-SHA256 (C1 fix)."""
-    payload = json.dumps(user_data or {}, ensure_ascii=False).encode("utf-8")
-    b64 = base64.urlsafe_b64encode(payload).decode("ascii")
-    key = _session_sign_key()
-    if not key:
-        return b64
-    sig = hmac.new(key, b64.encode("ascii"), digestmod=hashlib.sha256).hexdigest()
-    return f"{b64}.{sig}"
-
-
-def _decode_session_payload(token: str):
-    """Verifica la firma HMAC y decodifica el payload de sesión (C1 fix)."""
+def _restaurar_desde_token(token: str):
+    """
+    Restaura la sesión únicamente si el token está firmado, vigente y su session_id
+    sigue siendo la sesión más reciente de la licencia (control de sesión única).
+    Devuelve (user_data, session_id) o (None, None).
+    """
+    datos = session_token.verificar_restauracion(token)
+    if not datos:
+        return None, None
+    db = SessionLocal()
     try:
-        key = _session_sign_key()
-        if key:
-            parts = token.rsplit(".", 1)
-            if len(parts) != 2:
-                return None
-            b64, sig = parts
-            expected = hmac.new(key, b64.encode("ascii"), digestmod=hashlib.sha256).hexdigest()
-            if not hmac.compare_digest(sig, expected):
-                return None
-        else:
-            b64 = token
-        data = base64.urlsafe_b64decode(b64.encode("ascii"))
-        parsed = json.loads(data.decode("utf-8"))
-        return parsed if isinstance(parsed, dict) else None
-    except Exception:
-        return None
+        usuario = crud.sesion_vigente(db, datos["sid"])
+        if usuario is None or str(usuario.licence_id) != datos["lid"]:
+            return None, None
+        if usuario.fecha_expiracion < date.today():
+            return None, None
+        return _usuario_a_dict(usuario), datos["sid"]
+    except SQLAlchemyError:
+        logging.getLogger(__name__).exception("No se pudo validar la sesión restaurada en la base de datos.")
+        return None, None
+    finally:
+        db.close()
 
 
 def _logout_session(timed_out=False):
     st.session_state.authenticated = False
     st.session_state.user_data = None
     st.session_state.access_token = None
+    st.session_state.session_id = None
     st.session_state.last_activity_at = datetime.now()
     clear_analysis_cache()
     for key in ["data", "data_raw", "aml_config", "archivo_nombre",
@@ -215,18 +210,21 @@ if st.query_params.get(SESSION_TIMEOUT_QUERY_PARAM) == "1":
 
 
 if st.query_params.get(SESSION_RESTORE_QUERY_PARAM) == "1":
-    restored_user = _decode_session_payload(st.query_params.get(SESSION_RESTORE_PAYLOAD_PARAM, ""))
+    restored_user, restored_sid = _restaurar_desde_token(
+        str(st.query_params.get(SESSION_RESTORE_PAYLOAD_PARAM, ""))
+    )
     if restored_user:
         st.session_state.authenticated = True
         st.session_state.user_data = restored_user
         st.session_state.access_token = None
+        st.session_state.session_id = restored_sid
         st.session_state.last_activity_at = datetime.now()
-    if SESSION_RESTORE_QUERY_PARAM in st.query_params:
-        del st.query_params[SESSION_RESTORE_QUERY_PARAM]
-    if SESSION_RESTORE_PAYLOAD_PARAM in st.query_params:
-        del st.query_params[SESSION_RESTORE_PAYLOAD_PARAM]
-    if restored_user:
-        st.rerun()
+    else:
+        st.session_state.clear_browser_session = True
+    for param in (SESSION_RESTORE_QUERY_PARAM, SESSION_RESTORE_PAYLOAD_PARAM):
+        if param in st.query_params:
+            del st.query_params[param]
+    st.rerun()
 
 
 if st.session_state.authenticated:
@@ -239,7 +237,10 @@ if st.session_state.authenticated:
 
 
 def session_timeout_guard():
-    session_payload = _encode_session_payload(st.session_state.get("user_data", {}))
+    user_data = st.session_state.get("user_data") or {}
+    session_payload = session_token.firmar_restauracion(
+        user_data.get("licence_id"), st.session_state.get("session_id")
+    ) or ""
     analysis_cache_id = st.session_state.get("analysis_cache_id", "")
     components.html(f"""
     <script>
@@ -260,6 +261,10 @@ def session_timeout_guard():
         }}
 
         function persistSession() {{
+            if (!SESSION_PAYLOAD) {{
+                window.parent.localStorage.removeItem(STORAGE_KEY);
+                return;
+            }}
             window.parent.localStorage.setItem(STORAGE_KEY, JSON.stringify({{
                 payload: SESSION_PAYLOAD,
                 analysisCacheId: ANALYSIS_CACHE_ID,
@@ -517,6 +522,7 @@ def login_flow():
                             st.session_state.authenticated = True
                             st.session_state.user_data = data.get("licencia")
                             st.session_state.access_token = data.get("access_token")
+                            st.session_state.session_id = data.get("session_id")
                             st.session_state.last_activity_at = datetime.now()
                             st.rerun()
                         else:

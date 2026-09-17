@@ -1,28 +1,16 @@
 """
-Utilidades de base de datos para pruebas: motor SQLite en memoria con el
-esquema "public" adjunto (los modelos usan schema="public").
+Utilidades de base de datos para pruebas. Reutiliza el motor de backend.database
+(SQLite en memoria cuando DATABASE_URL=sqlite://, fijado en tests/conftest.py).
 """
-from sqlalchemy import create_engine, event
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
-
 from backend import models
+from backend.database import SessionLocal, engine
 
 
 def crear_engine_pruebas():
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-
-    @event.listens_for(engine, "connect")
-    def _adjuntar_public(dbapi_conn, _record):
-        dbapi_conn.execute("ATTACH DATABASE ':memory:' AS public")
-
+    models.Base.metadata.drop_all(bind=engine)
     models.Base.metadata.create_all(bind=engine)
     return engine
 
 
-def crear_session_factory(engine):
-    return sessionmaker(autocommit=False, autoflush=False, bind=engine)
+def crear_session_factory(_engine=None):
+    return SessionLocal
