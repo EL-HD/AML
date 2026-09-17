@@ -755,3 +755,279 @@ div[data-testid="stFileUploader"] section button {
 .sovereign-table th:last-child,
 .sovereign-table td:last-child { border-right: none; }
 .sovereign-table tbody tr:last-child td { border-bottom: none; }
+
+/* ---- T9: TONOS Y UTILIDADES (sustituyen estilos inline) ----
+   Un tono fija la variable --sv-tone en el elemento; los componentes que
+   siguen la leen para color, borde o fondo suave. Al heredarse, un tono puesto
+   en el contenedor colorea también a sus hijos que usen .tx o .kicker. */
+.tone-danger { --sv-tone: var(--sv-peligro);          --sv-tone-soft: rgba(239, 68, 68, 0.13); }
+.tone-warn   { --sv-tone: var(--sv-advertencia);      --sv-tone-soft: rgba(249, 115, 22, 0.13); }
+.tone-yellow { --sv-tone: var(--sv-amarillo);         --sv-tone-soft: rgba(234, 179, 8, 0.13); }
+.tone-ok     { --sv-tone: var(--sv-exito-texto);      --sv-tone-soft: rgba(34, 197, 94, 0.13); }
+.tone-green  { --sv-tone: var(--sv-exito);            --sv-tone-soft: rgba(16, 185, 129, 0.13); }
+.tone-info   { --sv-tone: var(--sv-info);             --sv-tone-soft: rgba(59, 130, 246, 0.13); }
+.tone-violet { --sv-tone: var(--sv-violeta);          --sv-tone-soft: rgba(180, 124, 247, 0.13); }
+.tone-accent { --sv-tone: var(--sv-acento);           --sv-tone-soft: rgba(245, 158, 11, 0.13); }
+.tone-muted  { --sv-tone: var(--sv-texto-secundario); --sv-tone-soft: rgba(167, 176, 187, 0.13); }
+.tone-strong { --sv-tone: var(--sv-texto-fuerte);     --sv-tone-soft: rgba(240, 246, 252, 0.13); }
+.tone-white  { --sv-tone: var(--sv-blanco);           --sv-tone-soft: rgba(255, 255, 255, 0.13); }
+.tone-sky    { --sv-tone: var(--sv-info-claro);       --sv-tone-soft: rgba(124, 199, 255, 0.13); }
+
+.tx          { color: var(--sv-tone, inherit); }
+.tx-strong   { color: var(--sv-texto-fuerte); }
+.tx-muted    { color: var(--sv-texto-secundario); }
+.tx-tenue    { color: var(--sv-texto-tenue); }
+.tx-tertiary { color: var(--sv-texto-terciario); }
+.tx-sky      { color: var(--sv-info-claro); }
+.fw-600 { font-weight: 600; }
+.fw-700 { font-weight: 700; }
+.mono   { font-family: var(--sv-font-mono); }
+.fs-12  { font-size: var(--sv-font-minima); }
+.fs-13  { font-size: var(--sv-font-pequena); }
+.text-center { text-align: center; }
+.mt-0  { margin-top: 0; }
+.mt-5  { margin-top: 5px; }
+.mt-10 { margin-top: 10px; }
+.mt-12 { margin-top: 12px; }
+.mt-neg-6 { margin-top: -6px; }
+.mb-8  { margin-bottom: 8px; }
+.mb-10 { margin-bottom: 10px; }
+.mb-12 { margin-bottom: 12px; }
+.mb-15 { margin-bottom: 15px; }
+.mb-20 { margin-bottom: 20px; }
+.py-4  { padding: 4px 0; }
+.w-60  { width: 60px; }
+.w-130 { width: 130px; }
+.w-160 { width: 160px; }
+
+/* Cajas informativas con borde del tono */
+.info-box.tone-danger, .info-box.tone-info, .info-box.tone-accent { border-left-color: var(--sv-tone); }
+.info-box.two-cols { columns: 2; font-size: 1.05rem; letter-spacing: 0.05em; }
+.code-wide { font-size: 1.05rem; letter-spacing: 0.08em; }
+.code-accent { color: var(--sv-acento); }
+.box-title { margin-top: 0; color: var(--sv-acento); font-size: 20px; }
+.note-muted { color: var(--sv-texto-secundario); font-size: var(--sv-font-pequena); padding: 8px 0; }
+.list-tight { margin: 6px 0 0 18px; padding: 0; }
+
+/* Insignias con tono dinámico */
+.badge-tone { border-color: var(--sv-tone); color: var(--sv-tone); }
+.badge-soft {
+    background: var(--sv-tone-soft);
+    color: var(--sv-tone);
+    border: 1px solid var(--sv-tone);
+    padding: 2px 10px;
+    font-size: var(--sv-font-minima);
+    font-weight: 700;
+    border-radius: 2px;
+    font-family: var(--sv-font-mono);
+}
+.state-center { text-align: center; font-weight: 600; color: var(--sv-tone); }
+
+/* Panel con acento lateral (guías de Imperator Diagnostics, sesión .saml) */
+.panel-accent {
+    background: var(--sv-superficie);
+    border-left: 3px solid var(--sv-tone, var(--sv-acento));
+    padding: 14px;
+    margin-bottom: 16px;
+    font-size: var(--sv-font-minima);
+    color: var(--sv-texto-tenue);
+}
+.panel-accent.saml-help {
+    padding: 16px;
+    font-size: 14px;
+    font-family: var(--sv-font-mono);
+    margin-bottom: 18px;
+}
+.panel-accent.session-restored {
+    padding: 12px 16px;
+    font-family: var(--sv-font-mono);
+    margin-bottom: 0;
+}
+.saml-empty {
+    color: var(--sv-texto-secundario);
+    font-size: 14px;
+    text-align: center;
+    font-family: var(--sv-font-mono);
+    margin-top: 24px;
+}
+
+/* Encabezado tipo "kicker" (mayúsculas, mono) y paneles de Configuración */
+.kicker {
+    color: var(--sv-tone, var(--sv-acento));
+    font-size: var(--sv-font-minima);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-family: var(--sv-font-mono);
+    margin-bottom: 12px;
+}
+.panel-outline {
+    background: var(--sv-superficie);
+    border: 1px solid var(--sv-borde-suave);
+    border-radius: var(--sv-radius-none);
+    padding: 20px;
+    margin-bottom: 16px;
+}
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    font-size: var(--sv-font-minima);
+    color: var(--sv-texto-tenue);
+    line-height: 1.8;
+}
+.kw { color: var(--sv-acento); font-family: var(--sv-font-mono); }
+.field-help { font-size: var(--sv-font-minima); color: var(--sv-texto-tenue); margin-bottom: 12px; }
+.list-lines { font-size: var(--sv-font-minima); color: var(--sv-texto-tenue); line-height: 2; }
+
+.level-card {
+    background: var(--sv-superficie-alta);
+    border-left: 8px solid var(--sv-tone);
+    border-radius: var(--sv-radius-none);
+    padding: 16px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(83, 68, 52, 0.1);
+}
+.level-card-title { color: var(--sv-tone); font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+.level-card-criteria { color: var(--sv-texto); font-size: var(--sv-font-minima); margin-top: 6px; font-family: var(--sv-font-mono); }
+.level-card-action { color: var(--sv-texto-tenue); font-size: var(--sv-font-minima); margin-top: 4px; }
+
+.rule-row {
+    background: var(--sv-superficie);
+    border: 1px solid #21262d;
+    border-radius: var(--sv-radius-none);
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.rule-row-name { color: #c9d1d9; font-size: var(--sv-font-pequena); }
+.rule-row-detail { color: var(--sv-texto-secundario); font-size: var(--sv-font-minima); font-family: var(--sv-font-mono); }
+.rule-row-state {
+    color: var(--sv-tone);
+    font-size: var(--sv-font-minima);
+    font-weight: 700;
+    font-family: var(--sv-font-mono);
+    border: 1px solid var(--sv-tone);
+    padding: 2px 8px;
+    border-radius: var(--sv-radius-none);
+}
+.summary-box { background: var(--sv-superficie); border: 1px solid #21262d; border-radius: var(--sv-radius-none); padding: 16px; }
+.summary-box-body { font-family: var(--sv-font-mono); font-size: var(--sv-font-minima); color: var(--sv-texto-secundario); line-height: 2; }
+.summary-box-body hr { border-color: #21262d; margin: 8px 0; }
+.summary-box-title { color: var(--sv-texto-fuerte); font-weight: 700; margin-bottom: 5px; }
+
+/* Panel estratégico (Resumen Ejecutivo, Análisis por Cliente) y grupos PEP/CPE */
+.strategy-panel {
+    background-color: var(--sv-superficie-alta);
+    border: 1px solid var(--sv-tone, var(--sv-acento));
+    border-radius: var(--sv-radius-none);
+    padding: 24px;
+    border-left: 8px solid var(--sv-tone, var(--sv-acento));
+}
+.strategy-title {
+    color: var(--sv-acento);
+    font-weight: 700;
+    font-size: 18px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    font-family: 'IBM Plex Sans', sans-serif;
+}
+.strategy-body { color: var(--sv-texto); font-size: 14px; line-height: 1.8; }
+.group-card {
+    background: var(--sv-superficie);
+    border: 1px solid var(--sv-tone);
+    border-top: 3px solid var(--sv-tone);
+    padding: 16px;
+    margin-bottom: 8px;
+}
+
+/* Vista previa del informe (Informes y Reportes) */
+.preview-title { font-size: var(--sv-font-pequena); color: #c9d1d9; font-weight: 600; }
+.preview-body { font-size: var(--sv-font-minima); color: var(--sv-texto-secundario); margin-top: 6px; font-family: var(--sv-font-mono); line-height: 1.8; }
+
+/* Tablas HTML: marco, celdas centradas y celdas de acciones */
+.table-frame { overflow-x: auto; border: 1px solid var(--sv-borde); border-radius: var(--sv-radius-none); overflow: hidden; }
+.td-center { text-align: center; }
+.aml-table.actions-table td { padding: 9px 14px; }
+.td-code { color: var(--sv-tone); font-family: var(--sv-font-mono); font-size: var(--sv-font-minima); font-weight: 700; }
+.td-cat { color: var(--sv-tone); font-size: var(--sv-font-minima); text-transform: uppercase; letter-spacing: 0.5px; }
+.td-action { color: var(--sv-texto); font-size: var(--sv-font-pequena); }
+.td-norm { color: var(--sv-texto-secundario); font-family: var(--sv-font-mono); font-size: var(--sv-font-minima); }
+
+/* Acciones de Mitigación */
+.frame-card {
+    background: var(--sv-superficie-alta);
+    border-left: 4px solid var(--sv-tone);
+    padding: 16px;
+    margin-bottom: 8px;
+    min-height: 120px;
+}
+.frame-card-title { color: var(--sv-tone); font-size: var(--sv-font-pequena); font-weight: 700; font-family: var(--sv-font-mono); }
+.frame-card-sub { color: var(--sv-texto-fuerte); font-size: var(--sv-font-minima); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 6px 0 4px; }
+.frame-card-desc { color: var(--sv-texto-tenue); font-size: var(--sv-font-minima); line-height: 1.6; }
+.feic-banner {
+    background: #1b1027;
+    border-left: 4px solid var(--sv-violeta);
+    padding: 14px;
+    margin-bottom: 16px;
+    font-size: var(--sv-font-minima);
+    color: var(--sv-texto-terciario);
+}
+.feic-banner-title { color: var(--sv-violeta); font-weight: 700; font-family: var(--sv-font-mono); }
+.catalog-card { background: var(--sv-superficie); border: 1px solid var(--sv-tone); border-top: 3px solid var(--sv-tone); padding: 16px; }
+.catalog-card-title {
+    color: var(--sv-tone);
+    font-size: var(--sv-font-minima);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+    font-family: var(--sv-font-mono);
+}
+.catalog-item { display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start; }
+.catalog-item-code { color: var(--sv-tone); font-family: var(--sv-font-mono); font-size: var(--sv-font-minima); font-weight: 700; min-width: 36px; padding-top: 1px; }
+.catalog-item-action { color: var(--sv-texto); font-size: var(--sv-font-minima); line-height: 1.4; }
+.catalog-item-norm { color: var(--sv-texto-secundario); font-size: var(--sv-font-minima); font-family: var(--sv-font-mono); }
+.client-head {
+    background: var(--sv-superficie);
+    border: 1px solid var(--sv-tone);
+    border-left: 6px solid var(--sv-tone);
+    padding: 14px 18px;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.client-head-main { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.client-head-name { color: var(--sv-texto-fuerte); font-weight: 700; font-size: 15px; font-family: var(--sv-font-sans); }
+.client-head-meta { color: var(--sv-texto-tenue); font-size: var(--sv-font-minima); font-family: var(--sv-font-mono); line-height: 1.5; word-break: break-word; }
+.client-head-level {
+    color: var(--sv-tone);
+    font-weight: 700;
+    font-size: var(--sv-font-minima);
+    font-family: var(--sv-font-mono);
+    border: 1px solid var(--sv-tone);
+    padding: 3px 10px;
+    white-space: nowrap;
+}
+
+/* Gestión de Ubicaciones */
+.loc-item { background: rgba(255, 255, 255, 0.05); padding: 8px 12px; border-radius: var(--sv-radius-none); margin-bottom: 4px; border-left: 3px solid var(--sv-acento); }
+
+/* Ficha de especificación con acento dinámico */
+.pulse-dot.spec-dot-tone { background-color: var(--sv-tone); box-shadow: 0 0 10px var(--sv-tone); }
+.spec-impact.spec-impact-tone { border-left-color: var(--sv-tone); }
+
+/* Estado textual junto al título de una regla (ACTIVA / DESACTIVADA) */
+.section-badge {
+    font-family: var(--sv-font-mono);
+    font-size: var(--sv-font-minima);
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--sv-texto-secundario);
+    vertical-align: middle;
+}

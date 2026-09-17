@@ -68,11 +68,44 @@ def status_badge(estado: str, texto: Optional[str] = None) -> str:
     return html_block('<span class="badge {clase}">{texto}</span>', clase=clase, texto=texto or etiqueta)
 
 
+_TONO_POR_COLOR = {
+    COLORES["peligro"]: "tone-danger",
+    COLORES["advertencia"]: "tone-warn",
+    COLORES["amarillo"]: "tone-yellow",
+    COLORES["exito_texto"]: "tone-ok",
+    COLORES["exito"]: "tone-green",
+    COLORES["info"]: "tone-info",
+    COLORES["violeta"]: "tone-violet",
+    COLORES["acento"]: "tone-accent",
+    COLORES["texto_secundario"]: "tone-muted",
+    COLORES["texto_fuerte"]: "tone-strong",
+    COLORES["blanco"]: "tone-white",
+    COLORES["info_claro"]: "tone-sky",
+    # Colores heredados que se alinean al token accesible más cercano
+    "#8b949e": "tone-muted",
+    "#2ecc71": "tone-ok",
+    "#e74c3c": "tone-danger",
+}
+
+
+def tone_class(color: Optional[str], por_defecto: str = "tone-muted") -> str:
+    """
+    Clase de tono (.tone-*) para un color de token. Sustituye los style= inline
+    con colores dinámicos: el componente lee --sv-tone desde styles.css.
+    Un color desconocido cae en `por_defecto` (nunca se emite el valor crudo).
+    """
+    return _TONO_POR_COLOR.get(str(color or "").strip().lower(), por_defecto)
+
+
+def tone_nivel(nivel: str) -> str:
+    """Clase de tono para un nivel de riesgo (Crítico, Alto, Medio, Bajo)."""
+    return tone_class(COLOR_NIVEL.get(str(nivel)), "tone-muted")
+
+
 def nivel_badge(nivel: str) -> str:
     """Insignia de nivel de riesgo (Crítico, Alto, Medio, Bajo) con color y texto."""
-    color = COLOR_NIVEL.get(str(nivel), COLORES["texto_secundario"])
-    return html_block('<span class="badge" style="border-color:{color};color:{color};">{nivel}</span>',
-                      color=color, nivel=nivel)
+    return html_block('<span class="badge badge-tone {tono}">{nivel}</span>',
+                      tono=tone_nivel(nivel), nivel=nivel)
 
 
 def empty_state(titulo: str, descripcion: str, accion: Optional[str] = None) -> None:
@@ -101,6 +134,28 @@ def etiqueta_monto(texto: str = "Monto") -> str:
     return f"{texto} ({simbolo_moneda()})"
 
 
+def nombre_moneda(moneda: Optional[str] = None) -> str:
+    """Nombre largo de la moneda de trabajo, por ejemplo 'GTQ (Quetzales)'."""
+    return "USD (Dólares)" if (moneda or moneda_actual()) == "USD" else "GTQ (Quetzales)"
+
+
+# Umbral RTE del Art. 31 Ley 6593: monto normativo fijado en dólares.
+UMBRAL_RTE_USD = 10_000
+UMBRAL_RTE_TEXTO = f"USD {UMBRAL_RTE_USD:,}"
+
+
+def texto_moneda_normativa() -> str:
+    """
+    Aclaración para informes: distingue la moneda de trabajo (configurable, en
+    la que se expresan los montos) del umbral normativo RTE, que la ley fija en USD.
+    """
+    return (
+        f"Moneda de trabajo: {nombre_moneda()}. Los montos de este documento se expresan en esa moneda. "
+        f"El umbral de reporte de transacciones en efectivo del Art. 31 Ley 6593 ({UMBRAL_RTE_TEXTO}) "
+        "es un monto normativo fijado en dólares y se compara contra su equivalente en la moneda de trabajo."
+    )
+
+
 def fmt_moneda(valor, decimales: int = 0, moneda: Optional[str] = None) -> str:
     """Formato único de moneda (U-08). Usa la moneda configurada (GTQ por defecto)."""
     simbolo = simbolo_moneda(moneda)
@@ -127,24 +182,25 @@ def spec_card(descripcion_html: str, variable: str, logica: str, acento: Optiona
     Ficha de especificación técnica de una regla. descripcion_html e impacto_html
     deben ser HTML constante del código (no datos de usuario); el resto se escapa.
     """
-    estilo_punto = f' style="background:{h(acento)}; box-shadow:0 0 10px {h(acento)};"' if acento else ""
-    estilo_borde = f' style="border-left-color:{h(acento)};"' if acento else ""
+    tono = f" {tone_class(acento)}" if acento else ""
+    clase_punto = f' class="pulse-dot spec-dot-tone{tono}"' if acento else ' class="pulse-dot"'
+    clase_borde = f' class="spec-impact spec-impact-tone{tono}"' if acento else ' class="spec-impact"'
     impacto = ""
     if impacto_html:
         impacto = html_block(
-            '<div class="spec-impact"{borde_html}><div class="spec-impact-title">{titulo}</div>'
+            '<div{clase_html}><div class="spec-impact-title">{titulo}</div>'
             '<div class="spec-impact-body">{cuerpo_html}</div></div>',
-            borde_html=estilo_borde, titulo=impacto_titulo or "IMPACTO AL MODIFICAR", cuerpo_html=impacto_html,
+            clase_html=clase_borde, titulo=impacto_titulo or "IMPACTO AL MODIFICAR", cuerpo_html=impacto_html,
         )
     _render(html_block(
         '<div class="spec-card">'
-        '<div class="spec-kicker"><span class="pulse-dot"{punto_html}></span> ESPECIFICACIÓN TÉCNICA</div>'
+        '<div class="spec-kicker"><span{punto_html}></span> ESPECIFICACIÓN TÉCNICA</div>'
         '<div class="spec-desc">{descripcion_html}</div>'
         '<div class="spec-grid">'
         '<div class="spec-cell"><div class="spec-cell-label">{etiqueta_variable}</div><div class="spec-cell-value">{variable}</div></div>'
         '<div class="spec-cell"><div class="spec-cell-label">{etiqueta_logica}</div><div class="spec-cell-value">{logica}</div></div>'
         '</div>{impacto_html}</div>',
-        punto_html=estilo_punto, descripcion_html=descripcion_html, variable=variable, logica=logica,
+        punto_html=clase_punto, descripcion_html=descripcion_html, variable=variable, logica=logica,
         etiqueta_variable=etiqueta_variable, etiqueta_logica=etiqueta_logica, impacto_html=impacto,
     ))
 

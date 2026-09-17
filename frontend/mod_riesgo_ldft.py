@@ -54,11 +54,7 @@ def _sesion_usuario():
 def _badge_nivel(nivel: int) -> str:
     color = logic.color_nivel(nivel)
     texto = logic.descripcion_nivel(nivel)
-    return (
-        f'<span style="background:{h(color)}22; color:{h(color)}; border:1px solid {h(color)}; '
-        f'padding:2px 10px; font-size:12px; font-weight:700; border-radius:2px; '
-        f'font-family:IBM Plex Mono,monospace;">{h(texto)}</span>'
-    )
+    return f'<span class="badge-soft {h(ui_components.tone_class(color))}">{h(texto)}</span>'
 
 
 def mostrar():
@@ -197,7 +193,7 @@ def _tab_eventos(db, licenciaid, username):
         c1, c2, c3, c4 = st.columns([3, 1, 1, 1])
         # e.nombre / e.factor se escapan antes de interpolarse en HTML (previene XSS almacenado).
         c1.markdown(
-            f"**{h(e.codigo)} · {h(e.nombre)}**  \n<span style='color:#a7b0bb;font-size:12px;'>{h(e.factor)}</span>",
+            f"**{h(e.codigo)} · {h(e.nombre)}**  \n<span class='tx-muted fs-12'>{h(e.factor)}</span>",
             unsafe_allow_html=True,
         )
         c2.markdown(f"Inherente<br>{_badge_nivel(e.nivel_inherente)}", unsafe_allow_html=True)

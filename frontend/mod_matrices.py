@@ -36,7 +36,7 @@ def mostrar(casos, matriz_alertas):
         tabla_casos["Anomalia_Percentil"] = tabla_casos["Anomalia_Percentil"].map(
             lambda v: "--" if v is None or v != v else f"{float(v):.1f}")
     tabla_casos = tabla_casos.rename(columns={
-        "Total_Mensual": "Total Mensual (Q)",
+        "Total_Mensual": ui_components.etiqueta_monto("Total Mensual"),
         "Score_Max": "Score Máx.",
         "ST_Max": "S_T",
         "SC_Max": "S_C",
@@ -65,21 +65,21 @@ def mostrar(casos, matriz_alertas):
             imp_color = "#22c55e"
         filas_html += f"""
         <tr>
-            <td style="font-weight: 600;">{h(row['Tipo de Alerta'])}</td>
-            <td style='text-align:center; font-family:IBM Plex Mono,monospace; font-weight:600; color:{h(imp_color)};'>{h(int(row['Cantidad']))}</td>
-            <td><span style='color:{h(imp_color)}; font-weight:600; font-family:IBM Plex Mono,monospace;'>{h(imp)}</span></td>
-            <td style='text-align:center; font-family:IBM Plex Mono,monospace;'>{h(int(row['Peso en Score']))}</td>
-            <td style='color:#d8c3ad; font-size:12px;'>{h(row['Descripción'])}</td>
+            <td class="fw-600">{h(row['Tipo de Alerta'])}</td>
+            <td class="td-center mono fw-600 tx {h(ui_components.tone_class(imp_color))}">{h(int(row['Cantidad']))}</td>
+            <td><span class="tx fw-600 mono {h(ui_components.tone_class(imp_color))}">{h(imp)}</span></td>
+            <td class="td-center mono">{h(int(row['Peso en Score']))}</td>
+            <td class="tx-tertiary fs-12">{h(row['Descripción'])}</td>
         </tr>"""
 
     st.markdown(f"""
-    <div style="overflow-x:auto; border:1px solid #30353d; border-radius:0px; overflow:hidden;">
+    <div class="table-frame">
     <table class="aml-table">
         <thead><tr>
             <th>Tipo de Alerta</th>
-            <th style='text-align:center;'>Detecciones</th>
+            <th class="td-center">Detecciones</th>
             <th>Nivel de Impacto</th>
-            <th style='text-align:center;'>Ponderación</th>
+            <th class="td-center">Ponderación</th>
             <th>Descripción Técnica</th>
         </tr></thead>
         <tbody>{filas_html}</tbody>
@@ -108,4 +108,4 @@ def mostrar(casos, matriz_alertas):
         xaxis=dict(tickangle=-30, gridcolor='#30353d', linecolor='#30353d', tickfont=dict(color='#d8c3ad', size=9)),
     ))
     st.plotly_chart(fig_contrib, use_container_width=True)
-    st.markdown("""<div class="info-box" style="margin-top: 5px;"><b>Interpretación:</b> Análisis de contribución ponderada. Destaca las reglas que inyectan mayor riesgo distribuido en la cartera analizada.</div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="info-box mt-5"><b>Interpretación:</b> Análisis de contribución ponderada. Destaca las reglas que inyectan mayor riesgo distribuido en la cartera analizada.</div>""", unsafe_allow_html=True)

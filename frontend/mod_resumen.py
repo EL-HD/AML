@@ -5,6 +5,7 @@ from frontend.ui_safe import h
 from frontend import ui_components
 
 def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
+    sim = ui_components.simbolo_moneda()  # moneda de trabajo para etiquetas de gráficos
     st.markdown("""<div class="info-box"><strong>RESUMEN EJECUTIVO</strong>: Análisis de alto nivel IMPERATOR Intelligence. Muestra indicadores críticos y distribución de riesgo detectada. Optimizado para supervisión operativa mediante capas tonales.</div>""", unsafe_allow_html=True)
 
     # KPIs
@@ -44,7 +45,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
         
         fig_gauge.update_layout(plotly_dark_layout(height=260, margin=dict(t=50, b=10, l=30, r=30)))
         st.plotly_chart(fig_gauge, use_container_width=True)
-        st.markdown("""<div class="info-box" style="margin-top: 5px;"><b>Interpretación:</b> Porcentaje de clientes en 'Bajo Riesgo'. Refleja la salud operativa de la cartera según los parámetros del Sovereign Intelligence Framework.</div>""", unsafe_allow_html=True)
+        st.markdown("""<div class="info-box mt-5"><b>Interpretación:</b> Porcentaje de clientes en 'Bajo Riesgo'. Refleja la salud operativa de la cartera según los parámetros del Sovereign Intelligence Framework.</div>""", unsafe_allow_html=True)
 
     with col_kpi2:
         # Mini-metricas horizontales
@@ -108,7 +109,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
         ))
         fig_pie.update_layout(plotly_dark_layout(showlegend=True, height=360))
         st.plotly_chart(fig_pie, use_container_width=True)
-        st.markdown("""<div class="info-box" style="margin-top: 10px;"><b>Interpretación:</b> Segmentación porcentual por nivel de riesgo. Los valores se derivan de la matriz de ponderación activa en el motor de cumplimiento.</div>""", unsafe_allow_html=True)
+        st.markdown("""<div class="info-box mt-10"><b>Interpretación:</b> Segmentación porcentual por nivel de riesgo. Los valores se derivan de la matriz de ponderación activa en el motor de cumplimiento.</div>""", unsafe_allow_html=True)
 
     with col_b:
         ui_components.section_title("Alertas por Tipo")
@@ -134,7 +135,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
             yaxis=dict(autorange='reversed', gridcolor='#30353d', linecolor='#30353d', tickfont=dict(color='#d8c3ad')),
         ))
         st.plotly_chart(fig_bar, use_container_width=True)
-        st.markdown("""<div class="info-box" style="margin-top: 10px;"><b>Interpretación:</b> Detección analítica por tipología. Identifica vulnerabilidades y patrones recurrentes en el ecosistema transaccional.</div>""", unsafe_allow_html=True)
+        st.markdown("""<div class="info-box mt-10"><b>Interpretación:</b> Detección analítica por tipología. Identifica vulnerabilidades y patrones recurrentes en el ecosistema transaccional.</div>""", unsafe_allow_html=True)
 
     # Línea de tiempo
     st.markdown("---")
@@ -159,7 +160,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
         marker=dict(size=6, color='#3b82f6', line=dict(color='#93c5fd', width=1)),
         fill='tozeroy', fillcolor='rgba(59,130,246,0.15)',
         name='Volumen',
-        hovertemplate="<b>%{x}</b><br>Monto: <b>Q%{y:,.0f}</b><extra></extra>",
+        hovertemplate="<b>%{x}</b><br>Monto: <b>" + sim + "%{y:,.0f}</b><extra></extra>",
     ))
     
     # Puntos de interrupción / Anomalías
@@ -172,16 +173,16 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
             mode='markers',
             marker=dict(color='#ef4444', size=10, symbol='diamond', line=dict(color='#fca5a5', width=1)),
             name='Pico Anómalo',
-            hovertemplate="<b>Anomalía: %{x}</b><br>Monto: <b>Q%{y:,.0f}</b><extra></extra>"
+            hovertemplate="<b>Anomalía: %{x}</b><br>Monto: <b>" + sim + "%{y:,.0f}</b><extra></extra>"
         ))
 
     fig_line.update_layout(plotly_dark_layout(
-        yaxis_title="Monto total (Q)",
+        yaxis_title=ui_components.etiqueta_monto("Monto total"),
         height=320,
         xaxis=dict(tickangle=-45, gridcolor='#30353d', linecolor='#30353d', tickfont=dict(color='#d8c3ad', size=9)),
     ))
     st.plotly_chart(fig_line, use_container_width=True)
-    st.markdown("""<div class="info-box" style="margin-top: 10px;"><b>Interpretación:</b> Serie temporal del volumen económico. Los diamantes rojos indican puntos de ruptura estadística o actividad atípica coordinada.</div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="info-box mt-10"><b>Interpretación:</b> Serie temporal del volumen económico. Los diamantes rojos indican puntos de ruptura estadística o actividad atípica coordinada.</div>""", unsafe_allow_html=True)
 
     # Gráfica para Tipo de Operación
     if "TipoOperacion" in df.columns:
@@ -201,14 +202,14 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
             text=[f"{ui_components.fmt_moneda(v/1000, 0)}k" if v >= 1000 else ui_components.fmt_moneda(v, 0) for v in flujo_tipo["Monto"]],
             textposition='auto',
             textfont=dict(color='#f8fafc', size=11),
-            hovertemplate="<b>%{x}</b><br>Total: <b>Q%{y:,.0f}</b><extra></extra>"
+            hovertemplate="<b>%{x}</b><br>Total: <b>" + sim + "%{y:,.0f}</b><extra></extra>"
         ))
         fig_tipo.update_layout(plotly_dark_layout(
-            yaxis_title="Monto Acumulado (Q)",
+            yaxis_title=ui_components.etiqueta_monto("Monto Acumulado"),
             height=320,
         ))
         st.plotly_chart(fig_tipo, use_container_width=True)
-        st.markdown("""<div class="info-box" style="margin-top: 10px;"><b>Interpretación:</b> Este gráfico compara el volumen agregado por tipo de operación y permite identificar qué canales concentran mayor exposición económica dentro del período analizado.</div>""", unsafe_allow_html=True)
+        st.markdown("""<div class="info-box mt-10"><b>Interpretación:</b> Este gráfico compara el volumen agregado por tipo de operación y permite identificar qué canales concentran mayor exposición económica dentro del período analizado.</div>""", unsafe_allow_html=True)
         # --- BUBBLE CHART: MATRIZ DE OPORTUNIDAD DE CANAL ---
         st.markdown("<br>", unsafe_allow_html=True)
         ui_components.section_title("Matriz de Oportunidad de Canal (Mercadeo vs Riesgo)")
@@ -247,12 +248,12 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
             ),
             text=stats_bubble["Canal"],
             textposition="top center",
-            hovertemplate="<b>%{text}</b><br>Clientes Únicos: %{x}<br>Volumen Total: Q%{y:,.0f}<br>Riesgo Promedio: %{marker.color:.2f}<extra></extra>"
+            hovertemplate="<b>%{text}</b><br>Clientes Únicos: %{x}<br>Volumen Total: " + sim + "%{y:,.0f}<br>Riesgo Promedio: %{marker.color:.2f}<extra></extra>"
         ))
 
         fig_bubble.update_layout(plotly_dark_layout(
             xaxis_title="Alcance (Clientes Únicos)",
-            yaxis_title="Volumen Económico (Q)",
+            yaxis_title=ui_components.etiqueta_monto("Volumen Económico"),
             height=450,
         ))
         st.plotly_chart(fig_bubble, use_container_width=True)
@@ -284,14 +285,14 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
             desc_estrategia = f"El canal <b>{h(canal_frecuente)}</b> lidera la transaccionalidad. Fortalecer la atención en este punto mejorará la retención del cliente."
 
         st.markdown(f"""
-        <div style="background-color: #1b2027; border: 1px solid #f59e0b; border-radius: 0px; padding: 24px; border-left: 8px solid #f59e0b;">
-            <div style="color: #f59e0b; font-weight: 700; font-size: 18px; margin-bottom: 15px; display: flex; align-items: center; font-family: 'IBM Plex Sans', sans-serif;">
+        <div class="strategy-panel">
+            <div class="strategy-title">
                 <span class="pulse-dot"></span> {h(titulo_estrategia)}
             </div>
-            <div style="color: #dee2ed; font-size: 14px; line-height: 1.8;">
+            <div class="strategy-body">
                 {h(desc_estrategia)}<br><br>
-                <b style="color: #f59e0b;">SEGMENTACIÓN DE VALOR:</b> El canal <b>{h(canal_volumen)}</b> concentra el mayor flujo de capital (Q{h(format(monto_tipo.max(), ',.0f'))}). Optimización recomendada para productos de alta rentabilidad.<br><br>
-                <b style="color: #ef4444;">PROTOCOLO DE RIESGO:</b> Detección de anomalías críticas en el canal <b>{h(canal_riesgoso)}</b>. Se requiere monitoreo de transacciones en tiempo real y revisión de EDD.
+                <b class="tx tone-accent">SEGMENTACIÓN DE VALOR:</b> El canal <b>{h(canal_volumen)}</b> concentra el mayor flujo de capital ({h(ui_components.fmt_moneda(monto_tipo.max(), 0))}). Optimización recomendada para productos de alta rentabilidad.<br><br>
+                <b class="tx tone-danger">PROTOCOLO DE RIESGO:</b> Detección de anomalías críticas en el canal <b>{h(canal_riesgoso)}</b>. Se requiere monitoreo de transacciones en tiempo real y revisión de EDD.
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -307,7 +308,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
         st.markdown("---")
         ui_components.section_title("Asociados PEP / CPE Detectados")
         st.markdown("""
-        <div class="info-box" style="border-left-color: #ef4444;">
+        <div class="info-box tone-danger">
             <strong>GAFI: Personas Expuestas Políticamente (PEP) y Contratista o Proveedor del Estado (CPE).</strong>
             Estos clientes requieren Debida Diligencia Ampliada (EDD) según las recomendaciones 12 y 22 del GAFI.
             Su presencia eleva automáticamente el score contextual (S_C) del modelo IMPERATOR.
@@ -318,8 +319,8 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
 
         with col_pep:
             st.markdown("""
-            <div style="background:#171c23; border:1px solid #ef4444; border-top:3px solid #ef4444; padding:16px; margin-bottom:8px;">
-                <div style="color:#ef4444; font-size:12px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:8px;">
+            <div class="group-card tone-danger">
+                <div class="kicker mb-8">
                     Personas Expuestas Políticamente (PEP)
                 </div>
             </div>
@@ -336,12 +337,12 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
                 df_pep_show.columns = [c.replace("_", " ") for c in df_pep_show.columns]
                 st.markdown(render_html_table(df_pep_show, max_height=220), unsafe_allow_html=True)
             else:
-                st.markdown('<div style="color:#a7b0bb; font-size:13px; padding:8px 0;">No se detectaron clientes PEP en el período analizado.</div>', unsafe_allow_html=True)
+                st.markdown('<div class="note-muted">No se detectaron clientes PEP en el período analizado.</div>', unsafe_allow_html=True)
 
         with col_cpe:
             st.markdown("""
-            <div style="background:#171c23; border:1px solid #f97316; border-top:3px solid #f97316; padding:16px; margin-bottom:8px;">
-                <div style="color:#f97316; font-size:12px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:8px;">
+            <div class="group-card tone-warn">
+                <div class="kicker mb-8">
                     Contratista o Proveedor del Estado (CPE)
                 </div>
             </div>
@@ -358,4 +359,4 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
                 df_cpe_show.columns = [c.replace("_", " ") for c in df_cpe_show.columns]
                 st.markdown(render_html_table(df_cpe_show, max_height=220), unsafe_allow_html=True)
             else:
-                st.markdown('<div style="color:#a7b0bb; font-size:13px; padding:8px 0;">No se detectaron clientes CPE en el período analizado.</div>', unsafe_allow_html=True)
+                st.markdown('<div class="note-muted">No se detectaron clientes CPE en el período analizado.</div>', unsafe_allow_html=True)

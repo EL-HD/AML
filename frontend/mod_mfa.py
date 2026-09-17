@@ -234,7 +234,7 @@ def _mostrar_material(material: dict) -> None:
         st.markdown("**1.** Escanee el QR o añada una cuenta manualmente con estos datos:")
         st.markdown(html_block(
             '<div class="info-box"><div><strong>Cuenta:</strong> {emisor} ({cuenta})</div>'
-            '<div><strong>Clave (Base32):</strong> <code style="font-size:1.05rem;letter-spacing:0.08em;">{bloques}</code></div>'
+            '<div><strong>Clave (Base32):</strong> <code class="code-wide">{bloques}</code></div>'
             '<div><strong>Tipo:</strong> basado en tiempo (TOTP), SHA-1, 6 dígitos, 30 segundos</div></div>',
             emisor=material["emisor"], cuenta=material["cuenta"], bloques=material["secreto_bloques"],
         ), unsafe_allow_html=True)
@@ -250,9 +250,9 @@ def _mostrar_codigos_recuperacion() -> None:
         "mostrarse</strong> y cada uno sirve una sola vez para entrar si pierde el dispositivo.",
         titulo="Códigos de recuperación", tipo="warning",
     )
-    filas = "".join(html_block('<div style="padding:4px 0;"><code>{c}</code></div>', c=c) for c in codigos)
+    filas = "".join(html_block('<div class="py-4"><code>{c}</code></div>', c=c) for c in codigos)
     st.markdown(html_block(
-        '<div class="info-box" style="columns:2;font-size:1.05rem;letter-spacing:0.05em;">{filas}</div>', filas=filas,
+        '<div class="info-box two-cols">{filas}</div>', filas=filas,
     ), unsafe_allow_html=True)
     st.download_button(
         "Descargar códigos (.txt)", data="\n".join(codigos).encode("utf-8"),

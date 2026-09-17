@@ -662,7 +662,7 @@ if vista not in navegacion.VISTAS_SIN_DATOS:
         <div class="welcome-panel">
             <div class="welcome-kicker">Centro de análisis</div>
             <div class="welcome-rule"></div>
-            <div class="welcome-title">Bienvenido, <span style='color:#ffffff;'>{h(user_name)}</span>.</div>
+            <div class="welcome-title">Bienvenido, <span class="tx tone-white">{h(user_name)}</span>.</div>
             <div class="welcome-copy">
                 Es un gusto tenerle de vuelta. Inicie un nuevo análisis o restaure una sesión guardada
                 para continuar monitoreando transacciones, alertas y perfiles de riesgo desde un solo espacio.
@@ -676,9 +676,9 @@ if vista not in navegacion.VISTAS_SIN_DATOS:
         with tab_nuevo:
             st.markdown("""
             <div class="upload-requirements">
-                <span style='color:#f0f6fc; font-weight:600;'>Formato:</span> Excel (.xlsx) &nbsp;·&nbsp;
-                <span style='color:#f0f6fc; font-weight:600;'>Columnas requeridas:</span>
-                <span style='color:#7cc7ff;'>Fecha · Cliente · EsPEP · EsCPE · Monto · Perfil · Ubicacion · UbicacionRiesgo · TipoOperacion · Cliente_Destino</span>
+                <span class="tx-strong fw-600">Formato:</span> Excel (.xlsx) &nbsp;·&nbsp;
+                <span class="tx-strong fw-600">Columnas requeridas:</span>
+                <span class="tx-sky">Fecha · Cliente · EsPEP · EsCPE · Monto · Perfil · Ubicacion · UbicacionRiesgo · TipoOperacion · Cliente_Destino</span>
             </div>
             """, unsafe_allow_html=True)
 
@@ -725,9 +725,8 @@ if vista not in navegacion.VISTAS_SIN_DATOS:
         # ── Tab 2: Cargar sesión .saml ───────────────────────────────
         with tab_sesion:
             st.markdown("""
-            <div style="background:#171c23; border-left:3px solid #f59e0b; padding:16px;
-                        font-size:14px; color:#b8a58e; margin-bottom:18px; font-family:'IBM Plex Mono',monospace;">
-                <strong style='color:#f0f6fc;'>Formato .saml</strong>: Sovereign AML Session File.<br>
+            <div class="panel-accent saml-help">
+                <strong class="tx-strong">Formato .saml</strong>: Sovereign AML Session File.<br>
                 Contiene las transacciones originales y la configuración usada en el análisis previo.
                 Al cargarlo, el motor reprocesa todo automáticamente restaurando el estado completo.
             </div>
@@ -764,9 +763,8 @@ if vista not in navegacion.VISTAS_SIN_DATOS:
                     st.error(f"Error al cargar la sesión: {e}")
             else:
                 st.markdown("""
-                <p style='color:#a7b0bb; font-size:14px; text-align:center;
-                          font-family:"IBM Plex Mono",monospace; margin-top:24px;'>
-                    Suba un archivo <strong style='color:#f59e0b;'>.saml</strong> generado
+                <p class="saml-empty">
+                    Suba un archivo <strong class="tx tone-accent">.saml</strong> generado
                     previamente desde Sovereign AML para retomar el análisis.
                 </p>""", unsafe_allow_html=True)
 
@@ -783,9 +781,8 @@ if vista not in navegacion.VISTAS_SIN_DATOS:
                 nombre    = meta.get("nombre_archivo", st.session_state["archivo_nombre"])
                 filas     = meta.get("filas", "")
                 st.markdown(f"""
-                <div style="background:#171c23; border-left:3px solid #f59e0b; padding:12px 16px;
-                            font-family:'IBM Plex Mono',monospace; font-size:12px; color:#b8a58e;">
-                    <span style="color:#f59e0b; font-weight:700;">SESIÓN RESTAURADA</span>
+                <div class="panel-accent session-restored">
+                    <span class="tx fw-700 tone-accent">SESIÓN RESTAURADA</span>
                     &nbsp;·&nbsp; {h(nombre)}
                     &nbsp;·&nbsp; {h(filas)} registros
                     &nbsp;·&nbsp; Exportada: {h(exportado)}

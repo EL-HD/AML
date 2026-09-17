@@ -92,13 +92,12 @@ def marcar_casos(df: pd.DataFrame, casos: pd.DataFrame, cfg: dict) -> int:
 
 def _badge_nivel(nivel) -> str:
     nivel = str(nivel)
-    color = _COLOR_NIVEL.get(nivel, COLORES["texto_secundario"])
-    return html_block('<span class="badge" style="border-color:{color};color:{color};">{nivel}</span>',
-                      color=color, nivel=nivel)
+    tono = ui_components.tone_class(_COLOR_NIVEL.get(nivel, COLORES["texto_secundario"]))
+    return html_block('<span class="badge badge-tone {tono}">{nivel}</span>', tono=tono, nivel=nivel)
 
 
 def _lista_html(items) -> str:
-    return "<ul style='margin:6px 0 0 18px; padding:0;'>" + "".join(f"<li>{h(t)}</li>" for t in items) + "</ul>"
+    return '<ul class="list-tight">' + "".join(f"<li>{h(t)}</li>" for t in items) + "</ul>"
 
 
 def _panel_variables(fila: pd.Series, moneda_txt: str = "") -> None:
@@ -111,8 +110,8 @@ def _panel_variables(fila: pd.Series, moneda_txt: str = "") -> None:
         _etq, formato = anomalias.DESCRIPCION_VARIABLES.get(v["variable"], (v["variable"], "decimal"))
         filas.append({
             "Variable": v["etiqueta"],
-            "Valor del cliente": anomalias.formatear_valor(v["valor"], formato, moneda_txt or "Q"),
-            "Referencia (mediana de la cartera)": anomalias.formatear_valor(v["referencia"], formato, moneda_txt or "Q"),
+            "Valor del cliente": anomalias.formatear_valor(v["valor"], formato, moneda_txt or ui_components.simbolo_moneda()),
+            "Referencia (mediana de la cartera)": anomalias.formatear_valor(v["referencia"], formato, moneda_txt or ui_components.simbolo_moneda()),
             "Dirección": v["direccion"],
             "Desviaciones robustas": f"{abs(v['z']):.1f}",
         })
@@ -269,8 +268,8 @@ def mostrar_tab(df: pd.DataFrame, casos: pd.DataFrame, cfg: dict) -> None:
     if not fila.empty:
         fila = fila.iloc[0]
         st.markdown(
-            f"<div style='margin-bottom:8px;'>{_badge_nivel(fila['Anomalia_Nivel'])} "
-            f"<span style='color:#a7b0bb; font-size:12px;'>Percentil {h(format(float(fila['Anomalia_Percentil']), '.1f'))} · "
+            f"<div class='mb-8'>{_badge_nivel(fila['Anomalia_Nivel'])} "
+            f"<span class='tx-muted fs-12'>Percentil {h(format(float(fila['Anomalia_Percentil']), '.1f'))} · "
             f"Score IMPERATOR {h(format(float(fila['Score_Max']), '.2f'))} · Nivel de riesgo {h(fila['Nivel_Riesgo'])}</span></div>",
             unsafe_allow_html=True,
         )

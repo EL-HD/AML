@@ -264,7 +264,8 @@ def mostrar(df, casos, matriz_alertas, cfg):
                 [Paragraph("Powered by IMPERATOR", ParagraphStyle("cp",
                     fontSize=10, textColor=C_BLUE, fontName="Helvetica-Bold",
                     alignment=TA_CENTER, spaceAfter=4))],
-                [Paragraph(f"Per\u00edodo: {fecha_min} \u2013 {fecha_max}  \u00b7  Generado: {fecha_gen}",
+                [Paragraph(f"Per\u00edodo: {fecha_min} \u2013 {fecha_max}  \u00b7  Generado: {fecha_gen}"
+                           f"  \u00b7  Moneda: {ui_components.nombre_moneda()}",
                     S["cover_meta"])],
             ], colWidths=[6.5*inch],
             style=TableStyle([
@@ -576,6 +577,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
                 [Paragraph(f"Fecha de generacion: {fecha_gen}", S["cover_meta"])],
                 [Paragraph(f"Total de transacciones analizadas: {len(df):,}", S["cover_meta"])],
                 [Paragraph(f"Total de clientes en el periodo: {df['Cliente'].nunique():,}", S["cover_meta"])],
+                [Paragraph(f"Moneda de trabajo: {ui_components.nombre_moneda()}", S["cover_meta"])],
                 [Spacer(1, 8)],
                 [Paragraph("CONFIDENCIAL \u00b7 USO INTERNO EXCLUSIVO",
                     ParagraphStyle("conf", fontSize=8, textColor=C_RED,
@@ -615,7 +617,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         story.append(Spacer(1, 6))
         story.append(kpi_row([
             ("Total alertas generadas", f"{total_alertas_g:,}",   C_AMBER),
-            ("Volumen total (Q)",        f"{monto_total_g:,.0f}", C_BLUE),
+            (ui_components.etiqueta_monto("Volumen total"), ui_components.fmt_moneda(monto_total_g, 0), C_BLUE),
             ("% clientes con alerta",   f"{pct_alerta:.1f}%",     C_ORANGE),
             ("Nivel MEDIO / BAJO",      f"{medios_g} / {bajos_g}", C_GREEN),
         ]))
@@ -696,7 +698,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         step = max(1, n_ticks // 15)
         ax_l.set_xticks(range(0, n_ticks, step))
         ax_l.set_xticklabels([fechas_g[i] for i in range(0, n_ticks, step)], rotation=45, ha='right', fontsize=7)
-        ax_l.set_ylabel("Monto total (Q)", color='#a7b0bb')
+        ax_l.set_ylabel(ui_components.etiqueta_monto("Monto total"), color='#a7b0bb')
         ax_l.set_title("Volumen transaccional diario", color="#c9d1d9", fontsize=9, pad=8)
         plt.tight_layout()
         desc_line = "<b>Interpretacion:</b> Serie temporal del dinero movilizado diariamente. Alteraciones abruptas o picos anomalos pueden indicar posibles ingresos atipicos o alta volatilidad transaccional."
@@ -711,7 +713,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
             flujo_t = df.groupby("TipoOperacion")["Monto"].sum().reset_index()
             fig_t, ax_t = dark_fig(10, 3)
             ax_t.bar(flujo_t["TipoOperacion"], flujo_t["Monto"], color="#f97316", edgecolor="#0d1117", alpha=0.9)
-            ax_t.set_ylabel("Monto total (Q)", color='#a7b0bb')
+            ax_t.set_ylabel(ui_components.etiqueta_monto("Monto total"), color='#a7b0bb')
             ax_t.set_title("Volumen por tipo", color="#c9d1d9", fontsize=9, pad=8)
             ax_t.tick_params(axis='x', colors='#a7b0bb', rotation=0)
             ax_t.tick_params(axis='y', colors='#a7b0bb')
@@ -787,9 +789,10 @@ def mostrar(df, casos, matriz_alertas, cfg):
             ubic_count = df_riesgo_ubic["Ubicacion"].value_counts().reset_index()
             ubic_count.columns = ["Zona de Riesgo", "Transacciones"]
             ubic_monto = df_riesgo_ubic.groupby("Ubicacion")["Monto"].sum().reset_index()
-            ubic_monto.columns = ["Zona de Riesgo", "Volumen (Q)"]
+            col_volumen = ui_components.etiqueta_monto("Volumen")
+            ubic_monto.columns = ["Zona de Riesgo", col_volumen]
             ubic_res = pd.merge(ubic_count, ubic_monto, on="Zona de Riesgo")
-            ubic_res["Volumen (Q)"] = ubic_res["Volumen (Q)"].apply(lambda x: ui_components.fmt_moneda(x, 0))
+            ubic_res[col_volumen] = ubic_res[col_volumen].apply(lambda x: ui_components.fmt_moneda(x, 0))
             
             story.append(KeepTogether([
                 hb_sec_ubic, Spacer(1, 8),
@@ -919,7 +922,8 @@ def mostrar(df, casos, matriz_alertas, cfg):
             [Paragraph(f"Cliente reportado: <b>{h(caso_rts_sel)}</b>",
                 ParagraphStyle("cov_cl", fontSize=11, textColor=C_WHITE,
                     fontName="Helvetica-Bold", alignment=TA_CENTER, spaceAfter=4))],
-            [Paragraph(f"Generado: {fecha_gen} · CONFIDENCIAL: USO EXCLUSIVO IVE/SIB", S["cover_meta"])],
+            [Paragraph(f"Generado: {fecha_gen} · Moneda de trabajo: {ui_components.nombre_moneda()}", S["cover_meta"])],
+            [Paragraph("CONFIDENCIAL: USO EXCLUSIVO IVE/SIB", S["cover_meta"])],
         ]
         cover_tbl = Table(cover_data, colWidths=[7.0 * inch])
         cover_tbl.setStyle(TableStyle([
@@ -1164,9 +1168,10 @@ def mostrar(df, casos, matriz_alertas, cfg):
         cover_data = [
             [Paragraph("REPORTE DE TRANSACCIÓN EN EFECTIVO", S["cover_title"])],
             [Paragraph("RTE: Intendencia de Verificación Especial (IVE) · SIB Guatemala", S["cover_sub"])],
-            [Paragraph("Art. 31 Ley Integral contra LD/FT/FPADM (Ley 6593) · Umbral: USD 10,000 o equivalente",
+            [Paragraph(f"Art. 31 Ley Integral contra LD/FT/FPADM (Ley 6593) · Umbral normativo: {ui_components.UMBRAL_RTE_TEXTO} o equivalente",
                 S["cover_meta"])],
-            [Paragraph(f"Generado: {fecha_gen} · CONFIDENCIAL: USO EXCLUSIVO IVE/SIB", S["cover_meta"])],
+            [Paragraph(f"Generado: {fecha_gen} · Moneda de trabajo: {ui_components.nombre_moneda()}", S["cover_meta"])],
+            [Paragraph("CONFIDENCIAL: USO EXCLUSIVO IVE/SIB", S["cover_meta"])],
         ]
         cover_tbl = Table(cover_data, colWidths=[7.0 * inch])
         cover_tbl.setStyle(TableStyle([
@@ -1183,23 +1188,25 @@ def mostrar(df, casos, matriz_alertas, cfg):
         story.append(kpi_row([
             ("Transacciones RTE",    str(n_rte),              C_RED),
             ("Clientes únicos", str(cli_unicos),          C_AMBER),
-            ("Monto total efectivo", ui_components.fmt_moneda(monto_rte, 0),    C_ORANGE),
-            ("Umbral reportable",    "USD 10,000",             C_BLUE),
+            (ui_components.etiqueta_monto("Monto total efectivo"), ui_components.fmt_moneda(monto_rte, 0), C_ORANGE),
+            ("Umbral normativo (USD)", ui_components.UMBRAL_RTE_TEXTO, C_BLUE),
         ]))
-        story.append(Spacer(1, 16))
+        story.append(Spacer(1, 6))
+        story.append(Paragraph(ui_components.texto_moneda_normativa(), S["body_small"]))
+        story.append(Spacer(1, 10))
 
         # ── I. Marco Legal ──
         story.append(header_band("I. MARCO LEGAL", "Base normativa del reporte RTE"))
         story.append(Spacer(1, 6))
         story.append(Paragraph(
             "<b>Art. 31 Ley 6593 (Guatemala):</b> Los sujetos obligados deben reportar a la IVE toda "
-            "transacción realizada en efectivo que iguale o supere el equivalente a USD 10,000, "
+            f"transacción realizada en efectivo que iguale o supere el equivalente a {h(ui_components.UMBRAL_RTE_TEXTO)}, "
             "independientemente de que la operación sea o no sospechosa.",
             S["body"]
         ))
         story.append(Paragraph(
-            "<b>Criterio de inclusión:</b> Tipo_Instrumento = EFECTIVO y Monto ≥ USD 10,000 "
-            "(o equivalente en Quetzales).",
+            f"<b>Criterio de inclusión:</b> Tipo_Instrumento = EFECTIVO y Monto ≥ {h(ui_components.UMBRAL_RTE_TEXTO)} "
+            f"(monto normativo en dólares; equivalente en la moneda de trabajo, {h(ui_components.nombre_moneda())}).",
             S["body"]
         ))
         story.append(Spacer(1, 10))
@@ -1223,7 +1230,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         story.append(Spacer(1, 6))
         if n_rte == 0:
             story.append(Paragraph(
-                "No se detectaron transacciones en efectivo ≥ USD 10,000.", S["body"]))
+                f"No se detectaron transacciones en efectivo ≥ {ui_components.UMBRAL_RTE_TEXTO}.", S["body"]))
         else:
             tx_cols_ord = ["Cliente", "Fecha", "Monto", "TipoOperacion"]
             tx_present  = [c for c in tx_cols_ord if c in df_rte.columns]
@@ -1257,7 +1264,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
 
     st.markdown("""
     <div class="section-title">Tipos de Reporte IMPERATOR AML</div>
-    <div class="info-box" style="margin-top:-6px;">
+    <div class="info-box mt-neg-6">
         Seleccione el formato de salida según su objetivo: <strong>reporte individual</strong> para expedientes de cliente o <strong>informe ejecutivo</strong> para visión consolidada de gerencia, comité o auditoría.
     </div>
     """, unsafe_allow_html=True)
@@ -1358,14 +1365,14 @@ def mostrar(df, casos, matriz_alertas, cfg):
             at_g     = int(df["Score"].gt(0).sum())
 
             st.markdown(f"""
-            <div class="metric-card red" style="margin-bottom:10px;">
-                <div style="font-size:13px; color:#c9d1d9; font-weight:600;">Vista previa del informe</div>
-                <div style="font-size:12px; color:#a7b0bb; margin-top:6px; font-family:IBM Plex Mono,monospace; line-height:1.8;">
-                    Clientes analizados: <strong style="color:#f0f6fc;">{h(total_cl)}</strong><br>
-                    Nivel cr\u00edtico: <strong style="color:#ef4444;">{h(crit_g)}</strong> &nbsp;\u00b7&nbsp;
-                    Nivel alto: <strong style="color:#f97316;">{h(alto_g)}</strong><br>
-                    Alertas totales: <strong style="color:#f59e0b;">{h(format(at_g, ','))}</strong><br>
-                    Volumen: <strong style="color:#3b82f6;">{h(ui_components.fmt_moneda(vol_g, 0))}</strong>
+            <div class="metric-card red mb-10">
+                <div class="preview-title">Vista previa del informe</div>
+                <div class="preview-body">
+                    Clientes analizados: <strong class="tx-strong">{h(total_cl)}</strong><br>
+                    Nivel cr\u00edtico: <strong class="tx tone-danger">{h(crit_g)}</strong> &nbsp;\u00b7&nbsp;
+                    Nivel alto: <strong class="tx tone-warn">{h(alto_g)}</strong><br>
+                    Alertas totales: <strong class="tx tone-accent">{h(format(at_g, ','))}</strong><br>
+                    Volumen: <strong class="tx tone-info">{h(ui_components.fmt_moneda(vol_g, 0))}</strong>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -1397,12 +1404,12 @@ def mostrar(df, casos, matriz_alertas, cfg):
                     st.code(traceback.format_exc())
 
     with tab_rts_rte:
-        st.markdown("""
+        st.markdown(f"""
         <div class="warning-box">
             <strong>Reportes Regulatorios IVE: Ley 6593</strong>:
             Genera PDFs estructurados compatibles con la Intendencia de Verificación Especial (IVE) de la SIB.
             <br>• <strong>RTS</strong>: Reporte de Transacción Sospechosa (Art. 30 Ley 6593 / GAFI Rec. 20)
-            <br>• <strong>RTE</strong>: Reporte de Transacción en Efectivo ≥ USD 10,000 (Art. 31 Ley 6593)
+            <br>• <strong>RTE</strong>: Reporte de Transacción en Efectivo ≥ {h(ui_components.UMBRAL_RTE_TEXTO)} (Art. 31 Ley 6593; umbral normativo en USD, montos en {h(ui_components.nombre_moneda())})
         </div>
         """, unsafe_allow_html=True)
 
@@ -1488,7 +1495,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
                 df_rte_prev = df[df["Es_RTE"] == True]
                 n_rte_prev  = len(df_rte_prev)
                 if n_rte_prev == 0:
-                    st.info("No hay transacciones en efectivo ≥ USD 10,000 en el período analizado.")
+                    st.info(f"No hay transacciones en efectivo ≥ {ui_components.UMBRAL_RTE_TEXTO} (umbral normativo en USD) en el período analizado.")
                 else:
                     col_r1, col_r2, col_r3 = st.columns(3)
                     with col_r1:

@@ -7,7 +7,7 @@ from frontend import ui_components
 def mostrar():
     st.markdown("""
     <div class="info-box">
-        <h2 style="margin-top:0; color:#f59e0b; font-size: 20px;">Gestión de Ubicaciones de Riesgo</h2>
+        <h2 class="box-title">Gestión de Ubicaciones de Riesgo</h2>
         Administre manualmente las zonas geográficas consideradas de alto riesgo (fronteras, zonas rojas, etc.). 
         El sistema marcará automáticamente cualquier transacción originada en estas ubicaciones si la columna 
         <strong>Ubicacion</strong> coincide con alguno de estos nombres.
@@ -51,7 +51,7 @@ def mostrar():
                 container = st.container()
                 c_text, c_del = container.columns([4, 1])
                 c_text.markdown(f"""
-                    <div style="background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 0px; margin-bottom: 4px; border-left: 3px solid #f59e0b;">
+                    <div class="loc-item">
                         {h(loc)}
                     </div>
                 """, unsafe_allow_html=True)
@@ -61,7 +61,7 @@ def mostrar():
 
     st.markdown("---")
     st.markdown("""
-    <div style="font-size: 13px; color: #a7b0bb;">
+    <div class="tx-muted fs-13">
         <strong>Nota:</strong> Estas ubicaciones se aplican globalmente al procesamiento de datos. 
         Si el archivo Excel ya contiene una columna <code>UbicacionRiesgo</code> con valores 'SI', 
         estas también serán tomadas en cuenta.

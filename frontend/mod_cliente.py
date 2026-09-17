@@ -20,6 +20,7 @@ TIPOS_PERSONA_OBLIGADA = [
 ]
 
 def mostrar(df, casos, cfg):
+    sim = ui_components.simbolo_moneda()  # moneda de trabajo para etiquetas de gráficos
     st.markdown("""<div class="info-box"><strong>ANÁLISIS POR CLIENTE</strong>: Perfil detallado de comportamiento transaccional IMPERATOR. Identifica vectores de riesgo individuales, picos de actividad estadística y patrones de fragmentación técnica (smurfing).</div>""", unsafe_allow_html=True)
 
     cliente = st.selectbox("Selecciona un cliente para analizar", df["Cliente"].unique())
@@ -131,11 +132,11 @@ def mostrar(df, casos, cfg):
     )
 
     st.markdown(f"""
-    <div style="background-color: #1b2027; border: 1px solid {h(nivel_color)}; border-radius: 0px; padding: 24px; border-left: 8px solid {h(nivel_color)};">
-        <div style="font-size:12px; color: #f59e0b; text-transform: uppercase; letter-spacing: 2px; font-family: 'IBM Plex Mono', monospace; margin-bottom: 15px;">
+    <div class="strategy-panel {h(ui_components.tone_class(nivel_color))}">
+        <div class="kicker tone-accent mb-15">
             <span class="pulse-dot"></span> RESUMEN TÉCNICO IMPERATOR INTELLIGENCE
         </div>
-        <div style="color: #dee2ed; font-size: 14px; line-height: 1.8;">
+        <div class="strategy-body">
             {h(resumen_manual)}
         </div>
     </div>
@@ -159,13 +160,13 @@ def mostrar(df, casos, cfg):
         mode='lines+markers', name='Monto',
         line=dict(color='#3b82f6', width=2),
         marker=dict(size=6, color='#3b82f6'),
-        hovertemplate="<b>%{x}</b><br>Monto: <b>Q%{y:,.2f}</b><extra></extra>",
+        hovertemplate="<b>%{x}</b><br>Monto: <b>" + sim + "%{y:,.2f}</b><extra></extra>",
     ))
     fig_tend.add_trace(go.Scatter(
         x=datos["Fecha_str"], y=[perfil_val]*len(datos),
         mode='lines', name=f'Perfil: {ui_components.fmt_moneda(perfil_val, 0)}',
         line=dict(color='#f59e0b', width=1.5, dash='dash'),
-        hovertemplate="Perfil: <b>Q%{y:,.0f}</b><extra></extra>",
+        hovertemplate="Perfil: <b>" + sim + "%{y:,.0f}</b><extra></extra>",
     ))
     # Área de exceso sobre perfil
     exceso_y = [m if m > perfil_val else perfil_val for m in datos["Monto"].values]
@@ -180,7 +181,7 @@ def mostrar(df, casos, cfg):
         xaxis=dict(tickangle=-45, gridcolor='#30353d', linecolor='#30353d', tickfont=dict(color='#d8c3ad', size=9)),
     ))
     st.plotly_chart(fig_tend, use_container_width=True)
-    st.markdown("""<div class="info-box" style="margin-top: 5px;"><b>Interpretación:</b> Análisis de desviación sobre perfil de riesgo. El área roja destaca transacciones que superan los umbrales de tolerancia institucional.</div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="info-box mt-5"><b>Interpretación:</b> Análisis de desviación sobre perfil de riesgo. El área roja destaca transacciones que superan los umbrales de tolerancia institucional.</div>""", unsafe_allow_html=True)
 
 
     col_g1, col_g2 = st.columns(2)
@@ -204,14 +205,14 @@ def mostrar(df, casos, cfg):
             mode='lines+markers', name='Monto',
             line=dict(color='#58a6ff', width=1.5),
             marker=dict(size=5, color='#58a6ff'),
-            hovertemplate="<b>%{x}</b><br>Monto: Q%{y:,.2f}<extra></extra>",
+            hovertemplate="<b>%{x}</b><br>Monto: " + sim + "%{y:,.2f}<extra></extra>",
         ))
         if len(picos) > 0:
             fig_picos.add_trace(go.Scatter(
                 x=picos["Fecha_str"], y=picos["Monto"],
                 mode='markers', name=f'{len(picos)} pico(s) anómalo(s)',
                 marker=dict(size=12, color='#ef4444', line=dict(color='#fca5a5', width=1.5)),
-                hovertemplate="<b>Pico anómalo</b><br>%{x}<br>Monto: Q%{y:,.2f}<extra></extra>",
+                hovertemplate="<b>Pico anómalo</b><br>%{x}<br>Monto: " + sim + "%{y:,.2f}<extra></extra>",
             ))
         fig_picos.add_hline(y=media, line=dict(color='#a7b0bb', dash='dot', width=1),
                             annotation_text="Media", annotation_font_color='#a7b0bb')
@@ -222,7 +223,7 @@ def mostrar(df, casos, cfg):
             xaxis=dict(tickangle=-45, gridcolor='#30353d', linecolor='#30353d', tickfont=dict(color='#d8c3ad', size=8)),
         ))
         st.plotly_chart(fig_picos, use_container_width=True)
-        st.markdown("""<div class="info-box" style="margin-top: 5px;"><b>Interpretación:</b> Identificación de anomalías estadísticas (+2 Std). Los diamantes rojos representan actividad que rompe la distribución normal del cliente.</div>""", unsafe_allow_html=True)
+        st.markdown("""<div class="info-box mt-5"><b>Interpretación:</b> Identificación de anomalías estadísticas (+2 Std). Los diamantes rojos representan actividad que rompe la distribución normal del cliente.</div>""", unsafe_allow_html=True)
 
 
     with col_g2:
@@ -254,4 +255,4 @@ def mostrar(df, casos, cfg):
             xaxis=dict(tickangle=-45, gridcolor='#30353d', linecolor='#30353d', tickfont=dict(color='#d8c3ad', size=8)),
         ))
         st.plotly_chart(fig_freq, use_container_width=True)
-        st.markdown("""<div class="info-box" style="margin-top: 5px;"><b>Interpretación:</b> Vigilancia de fragmentación estructural. Barras rojas indican una densidad operativa superior al umbral crítico de smurfing.</div>""", unsafe_allow_html=True)
+        st.markdown("""<div class="info-box mt-5"><b>Interpretación:</b> Vigilancia de fragmentación estructural. Barras rojas indican una densidad operativa superior al umbral crítico de smurfing.</div>""", unsafe_allow_html=True)

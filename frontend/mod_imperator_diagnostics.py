@@ -122,7 +122,7 @@ def mostrar(df, casos, cfg):
     with tab1:
         _section("Análisis de Dominancia de Reglas")
         st.markdown("""
-        <div style="background:#171c23; border-left:3px solid #f59e0b; padding:14px; margin-bottom:16px; font-size:12px; color:#b8a58e;">
+        <div class="panel-accent tone-accent">
             Identifica qué reglas generan mayor volumen de alertas. Una regla dominante con bajo impacto
             en puntaje puede ser fuente de ruido analítico. Evalúe si su peso refleja su contribución real.
         </div>""", unsafe_allow_html=True)
@@ -170,7 +170,7 @@ def mostrar(df, casos, cfg):
     with tab2:
         _section("Motor de Explicabilidad: Composición del Puntaje")
         st.markdown("""
-        <div style="background:#171c23; border-left:3px solid #3b82f6; padding:14px; margin-bottom:16px; font-size:12px; color:#b8a58e;">
+        <div class="panel-accent tone-info">
             Muestra cómo se construyó el puntaje por nivel de riesgo. Analiza qué pilares
             (S_T, S_C, S_B, S_N) contribuyen más a cada segmento y detecta desbalances de ponderación.
         </div>""", unsafe_allow_html=True)
@@ -234,7 +234,7 @@ def mostrar(df, casos, cfg):
     with tab3:
         _section("Estimación de Falsos Positivos")
         st.markdown("""
-        <div style="background:#171c23; border-left:3px solid #10b981; padding:14px; margin-bottom:16px; font-size:12px; color:#b8a58e;">
+        <div class="panel-accent tone-green">
             Estima el ruido analítico: alertas generadas sobre clientes clasificados como Bajo riesgo.
             Una tasa &gt;30% sugiere que los umbrales necesitan recalibración.
         </div>""", unsafe_allow_html=True)
@@ -280,13 +280,13 @@ def mostrar(df, casos, cfg):
     with tab4:
         _section("Motor de Pruebas de Estrés: Simulación de Configuración")
         st.markdown("""
-        <div style="background:#171c23; border-left:3px solid #b47cf7; padding:14px; margin-bottom:16px; font-size:12px; color:#b8a58e;">
+        <div class="panel-accent tone-violet">
             Simula el impacto de modificar un parámetro clave sin reprocesar todo el motor.
             Útil para calibrar umbrales antes de aplicar cambios definitivos.
         </div>""", unsafe_allow_html=True)
 
         param_opts = {
-            "Umbral Monto Absoluto (Q)": "umbral_absoluto",
+            ui_components.etiqueta_monto("Umbral Monto Absoluto"): "umbral_absoluto",
             "Multiplicador Acumulado (Nx)": "mult_acumulado",
             "Umbral de Fragmentación (operaciones/día)": "umbral_smurfing",
         }
@@ -296,7 +296,7 @@ def mostrar(df, casos, cfg):
         val_actual = cfg.get(param_key, 1)
 
         if param_key == "umbral_absoluto":
-            rango = st.slider("Rango de simulación (Q)", 5000, 100000,
+            rango = st.slider(ui_components.etiqueta_monto("Rango de simulación"), 5000, 100000,
                               (max(5000, int(val_actual) - 10000), min(100000, int(val_actual) + 20000)), 1000)
             valores_sim = list(range(rango[0], rango[1] + 1, max(1000, (rango[1] - rango[0]) // 10)))
         elif param_key == "mult_acumulado":
@@ -335,7 +335,7 @@ def mostrar(df, casos, cfg):
     with tab5:
         _section("Análisis de Densidad de Riesgo")
         st.markdown("""
-        <div style="background:#171c23; border-left:3px solid #ef4444; padding:14px; margin-bottom:16px; font-size:12px; color:#b8a58e;">
+        <div class="panel-accent tone-danger">
             Analiza la concentración del riesgo en la cartera. Identifica si el riesgo está
             concentrado en pocos clientes o distribuido. Una concentración extrema puede indicar
             un sesgo de reglas o un grupo de actividad inusual.

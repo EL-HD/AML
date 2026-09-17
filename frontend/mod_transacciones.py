@@ -3,7 +3,8 @@ from frontend.mod_utils import render_html_table
 from frontend.ui_safe import h
 from frontend import ui_components
 
-UMBRAL_RTE_USD = 10_000  # Art. 31 Ley 6593
+# Art. 31 Ley 6593: umbral normativo en USD (única definición en ui_components)
+UMBRAL_RTE_USD = ui_components.UMBRAL_RTE_USD
 
 def _detectar_rte(df, col_monto: str = "Monto", col_tipo: str = "Tipo_Instrumento"):
     """Marca transacciones en efectivo >= USD 10,000 para RTE (Art. 31 Ley 6593)."""
@@ -74,11 +75,12 @@ def mostrar(df):
     columnas_mostrar = [c for c in columnas_mostrar if c in df_view.columns]
 
     if n_rte > 0:
-        st.warning(f"{n_rte} transacción(es) en efectivo iguales o mayores a USD {UMBRAL_RTE_USD:,} "
-                   "(umbral legal expresado en dólares): requieren RTE ante la IVE (Art. 31 Ley 6593).")
+        st.warning(f"{n_rte} transacción(es) en efectivo iguales o mayores a {ui_components.UMBRAL_RTE_TEXTO} "
+                   f"(umbral normativo expresado en dólares; los montos se muestran en {ui_components.nombre_moneda()}): "
+                   "requieren RTE ante la IVE (Art. 31 Ley 6593).")
 
     st.markdown(f"""
-    <div class="warning-box" style="margin-top:10px;">
+    <div class="warning-box mt-10">
         <strong>{h(format(len(df_view), ','))} transacción(es)</strong> visibles en la bitácora actual.
         Las columnas de validación muestran <strong>Si</strong> cuando la condición aplica y <strong>--</strong> cuando no fue activada en el análisis.
     </div>

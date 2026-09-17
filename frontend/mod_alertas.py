@@ -76,7 +76,7 @@ def mostrar(casos):
             casos_view[col] = casos_view[col].apply(lambda x: "Si" if x else "--")
 
     st.markdown(f"""
-    <div class="warning-box" style="margin-top:10px;">
+    <div class="warning-box mt-10">
         <strong>{h(len(casos_view))} caso(s) identificados</strong> con los criterios actuales.
         El listado se presenta de mayor a menor score para facilitar priorización operativa.
     </div>
@@ -93,7 +93,7 @@ def mostrar(casos):
         tabla_casos["Anomalia_Percentil"] = tabla_casos["Anomalia_Percentil"].map(
             lambda v: "--" if v is None or v != v else f"{float(v):.1f}")
     tabla_casos = tabla_casos.rename(columns={
-        "Total_Mensual": "Total Mensual (Q)",
+        "Total_Mensual": ui_components.etiqueta_monto("Total Mensual"),
         "Score_Max": "Score de Riesgo",
         "ST_Max": "S_T (Transaccional)",
         "SC_Max": "S_C (Contextual)",

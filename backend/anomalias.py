@@ -514,7 +514,7 @@ def calcular_anomalias(df: pd.DataFrame, cfg: Optional[dict] = None, hash_lote: 
     inicio = time.perf_counter()
     params = params or ParametrosAnomalia.desde_config(cfg)
     params.validar()
-    moneda = moneda or ("USD " if (cfg or {}).get("moneda") == "USD" else "Q")
+    moneda = moneda or ("US$" if (cfg or {}).get("moneda") == "USD" else "Q")
     if not params.activa:
         return _resultado_vacio("La señal de anomalía está desactivada en la configuración.", params)
     if df is None or len(df) == 0:

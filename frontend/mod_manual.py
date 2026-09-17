@@ -70,6 +70,7 @@ def mostrar():
 
     * **RTS: Reporte de Transacción Sospechosa (Art. 30):** Se genera para casos clasificados como `Sospechosa_Confirmada`. Incluye datos del sujeto obligado, cliente, score IMPERATOR y fundamento del examen. Formato compatible con la IVE-SIB.
     * **RTE: Reporte de Transacción en Efectivo (Art. 31):** Se genera automáticamente para transacciones con `Tipo_Instrumento = EFECTIVO` y `Monto ≥ USD 10,000`. El sistema alerta en el módulo de Transacciones cuando existen casos pendientes.
+    * **Moneda de trabajo y monto normativo:** en Configuración se elige la moneda de trabajo (GTQ o USD) con la que se expresan montos, umbrales de reglas, ejes de gráficos y PDF. El umbral RTE del Art. 31 es un monto normativo fijado en dólares (USD 10,000) y se muestra siempre en USD, aunque la moneda de trabajo sea GTQ; cada PDF indica la moneda de trabajo en su portada.
 
     ## 5. Inteligencia de Red Transaccional
     El módulo de **Red Transaccional** visualiza el flujo de capital mediante grafos. Patrones detectados:
