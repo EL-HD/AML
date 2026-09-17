@@ -3,6 +3,84 @@
 **Plan de referencia:** `docs/planes/PLAN_FASE2_2026-09.md` · **Rama:** `mejora/fase2-cumplimiento-2026-09` (sin push, sin merge).
 Cada tarea añade su sección al terminar (estado, commit, evidencia, variables nuevas y pasos de despliegue).
 
+## Resumen ejecutivo (cierre de fase, 17/09/2026)
+
+Rama `mejora/fase2-cumplimiento-2026-09`, 19 commits sobre `main` (código + informe por tarea), **sin push, sin merge y sin cambios en Railway**. Todas las tareas del plan quedaron HECHAS; los puntos que solo pueden validarse con red, Docker o navegador real se listan en "Riesgos residuales".
+
+### Estado por tarea
+
+| Tarea | Estado | Commit de código | Entregable principal |
+|-------|--------|------------------|----------------------|
+| T1 Persistencia de casos (Art. 29, 30, 34) | HECHO | `fbab9e9` | `CasosAlerta` + historial inmutable, flujo cuatro ojos, migración 004 |
+| T2 CI en GitHub Actions | HECHO (primera corrida real pendiente del push) | `d611307` | `.github/workflows/ci.yml`, `bandit.yaml`, Dependabot, guía "Wait for CI" |
+| T3 Screening de sanciones (GAFI R.6/R.7) | HECHO | `dc66328` | `backend/screening.py`, migración 005, vista Listas de Sanciones |
+| T4 Bitácora a prueba de alteraciones | HECHO | `a959f08` | Cadena SHA-256/HMAC por licencia, migración 006, vista Integridad |
+| T5 Cabeceras de seguridad | HECHO (build de imagen y navegador real por observar) | `15baaba` | Caddy con CSP/HSTS delante de Streamlit, `verificar_cabeceras.py` |
+| T6 MFA TOTP (RFC 6238) | HECHO | `890b8b2` | `backend/totp.py`, `backend/mfa.py`, migración 007, vista Seguridad de la Cuenta |
+| T7 Respaldos | HECHO (cron documentado, S3 sin probar) | `3e9be0f` | `respaldo_bd.py`/`restaurar_bd.py` cifrados, manifiesto firmado, runbook |
+| T8 Detección de anomalías | HECHO | `30e2cab` | `backend/anomalias.py` (Isolation Forest numpy + MAD), pestaña y PDF |
+| T9 Pendientes UI | HECHO | `1aedba4` | Moneda configurable en PDF/ejes, `style=` inline 156 -> 2 |
+
+**Pruebas:** 70 al inicio de la fase -> **245 en verde** (`python -m unittest discover -s tests`), más prueba de humo `AppTest` en las 17 vistas, LOGIN y SIN_DATOS. **Duplicación:** 1.54 % (umbral 10 %). Migraciones validadas con `psql` en PostgreSQL 16, dos veces cada una (idempotencia).
+
+### Variables de entorno nuevas en la fase
+
+| Variable | Tarea | Obligatoria | Valor por defecto | Uso |
+|----------|-------|-------------|-------------------|-----|
+| `SCREENING_AUTO_DOWNLOAD` | T3 | Opcional | `false` | Habilita la descarga desde las URLs oficiales fijas de OFAC y ONU (la carga manual funciona siempre). |
+| `AUDIT_HMAC_KEY` | T4 | Opcional, **recomendada** en producción | vacía (se usa SHA-256) | Clave HMAC-SHA256 de los eslabones de la bitácora. Definirla **antes** del primer despliegue y no cambiarla ni retirarla después. |
+| `CSP_SCRIPT_EXTRA` | T5 | Opcional | vacía | Fuentes extra para `script-src` de la CSP (válvula de escape sin reconstruir la imagen). |
+| `PORT` | T5 | La fija Railway | `8080` en la imagen (antes 8501) | Puerto en el que escucha Caddy; Streamlit queda en `127.0.0.1:8501`. |
+| `MFA_ENCRYPTION_KEY` | T6 | Opcional; **obligatoria para habilitar MFA** | vacía (no se puede enrolar) | Clave Fernet para cifrar los secretos TOTP. Generar con `Fernet.generate_key()`; no cambiar con usuarios enrolados. |
+| `MFA_ENFORCE` | T6 | Opcional | `false` | `true` exige MFA a `admin` y `oficial`. |
+| `BACKUP_ENCRYPTION_KEY` | T7 | **Obligatoria para respaldar/restaurar** (solo en el servicio cron o donde corran los scripts) | ninguna | Clave maestra (formato Fernet) del cifrado AES-256-GCM y de la firma del manifiesto. Generar con `python scripts/respaldo_bd.py --generar-clave`; guardar copia en el gestor de secretos. |
+| `BACKUP_DIR` | T7 | Opcional | `backups/` | Destino local (en Railway, un volumen, por ejemplo `/data/respaldos`). |
+| `BACKUP_S3_BUCKET`, `BACKUP_S3_ENDPOINT`, `BACKUP_S3_REGION` | T7 | Opcionales (alternativa a `BACKUP_DIR`) | vacías | Destino S3 compatible (Railway Bucket); requieren `boto3`. |
+| `BACKUP_S3_PREFIX` | T7 | Opcional | `sovereign-aml` | Prefijo de los objetos en el bucket. |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | T7 | Obligatorias solo con S3 | ninguna | Credenciales del bucket. |
+| `BACKUP_RETENCION_DIARIOS` / `_SEMANALES` / `_MENSUALES` | T7 | Opcionales | `7` / `4` / `12` | Política abuelo-padre-hijo. |
+| `BACKUP_TMPDIR` | T7 | Opcional | temporal del sistema | Directorio privado donde vive el volcado en claro durante segundos. |
+| `BACKUP_HOSTS_PRODUCCION` | T7 | Opcional | vacía | Hosts adicionales considerados producción al restaurar. |
+| `BACKUP_PERMITIR_RESTAURAR_PRODUCCION` | T7 | Solo durante una restauración de producción autorizada | no definida | Debe valer `si` junto con `--confirmar-produccion`; retirarla al terminar. |
+
+T1, T2, T8 y T9 no añaden variables. T8 añade claves de configuración AML (`anomalia_*`) con valores por defecto.
+
+### Orden de despliegue seguro a producción
+
+1. **Antes de desplegar, crear en Railway** (servicio de la aplicación): `AUDIT_HMAC_KEY` (32+ caracteres aleatorios) y `MFA_ENCRYPTION_KEY` (Fernet). Guardar ambas en el gestor de secretos de la organización. Dejar `MFA_ENFORCE` sin definir (o `false`) y `CSP_SCRIPT_EXTRA` vacía. No definir `SCREENING_AUTO_DOWNLOAD` todavía.
+2. **Activar "Wait for CI"** en Railway (Settings > Source > Wait for CI) y hacer el push de la rama / PR a `main`: la primera corrida real de `ci.yml` (pruebas, bandit, pip-audit, duplicación, migraciones en PostgreSQL 16) puede revelar hallazgos de bandit/pip-audit que no pudieron ejecutarse localmente (PyPI bloqueado); corregirlos antes del merge. Con "Wait for CI" activo, `main` solo despliega en verde.
+3. **Despliegue del código**: al arrancar, `scripts/db_migrate.py` aplica en orden **004 (casos), 005 (screening), 006 (bitácora con hash), 007 (MFA)**; son idempotentes y coexisten con `create_all`. Importante: código y migración 006 deben ir juntos (ya ocurre con el runner): tras 006 la base rechaza inserciones en la bitácora sin cadena. Vigilar el build: el stage `builder` descarga Caddy desde GitHub y verifica SHA-512; si la red de build lo impide, el build falla de forma explícita (ver reversión de T5).
+4. **Verificación inmediata tras el despliegue**: (a) `python scripts/verificar_cabeceras.py https://<dominio> --websocket` debe terminar con "Todas las comprobaciones se cumplen"; (b) abrir la aplicación con la **consola del navegador** visible y recorrer login, carga de Excel, gráficos Plotly, exportaciones PDF/CSV y manual: no debe aparecer ningún "Refused to ... Content Security Policy"; si aparece, añadir la fuente (o `'unsafe-eval'`) en `CSP_SCRIPT_EXTRA` y redesplegar sin tocar código; (c) Administración > Integridad de Bitácora > "Verificar cadena ahora": cadena íntegra con HMAC activo; conservar el CSV como línea base; (d) generar un RTE y comprobar la moneda de trabajo y el umbral "USD 10,000".
+5. **Listas de sanciones**: un Administrador descarga `sdn.csv`, `alt.csv` (OFAC) y `consolidated.xml` (ONU) de los sitios oficiales y los carga en Investigación > Listas de Sanciones; validar que los parsers aceptan los archivos reales (no pudieron descargarse en desarrollo). Solo entonces, y si la red de Railway alcanza `www.treasury.gov` y `scsanctions.un.org`, considerar `SCREENING_AUTO_DOWNLOAD=true`.
+6. **Activación de MFA_ENFORCE** (en dos pasos): con `MFA_ENCRYPTION_KEY` ya definida, cada Administrador y Oficial enrola su autenticador en Administración > Seguridad de la Cuenta y guarda sus códigos de recuperación; comprobar que al menos **dos administradores** están enrolados y que un cierre/reinicio de sesión y una recarga del navegador funcionan con código. Solo entonces poner `MFA_ENFORCE=true` y redesplegar: los admin/oficial no enrolados verán únicamente la pantalla de enrolamiento en su próximo login; analistas y auditores no cambian.
+7. **Servicio cron de respaldos**: (a) añadir al `Dockerfile` (stage `runtime`) `postgresql-client-18` con el snippet de la sección T7 y, si se usa bucket, `boto3` en `requirements.txt`; verificar el build; (b) crear en el mismo proyecto un servicio "New > GitHub Repo" con la misma rama y "Config file path" = `railway.respaldo.toml` (`cronSchedule = "0 3 * * *"`, sin dominio público); (c) variables del cron: `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `BACKUP_ENCRYPTION_KEY` (guardada en el gestor de secretos) y un destino (`BACKUP_DIR` con volumen en `/data`, o `BACKUP_S3_*` + credenciales del Bucket); (d) primera ejecución manual con `--sin-retencion`, luego `--listar` y `python scripts/restaurar_bd.py --respaldo <último> --verificar-solo`; (e) programar la verificación mensual y el ensayo trimestral del runbook, y comparar las anclas de auditoría del manifiesto con "Integridad de Bitácora".
+8. **Gobierno del modelo de anomalías** (T8): registrar la precisión observada contra casos examinados antes de usar la señal para priorizar y fijar la recalibración trimestral.
+
+### Riesgos residuales
+
+- **CSP en navegador real** (T5): validada por análisis de bundles, no con navegador contra el proxy; mitigación inmediata `CSP_SCRIPT_EXTRA`; riesgo de bloqueo de algún componente hasta la verificación del paso 4.
+- **Build de la imagen** (T5, T7): no hay Docker en los entornos de trabajo; la descarga verificada de Caddy y la instalación de `postgresql-client-18`/`qrcode`/`boto3` se validan en el primer build de Railway. Si `qrcode` rompiera el build, retirarlo de `requirements.txt` (MFA funciona con clave manual).
+- **bandit / pip-audit** (T2): no ejecutados localmente; posibles hallazgos en la primera corrida de CI.
+- **Archivos reales OFAC/ONU** (T3): parsers probados con fixtures conforme al formato documentado; un cambio de etiquetas en la ONU exigiría ajustar `parsear_onu_consolidada`.
+- **Estado en memoria de un solo worker** (T6, límite de intentos y `jti` canjeados; heredado del limitador previo): con varios workers migrar a Redis.
+- **Claves irrecuperables**: perder `MFA_ENCRYPTION_KEY` obliga a restablecer el MFA de todos (entran con códigos de recuperación); perder `BACKUP_ENCRYPTION_KEY` deja los respaldos indescifrables; retirar `AUDIT_HMAC_KEY` vuelve no verificables los eslabones HMAC. Las tres deben estar en el gestor de secretos con doble custodia.
+- **Borrado de la cola de la cadena de bitácora** (T4): solo se detecta comparando el último hash entre verificaciones o con las anclas del manifiesto de respaldo (T7); los triggers lo impiden a nivel de base.
+- **S3 y cron no ejercitados** (T7): código conforme a la API de boto3 y a la configuración documentada de Railway; primera corrida con `--sin-retencion`.
+- **Moneda** (T9): sin tipo de cambio; la moneda de trabajo etiqueta los montos tal como llegan; el umbral RTE se compara numéricamente con el monto del Excel.
+
+### Pasos de reversión
+
+- **General**: Railway conserva el despliegue anterior si el nuevo no supera el healthcheck; para volver atrás, redesplegar el commit previo de `main` (o `git revert` de los commits de la fase, en orden inverso). Las migraciones 004-007 son aditivas (tablas y columnas nuevas, triggers) y no rompen el código anterior salvo lo indicado abajo.
+- **T5 (proxy)**: `git revert 15baaba`, o restaurar en `supervisord.conf` `--server.port %(ENV_PORT)s --server.address 0.0.0.0` y quitar `[program:caddy]`, y en `Dockerfile` `PORT=8501`, `EXPOSE 8501` y el healthcheck a `localhost:8501`. Sin efecto en datos.
+- **T6 (MFA)**: poner `MFA_ENFORCE=false` desactiva la obligatoriedad de inmediato; los usuarios ya enrolados siguen con MFA. Para desactivar MFA de un usuario, un administrador lo restablece desde la vista; retirar `MFA_ENCRYPTION_KEY` solo impide nuevos enrolamientos (los enrolados entran con códigos de recuperación). La tabla `MfaUsuarios` puede quedar sin uso.
+- **T4 (bitácora)**: si se revierte el código a una versión sin cadena, **debe revertirse también la migración 006** (eliminar `trg_bitacora_validar_eslabon` y `trg_bitacora_inmutable`) o la aplicación anterior no podrá insertar en la bitácora; las columnas `seq/hash_prev/hash/hash_alg` pueden quedar. Hacerlo solo por procedimiento del DBA y documentarlo, porque desactiva la protección append-only.
+- **T3 / T1 (screening, casos)**: revertir el código deja las tablas `ListasSancion*`, `Screening*`, `CasosAlerta*` sin uso; no hay que borrarlas (retención Art. 34).
+- **T7 (respaldos)**: eliminar el servicio cron en Railway; los respaldos existentes siguen siendo restaurables con la clave de su fecha.
+- **T9 (UI)**: `git revert 1aedba4`; sin datos ni variables afectadas.
+- **T2 (CI)**: desactivar "Wait for CI" en Railway si el pipeline bloqueara un despliegue urgente; el workflow puede deshabilitarse desde GitHub sin tocar el código.
+
+---
+
 ---
 
 ## T1 Persistencia de casos (Art. 29, 30 y 34 Ley 6593)
@@ -401,3 +479,36 @@ Ninguna de entorno. Claves de configuración AML: `anomalia_activa`, `anomalia_p
 - **Señal por transacción en la vista Transacciones**: se calcula (`Anomalia_Tx_Percentil`) y se muestra en el detalle del cliente, pero no se añadió como columna en la bitácora transaccional para no ampliar una tabla ya densa; opción: columna opcional con filtro.
 - **Memoria histórica entre lotes** (percentiles frente a períodos anteriores) requeriría persistir variables por cliente y lote en base de datos; queda como evolución con tabla `AnomaliasHistorial` (licenciaid, hash_lote, cliente, variables, percentil) y comparación de deriva.
 - **Contribuciones nativas del bosque** (profundidad por variable) se descartaron en favor de la desviación robusta por ser más estable y legible; puede añadirse como segunda vista técnica si el Oficial la solicita.
+
+---
+
+## T9 Pendientes UI
+
+**Estado:** HECHO · **Fecha:** 17/09/2026 · **Commit:** `1aedba4` (código) y el commit de este informe.
+
+### Qué se hizo
+- **Moneda configurable en todos los PDF** (`frontend/mod_reportes.py`): los cuatro documentos (ficha de cliente, informe ejecutivo, RTS y RTE) usan `fmt_moneda`, `etiqueta_monto` y la nueva `nombre_moneda()` de `ui_components`; la portada de cada PDF indica "Moneda de trabajo: GTQ (Quetzales)" o "USD (Dólares)". Ejes `set_ylabel` de matplotlib ("Monto total (Q)" fijo) y la columna "Volumen (Q)" pasan por `etiqueta_monto`; el KPI "Volumen total" del informe ejecutivo se formatea con `fmt_moneda` (antes número sin símbolo).
+- **Monto normativo frente a moneda de trabajo**: `ui_components.UMBRAL_RTE_USD = 10_000` y `UMBRAL_RTE_TEXTO = "USD 10,000"` son la única definición del umbral del Art. 31 (`mod_transacciones` la reutiliza). El RTE muestra el KPI "Umbral normativo (USD)" junto a "Monto total efectivo (Q|US$)" y un párrafo (`texto_moneda_normativa()`) que explica que el umbral es un monto normativo en dólares comparado contra su equivalente en la moneda de trabajo. El aviso de Transacciones, la pestaña RTS/RTE y el manual (sección 4) repiten la distinción. Con moneda USD el texto del PDF no contiene ninguna "Q"; con moneda GTQ, "USD" aparece solo en el umbral normativo.
+- **Ejes, hovertemplates y textos de la UI**: `mod_resumen` (3 títulos de eje y 4 hovertemplates), `mod_cliente` (4 hovertemplates), `mod_configuracion` (10 etiquetas y textos de umbrales, incluido `monto_critico` del resumen), `mod_imperator_diagnostics` (2), `mod_red_transaccional` (1), `mod_alertas` y `mod_matrices` ("Total Mensual"), `mod_anomalias` y `backend/anomalias.py` (símbolo `US$` coherente con `simbolo_moneda`, antes `USD `). El símbolo se toma una vez por vista (`sim = ui_components.simbolo_moneda()`).
+- **Estilos inline** (`frontend/theme/styles.css`, `ui_components.py` y 16 módulos): los atributos `style=` en bloques HTML del código pasan de **156 a 2** (los dos restantes son valores numéricos dinámicos: altura máxima de `render_html_table` y tamaño de fuente opcional de `kpi_card`). Mecanismo: clases de tono `.tone-danger|warn|yellow|ok|green|info|violet|accent|muted|strong|white|sky` que fijan la variable CSS `--sv-tone` (y `--sv-tone-soft`) a partir de los tokens; los componentes (`.level-card`, `.rule-row-state`, `.client-head`, `.catalog-card`, `.frame-card`, `.badge-tone`, `.badge-soft`, `.panel-accent`, `.strategy-panel`, `.group-card`, `.kicker`, `.td-code`, etc.) leen esa variable para color, borde o fondo. `ui_components.tone_class(color)` traduce un color de token a su clase y **nunca emite el color crudo** (desconocido -> `tone-muted`), por lo que los colores dinámicos (nivel de riesgo, categoría de acción, estado) ya no requieren `style=`. Utilidades con tokens: `.tx`, `.tx-strong`, `.tx-muted`, `.fw-600/700`, `.mono`, `.fs-12/13`, `.mt-*`, `.mb-*`, `.w-*`. `spec_card` y `nivel_badge` también quedaron sin `style=`. Se añadió la regla `.section-badge` que `regla_titulo` usaba sin definir.
+- **Corrección encontrada durante la migración** (`frontend/mod_mitigacion.py`): la tabla "Acciones asignadas por cliente" se insertaba con `h(filas_acc)`, de modo que el HTML de las filas (ya escapadas celda a celda con `_texto_seguro`) se mostraba como texto (`&lt;tr&gt;...`). Ahora las filas se construyen como `filas_acc_html` y la tabla se renderiza; la prueba estática de `test_ui_safe` sigue en verde porque cada celda pasa por `_texto_seguro`.
+- Manual de usuario: viñeta "Moneda de trabajo y monto normativo" en la sección 4.
+
+### Evidencia (contenedor cloud, Python 3.11)
+- **Medición antes/después** (regex `[ ]style=["']` sobre `app.py` y `frontend/*.py`): 156 -> 2 (-98.7 %; objetivo: al menos la mitad). Por archivo: `mod_configuracion` 45 -> 0, `mod_mitigacion` 26 -> 0, `mod_resumen` 17 -> 0, `mod_red_transaccional` 10 -> 0, `app.py` 10 -> 0, `mod_reportes` 9 -> 0, `mod_matrices` 9 -> 0, `mod_cliente` 6 -> 0, `mod_imperator_diagnostics` 5 -> 0, `ui_components` 4 -> 1, `mod_anomalias` 4 -> 0, `mod_mfa` 3 -> 0, `mod_ubicaciones` 3 -> 0, `mod_riesgo_ldft` 2 -> 0, `mod_utils` 1 -> 1, `mod_alertas` y `mod_transacciones` 1 -> 0. En el HTML renderizado con `AppTest` (17 vistas): Configuración 84 -> 0, Matrices 50 -> 1, Acciones de Mitigación 2143 -> 0, Imperator Diagnostics 26 -> 16 (los KPI con tamaño de fuente), Resumen 17 -> 2, Red 11 -> 2, Reportes 9 -> 0.
+- **Sin cambios visuales**: se volcó el HTML de las 17 vistas de la navegación antes y después (`AppTest`, admin, `Transacciones_AML_200.xlsx`, moneda GTQ) y, tras eliminar los atributos `style=` y `class=` y el bloque `<style>`, el contenido es **idéntico** en 14 vistas; las tres diferencias son intencionales: Acciones de Mitigación (la tabla de acciones ahora se renderiza en vez de mostrarse escapada), Informes y Reportes (texto del aviso RTE con la aclaración de moneda) y Manual (viñeta nueva), más marcas de tiempo. Toda clase usada en HTML del código existe en `styles.css`/`login.css` (verificado por prueba; 160 clases, 0 sin definir). Las clases de tono definen colores exclusivamente con tokens ya validados por `test_contraste`; los únicos colores heredados fuera de token (`#2ecc71`/`#e74c3c` del estado del catálogo) se alinearon a `exito_texto`/`peligro`.
+- **PDF en ambas monedas** (generación real por la UI con `AppTest`, botones "Generar PDF", "Generar Informe Ejecutivo PDF", `btn_rts`, `btn_rte`; texto extraído con `pypdf`): con GTQ, informe ejecutivo (218 KB) "Moneda de trabajo: GTQ (Quetzales)", "Q1,965,444 · Volumen total (Q)", 0 apariciones de "US$"; ficha de cliente (99 KB) "Moneda: GTQ (Quetzales)"; RTS (8 KB) "Moneda de trabajo: GTQ"; RTE (9 KB) "Umbral normativo: USD 10,000 o equivalente", "Q510,491 · Monto total efectivo (Q)", "USD 10,000 · Umbral normativo (USD)" y el párrafo de aclaración. Con USD: "US$1,965,444 · Volumen total (US$)", "Moneda: USD (Dólares)", "US$510,491 · Monto total efectivo (US$)", **0 apariciones de "Q"** en los cuatro documentos y el umbral sigue en "USD 10,000". Sin excepciones ni `st.error`. En la UI con moneda USD (9 vistas): 0 etiquetas "(Q)" o "Q<número>"; los umbrales de Configuración muestran "US$45,000", "US$20,000", "US$30,000".
+- `python3 -m unittest discover -s tests`: **245 pruebas en verde** (236 previas + 9 nuevas en `tests/test_estilos_inline.py`): tope de `style=` inline (<= 10), clases HTML definidas en el tema, `tone_class` solo emite clases del tema (incluido color desconocido y `None`), `nivel_badge` sin `style=`, tonos con `--sv-tone`, formato y etiquetas por moneda (GTQ, USD y valor inválido), umbral RTE normativo presente en ambas monedas, símbolo coherente en anomalías y ausencia de "(Q)"/"Q{" fijos fuera de `ui_components`. `test_ui_safe` (escape) y `test_contraste` (AA) en verde. Humo `apptest_smoke.py` en las 17 vistas de la navegación más SIN_DATOS y LOGIN: 0 excepciones, sin XSS (el `st.error` de "Seguridad de la Cuenta" con usuario ficticio sin fila en `Licencias` es previo a T9 y se reproduce en el snapshot anterior).
+- Duplicación: 13.596 líneas, 210 duplicadas, **1.54 %** (umbral 10 %).
+
+### Variables nuevas
+Ninguna.
+
+### Pasos de despliegue
+1. Ninguna migración ni dependencia. La moneda se elige en Configuración > "Moneda de presentación" y se guarda en la configuración AML (`.saml`/JSON antiguos siguen siendo válidos con GTQ por defecto).
+2. Tras desplegar, generar un RTE y comprobar que la portada indica la moneda de trabajo y que el umbral aparece como "USD 10,000".
+
+### Pendientes y motivo
+- Los dos `style=` restantes son valores numéricos calculados (altura de tabla, tamaño de KPI); moverlos a clases exigiría un conjunto cerrado de tamaños. Opción: `.kpi-xl` y alturas fijas de tabla si se quiere llegar a cero.
+- La conversión entre monedas no existe (no hay tipo de cambio): la moneda de trabajo etiqueta los montos tal como vienen en el Excel. Si un lote mezclara monedas, haría falta una columna de moneda por transacción y un tipo de cambio de referencia (Banguat) para comparar contra el umbral RTE; queda como evolución.
+- Los gráficos matplotlib de los PDF se rasterizan: la etiqueta de eje no se puede verificar con `pypdf` (se verificó por código y por la generación sin errores).
