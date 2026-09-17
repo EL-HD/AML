@@ -82,10 +82,11 @@ class ConexionTests(unittest.TestCase):
 
     def test_entorno_pg_lleva_password_solo_al_hijo(self):
         c = respaldos.parsear_database_url("postgresql://u:p%40ss@h:5433/base")
+        antes = dict(os.environ)
         env = c.entorno_pg()
         self.assertEqual(env["PGPASSWORD"], "p@ss")
         self.assertEqual(env["PGPORT"], "5433")
-        self.assertNotIn("PGPASSWORD", os.environ)
+        self.assertEqual(dict(os.environ), antes)  # el entorno del proceso padre no se toca
 
     def test_url_invalida(self):
         with self.assertRaises(respaldos.RespaldoError):
