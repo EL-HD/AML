@@ -13,6 +13,7 @@ from reportlab.platypus import (
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
 import matplotlib
 from frontend.ui_safe import h
+from frontend import exportacion
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -1316,13 +1317,14 @@ def mostrar(df, casos, matriz_alertas, cfg):
                     pdf_bytes = generar_reporte_cliente(cliente_pdf)
                     nombre_archivo = f"AML_Ficha_{cliente_pdf.replace(' ','_')}_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
                     st.success(f"Reporte generado correctamente ({len(pdf_bytes)/1024:.0f} KB)")
-                    st.download_button(
+                    exportacion.boton_descarga(
                         label="Descargar Ficha PDF",
                         data=pdf_bytes,
                         file_name=nombre_archivo,
                         mime="application/pdf",
                         use_container_width=True,
-                        type="primary"
+                        type="primary",
+                        modulo="Informes y Reportes",
                     )
                 except Exception as e:
                     st.error(f"Error al generar el reporte: {e}")
@@ -1383,13 +1385,14 @@ def mostrar(df, casos, matriz_alertas, cfg):
                     pdf_bytes_g = generar_informe_general()
                     nombre_g = f"AML_Informe_Ejecutivo_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
                     st.success(f"Informe generado correctamente ({len(pdf_bytes_g)/1024:.0f} KB)")
-                    st.download_button(
+                    exportacion.boton_descarga(
                         label="Descargar Informe Ejecutivo PDF",
                         data=pdf_bytes_g,
                         file_name=nombre_g,
                         mime="application/pdf",
                         use_container_width=True,
-                        type="primary"
+                        type="primary",
+                        modulo="Informes y Reportes",
                     )
                 except Exception as e:
                     st.error(f"Error al generar el informe: {e}")
@@ -1480,13 +1483,14 @@ def mostrar(df, casos, matriz_alertas, cfg):
                                 f"{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
                             )
                             st.success(f"RTS generado correctamente ({len(pdf_rts)/1024:.0f} KB)")
-                            st.download_button(
+                            exportacion.boton_descarga(
                                 label="Descargar RTS PDF",
                                 data=pdf_rts,
                                 file_name=nombre_rts,
                                 mime="application/pdf",
                                 use_container_width=True,
-                                type="primary"
+                                type="primary",
+                                modulo="Informes y Reportes",
                             )
                         except Exception as e:
                             st.error(f"Error al generar RTS: {e}")
@@ -1544,13 +1548,14 @@ def mostrar(df, casos, matriz_alertas, cfg):
                                 pdf_rte    = generar_pdf_rte_completo(sujeto_rte)
                                 nombre_rte = f"RTE_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
                                 st.success(f"RTE generado correctamente ({len(pdf_rte)/1024:.0f} KB)")
-                                st.download_button(
+                                exportacion.boton_descarga(
                                     label="Descargar RTE PDF",
                                     data=pdf_rte,
                                     file_name=nombre_rte,
                                     mime="application/pdf",
                                     use_container_width=True,
-                                    type="primary"
+                                    type="primary",
+                                    modulo="Informes y Reportes",
                                 )
                             except Exception as e:
                                 st.error(f"Error al generar RTE: {e}")

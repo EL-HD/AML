@@ -34,7 +34,7 @@ from backend import riesgo_ldft_logic as logic
 from backend import schemas
 from backend.database import SessionLocal
 from frontend.mod_utils import plotly_dark_layout, render_html_table
-from frontend import permisos
+from frontend import exportacion, permisos
 
 
 def _solo_lectura() -> bool:
@@ -48,19 +48,6 @@ def _sesion_usuario():
     licenciaid = ud.get("licence_id")
     username = ud.get("user", "desconocido")
     return licenciaid, username
-
-
-def _sanear_celda_csv(valor):
-    """
-    Neutraliza inyección de fórmulas (CSV/Excel Formula Injection) anteponiendo
-    un apóstrofo cuando el valor, potencialmente ingresado por el usuario,
-    como el nombre de un evento, comienza con un carácter que Excel/Sheets
-    interpretaría como inicio de fórmula (=, +, -, @).
-    """
-    texto = str(valor)
-    if texto[:1] in ("=", "+", "-", "@"):
-        return "'" + texto
-    return texto
 
 
 def _badge_nivel(nivel: int) -> str:
@@ -484,12 +471,8 @@ def _tab_reportes(db, licenciaid):
     </div>
     """, unsafe_allow_html=True)
 
-    # Saneado anti-inyección de fórmulas (CSV/Excel Formula Injection) antes de exportar.
-    # DataFrame.applymap() fue eliminado en pandas 3.0 (deprecado desde 2.1);
-    # el reemplazo oficial es DataFrame.map(), fijado en requirements.txt.
-    df_csv = df_factor.map(_sanear_celda_csv)
-    csv = df_csv.to_csv(index=False).encode("utf-8-sig")
-    st.download_button(
-        "Descargar matriz (CSV)", data=csv,
-        file_name="matriz_riesgo_ldft.csv", mime="text/csv",
+    # Saneado anti-inyección de fórmulas centralizado en frontend.exportacion (S-09).
+    exportacion.boton_descarga(
+        "Descargar matriz (CSV)", data=exportacion.csv_bytes(df_factor),
+        file_name="matriz_riesgo_ldft.csv", mime="text/csv", modulo="Riesgo Institucional LD/FT",
     )

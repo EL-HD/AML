@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import date as _date
 from backend import models
 from backend.database import SessionLocal
-from frontend import permisos
+from frontend import exportacion, permisos
 from frontend.mod_utils import apply_dark_style, render_html_table
 from frontend.ui_safe import h
 
@@ -66,6 +66,16 @@ def _validar_retencion(fecha_registro, anos_retencion: int = _RETENCION_MINIMA_A
             f"{fecha_registro.replace(year=fecha_registro.year + anos_retencion)}."
         )
     return puede_eliminar
+
+def _auditar_cambio_config() -> None:
+    """Registra CAMBIO_CONFIG en la bitácora (Art. 19 Ley 6593)."""
+    from frontend.mod_sesion import _registrar_acceso_auditoria
+    from backend import auditoria
+
+    datos = st.session_state.get("user_data") or {}
+    _registrar_acceso_auditoria(datos.get("user", "desconocido"), datos.get("licence_id"),
+                                "Configuración", auditoria.CAMBIO_CONFIG)
+
 
 def mostrar(_DEFAULTS):
     st.markdown("""
@@ -712,8 +722,8 @@ def mostrar(_DEFAULTS):
                     st.error(f"Error: {err}")
             else:
                 st.session_state["aml_config"] = c
+                _auditar_cambio_config()
                 st.success("Configuración aplicada. Vuelve a subir el archivo para reprocesar con los nuevos parámetros.")
-                st.balloons()
 
     with col_btn2:
         if st.button("Restablecer a valores base", use_container_width=True, disabled=not puede_editar):
@@ -724,12 +734,13 @@ def mostrar(_DEFAULTS):
     with col_btn3:
         import json as _json_export
         cfg_export = _json_export.dumps(st.session_state["aml_config"], indent=2, ensure_ascii=False)
-        st.download_button(
+        exportacion.boton_descarga(
             "Exportar Configuración (JSON)",
             data=cfg_export,
             file_name="aml_config.json",
             mime="application/json",
-            use_container_width=True
+            use_container_width=True,
+            modulo="Configuración",
         )
 
     # ── TAB 5: Catálogos IVE (RTS): solo lectura ────────────────────────

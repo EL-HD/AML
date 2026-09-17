@@ -17,7 +17,6 @@ Reglas de seguridad (OWASP A01: control de acceso roto / IDOR):
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
 from typing import Optional
 
 from sqlalchemy.orm import Session
@@ -40,7 +39,7 @@ def crear_segmento(db: Session, licenciaid, factor: str, segmento: str, variable
         segmento=segmento.strip(),
         variable=variable.strip(),
         creado_por=creado_por,
-        creado_en=datetime.now(),
+        creado_en=models.ahora_utc(),
     )
     db.add(row)
     db.commit()
@@ -111,8 +110,8 @@ def crear_evento(db: Session, licenciaid, data, creado_por: str) -> models.Riesg
         nivel_residual=nivel_inherente,  # sin controles vinculados aún = inherente
         requiere_plan_accion=logic.requiere_plan_de_accion(nivel_inherente),
         creado_por=creado_por,
-        creado_en=datetime.now(),
-        actualizado_en=datetime.now(),
+        creado_en=models.ahora_utc(),
+        actualizado_en=models.ahora_utc(),
     )
     db.add(row)
     db.commit()
@@ -180,8 +179,8 @@ def crear_control(db: Session, licenciaid, data, creado_por: str) -> models.Ries
         ponderacion=ponderacion,
         nivel_ponderacion=nivel_ponderacion,
         creado_por=creado_por,
-        creado_en=datetime.now(),
-        actualizado_en=datetime.now(),
+        creado_en=models.ahora_utc(),
+        actualizado_en=models.ahora_utc(),
     )
     db.add(row)
     db.commit()
@@ -232,7 +231,7 @@ def _recalcular_riesgo_residual(db: Session, licenciaid, evento_id) -> Optional[
     nuevo_residual = logic.calcular_riesgo_residual(evento.nivel_inherente, niveles)
     evento.nivel_residual = nuevo_residual
     evento.requiere_plan_accion = logic.requiere_plan_de_accion(nuevo_residual)
-    evento.actualizado_en = datetime.now()
+    evento.actualizado_en = models.ahora_utc()
     db.commit()
     db.refresh(evento)
     return evento
@@ -260,7 +259,7 @@ def vincular_control(db: Session, licenciaid, evento_id, control_id) -> Optional
     )
     if not ya_vinculado:
         db.add(models.RiesgoEventoControl(
-            licenciaid=lid, evento_id=evento.id, control_id=control.id, creado_en=datetime.now()
+            licenciaid=lid, evento_id=evento.id, control_id=control.id, creado_en=models.ahora_utc()
         ))
         db.commit()
     return _recalcular_riesgo_residual(db, lid, evento.id)
@@ -328,8 +327,8 @@ def crear_plan_accion(db: Session, licenciaid, evento_id, data, creado_por: str)
         fecha_fin=data.fecha_fin,
         porcentaje_avance=data.porcentaje_avance,
         creado_por=creado_por,
-        creado_en=datetime.now(),
-        actualizado_en=datetime.now(),
+        creado_en=models.ahora_utc(),
+        actualizado_en=models.ahora_utc(),
     )
     db.add(row)
     db.commit()
@@ -367,7 +366,7 @@ def actualizar_avance_plan(db: Session, licenciaid, plan_id, porcentaje_avance: 
     if not row:
         return None
     row.porcentaje_avance = porcentaje_avance
-    row.actualizado_en = datetime.now()
+    row.actualizado_en = models.ahora_utc()
     db.commit()
     db.refresh(row)
     return row

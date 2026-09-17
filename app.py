@@ -23,7 +23,7 @@ from datetime import date, datetime, timedelta
 
 # --- Importaciones Modulares ---
 from backend.procesador import validar_columnas, procesar_transacciones
-from backend import config_aml, crud, schemas, session_token
+from backend import auditoria, config_aml, crud, schemas, session_token
 from backend.database import SessionLocal
 from sqlalchemy.exc import SQLAlchemyError
 import logging
@@ -35,7 +35,7 @@ from frontend import (
     mod_imperator_diagnostics, mod_sesion, mod_riesgo_ldft
 )
 from frontend.mod_sesion import _registrar_acceso_auditoria
-from frontend import cache_analisis
+from frontend import cache_analisis, exportacion
 
 def _auditar(modulo: str, accion: str = "VISUALIZACION") -> None:
     """Registra acceso de sesión activa: Art. 19 Ley 6593."""
@@ -201,6 +201,7 @@ if st.session_state.authenticated:
     now = datetime.now()
     inactive_for = now - st.session_state.get("last_activity_at", now)
     if inactive_for > timedelta(seconds=SESSION_TIMEOUT_SECONDS):
+        _auditar("Sesión", "LOGOUT_INACTIVIDAD")
         _logout_session(timed_out=True)
         st.rerun()
     st.session_state.last_activity_at = now
@@ -588,6 +589,7 @@ with st.sidebar:
         """, unsafe_allow_html=True)
         
         if st.button("CERRAR SESIÓN", use_container_width=True):
+            _auditar("Sesión", auditoria.LOGOUT)
             _logout_session()
             st.session_state.clear_browser_session = True
             st.rerun()
@@ -1189,13 +1191,14 @@ with st.sidebar:
             st.session_state["aml_config"],
             st.session_state.get("archivo_nombre", "analisis")
         )
-        st.download_button(
+        exportacion.boton_descarga(
             label="Exportar sesión (.saml)",
             data=bytes_saml,
             file_name=nombre_saml,
             mime="application/octet-stream",
             use_container_width=True,
-            help="Descarga el análisis completo con datos y configuración para retomarlo después."
+            help="Descarga el análisis completo con datos y configuración para retomarlo después.",
+            modulo="Sesión",
         )
         st.markdown("""
         <div style='font-size:12.5px; color:#8b949e; font-family:IBM Plex Mono,monospace;
@@ -1294,6 +1297,7 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
                     st.session_state["data_raw"]     = df_raw
                     st.session_state["pep_cpe_info"] = pep_cpe_info
                     st.session_state["archivo_nombre"] = archivo.name
+                    _auditar("Carga de datos", f"{auditoria.IMPORTACION}:XLSX")
                     save_analysis_cache()
                     st.rerun()
             else:
@@ -1336,6 +1340,7 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
                         st.session_state["archivo_nombre"]  = session_meta.get("nombre_archivo", archivo_saml.name)
                         st.session_state["session_meta"]    = session_meta
                         st.session_state["from_saml"]       = True
+                        _auditar("Carga de datos", f"{auditoria.IMPORTACION}:SAML")
                         save_analysis_cache()
 
                     st.rerun()

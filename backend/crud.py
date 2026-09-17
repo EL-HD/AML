@@ -1,7 +1,7 @@
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from . import models, schemas
-from datetime import date, datetime
+from datetime import date
 import bcrypt
 import uuid
 
@@ -132,7 +132,7 @@ def validate_auth(db: Session, username: str, password: str, mail: str = None):
     nueva_sesion = models.BitacoraSesions(
         sessionid=new_session_id,
         licenciaid=db_licencia.licence_id,
-        last_activity=datetime.now()
+        last_activity=models.ahora_utc()
     )
     db.add(nueva_sesion)
     db.commit()
