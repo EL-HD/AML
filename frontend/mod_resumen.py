@@ -1,6 +1,8 @@
 import streamlit as st
 import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout, render_html_table
+from frontend.ui_safe import h
+from frontend import ui_components
 
 def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
     st.markdown("""<div class="info-box"><strong>RESUMEN EJECUTIVO</strong>: Análisis de alto nivel IMPERATOR Intelligence. Muestra indicadores críticos y distribución de riesgo detectada. Optimizado para supervisión operativa mediante capas tonales.</div>""", unsafe_allow_html=True)
@@ -26,7 +28,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
             domain = {'x': [0, 1], 'y': [0, 1]},
             title = {'text': "Salud de Cartera (% Bajo Riesgo)", 'font': {'size': 14}},
             gauge = {
-                'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#8b949e"},
+                'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#a7b0bb"},
                 'bar': {'color': "#22c55e"},
                 'bgcolor': "#161b22",
                 'borderwidth': 2,
@@ -48,31 +50,11 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
         # Mini-metricas horizontales
         c1, c2 = st.columns(2)
         with c1:
-            st.markdown(f"""
-            <div class="metric-card blue">
-                <div class="metric-number">{total_clientes}</div>
-                <div class="metric-label">Clientes Analizados</div>
-                <div class="metric-sub">{clientes_alerta} con alguna alerta</div>
-            </div>""", unsafe_allow_html=True)
-            st.markdown(f"""
-            <div class="metric-card amber">
-                <div class="metric-number">{total_alertas:,}</div>
-                <div class="metric-label">Total de Alertas</div>
-                <div class="metric-sub">{altos} clientes en nivel Alto</div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.kpi("Clientes Analizados", total_clientes, f"{clientes_alerta} con alguna alerta", tone="blue")
+            ui_components.kpi("Total de Alertas", format(total_alertas, ','), f"{altos} clientes en nivel Alto", tone="amber")
         with c2:
-            st.markdown(f"""
-            <div class="metric-card red">
-                <div class="metric-number">{criticos}</div>
-                <div class="metric-label">Clientes Críticos</div>
-                <div class="metric-sub">Requieren revisión inmediata</div>
-            </div>""", unsafe_allow_html=True)
-            st.markdown(f"""
-            <div class="metric-card green">
-                <div class="metric-number">Q{monto_total:,.0f}</div>
-                <div class="metric-label">Volumen Total</div>
-                <div class="metric-sub">Monto acumulado analizado</div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.kpi("Clientes Críticos", criticos, "Requieren revisión inmediata", tone="red")
+            ui_components.kpi("Volumen Total", ui_components.fmt_moneda(monto_total, 0), "Monto acumulado analizado", tone="green")
 
     # ── KPIs de gestión de alertas (Arts. 28-30 Ley 6593) ────────────────────
     if "Estado_Alerta" in casos.columns:
@@ -94,14 +76,14 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
             )
 
         if kpi_sospechosas_sin_rts > 0:
-            st.error(f"🚨 {kpi_sospechosas_sin_rts} caso(s) sospechoso(s) requieren generación urgente de RTS ante la IVE.")
+            st.error(f"{kpi_sospechosas_sin_rts} caso(s) sospechoso(s) requieren generación urgente de RTS ante la IVE.")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     col_a, col_b = st.columns(2)
 
     with col_a:
-        st.markdown('<div class="section-title">Distribución de Riesgo por Cliente</div>', unsafe_allow_html=True)
+        ui_components.section_title("Distribución de Riesgo por Cliente")
         riesgo_counts = casos["Nivel_Riesgo"].value_counts()
 
         def color_por_nivel(nivel):
@@ -109,7 +91,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
             if "Alto"    in nivel:  return "#f97316"
             if "Medio"   in nivel:  return "#eab308"
             if "Bajo"    in nivel:  return "#22c55e"
-            return "#8b949e"
+            return "#a7b0bb"
         colors_list = [color_por_nivel(k) for k in riesgo_counts.index]
 
         import re as _re
@@ -129,7 +111,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
         st.markdown("""<div class="info-box" style="margin-top: 10px;"><b>Interpretación:</b> Segmentación porcentual por nivel de riesgo. Los valores se derivan de la matriz de ponderación activa en el motor de cumplimiento.</div>""", unsafe_allow_html=True)
 
     with col_b:
-        st.markdown('<div class="section-title">Alertas por Tipo</div>', unsafe_allow_html=True)
+        ui_components.section_title("Alertas por Tipo")
 
         tipos_bar = matriz_alertas["Tipo de Alerta"].str.replace(r'\s*\(.*\)', '', regex=True).tolist()
         cantidades_bar = matriz_alertas["Cantidad"].tolist()
@@ -156,7 +138,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
 
     # Línea de tiempo
     st.markdown("---")
-    st.markdown('<div class="section-title">Volumen de Transacciones en el Tiempo</div>', unsafe_allow_html=True)
+    ui_components.section_title("Volumen de Transacciones en el Tiempo")
     st.markdown("""
     <div class="info-box">
         Evolución diaria del volumen transaccional. Los picos pueden indicar ventanas de actividad sospechosa
@@ -204,7 +186,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
     # Gráfica para Tipo de Operación
     if "TipoOperacion" in df.columns:
         st.markdown("---")
-        st.markdown('<div class="section-title">Flujo por Tipo de Operación</div>', unsafe_allow_html=True)
+        ui_components.section_title("Flujo por Tipo de Operación")
         st.markdown("""
         <div class="info-box">
             Distribución del volumen según el canal o rubro reportado. Esto ayuda a segmentar el monitoreo
@@ -216,7 +198,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
         fig_tipo = go.Figure(go.Bar(
             x=flujo_tipo["TipoOperacion"], y=flujo_tipo["Monto"],
             marker=dict(color="#f97316", line=dict(color='#0d1117', width=0.5)),
-            text=[f"Q{v/1000:,.0f}k" if v >= 1000 else f"Q{v:,.0f}" for v in flujo_tipo["Monto"]],
+            text=[f"{ui_components.fmt_moneda(v/1000, 0)}k" if v >= 1000 else ui_components.fmt_moneda(v, 0) for v in flujo_tipo["Monto"]],
             textposition='auto',
             textfont=dict(color='#f8fafc', size=11),
             hovertemplate="<b>%{x}</b><br>Total: <b>Q%{y:,.0f}</b><extra></extra>"
@@ -229,7 +211,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
         st.markdown("""<div class="info-box" style="margin-top: 10px;"><b>Interpretación:</b> Este gráfico compara el volumen agregado por tipo de operación y permite identificar qué canales concentran mayor exposición económica dentro del período analizado.</div>""", unsafe_allow_html=True)
         # --- BUBBLE CHART: MATRIZ DE OPORTUNIDAD DE CANAL ---
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown('<div class="section-title">Matriz de Oportunidad de Canal (Mercadeo vs Riesgo)</div>', unsafe_allow_html=True)
+        ui_components.section_title("Matriz de Oportunidad de Canal (Mercadeo vs Riesgo)")
         st.markdown("""
         <div class="info-box">
             Esta matriz cruza el <b>Volumen Económico</b> (Y) contra el <b>Alcance de Clientes</b> (X). 
@@ -260,7 +242,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
                 color=stats_bubble["Riesgo_Promedio"],
                 colorscale='Viridis',
                 showscale=True,
-                colorbar=dict(title="Score Riesgo", tickfont=dict(color='#8b949e')),
+                colorbar=dict(title="Score Riesgo", tickfont=dict(color='#a7b0bb')),
                 line=dict(width=2, color='#0d1117')
             ),
             text=stats_bubble["Canal"],
@@ -276,7 +258,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
         st.plotly_chart(fig_bubble, use_container_width=True)
         # --- ESTRATEGIA Y BUSINESS INTELLIGENCE (BI) ---
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown('<div class="section-title">Insight Estratégico y Oportunidades</div>', unsafe_allow_html=True)
+        ui_components.section_title("Insight Estratégico y Oportunidades")
         
         # 1. Cálculos de Inteligencia
         conteo_tipo = df["TipoOperacion"].value_counts()
@@ -295,21 +277,21 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
 
         titulo_estrategia = "Estrategia Comercial Recomendada"
         if es_digital:
-            desc_estrategia = f"El canal <b>{canal_frecuente}</b> es el preferido por tus clientes. Se recomienda lanzar campañas de fidelización digital (Cashback, Puntos) y notificaciones Push para productos de crédito rápido."
+            desc_estrategia = f"El canal <b>{h(canal_frecuente)}</b> es el preferido por tus clientes. Se recomienda lanzar campañas de fidelización digital (Cashback, Puntos) y notificaciones Push para productos de crédito rápido."
         elif es_cash:
-            desc_estrategia = f"El uso de <b>{canal_frecuente}</b> es predominante. Existe una oportunidad para migrar estos clientes a canales digitales mediante incentivos de 'Primera Transferencia' o quioscos de auto-servicio."
+            desc_estrategia = f"El uso de <b>{h(canal_frecuente)}</b> es predominante. Existe una oportunidad para migrar estos clientes a canales digitales mediante incentivos de 'Primera Transferencia' o quioscos de auto-servicio."
         else:
-            desc_estrategia = f"El canal <b>{canal_frecuente}</b> lidera la transaccionalidad. Fortalecer la atención en este punto mejorará la retención del cliente."
+            desc_estrategia = f"El canal <b>{h(canal_frecuente)}</b> lidera la transaccionalidad. Fortalecer la atención en este punto mejorará la retención del cliente."
 
         st.markdown(f"""
         <div style="background-color: #1b2027; border: 1px solid #f59e0b; border-radius: 0px; padding: 24px; border-left: 8px solid #f59e0b;">
             <div style="color: #f59e0b; font-weight: 700; font-size: 18px; margin-bottom: 15px; display: flex; align-items: center; font-family: 'IBM Plex Sans', sans-serif;">
-                <span class="pulse-dot"></span> {titulo_estrategia}
+                <span class="pulse-dot"></span> {h(titulo_estrategia)}
             </div>
             <div style="color: #dee2ed; font-size: 14px; line-height: 1.8;">
-                {desc_estrategia}<br><br>
-                <b style="color: #f59e0b;">SEGMENTACIÓN DE VALOR:</b> El canal <b>{canal_volumen}</b> concentra el mayor flujo de capital (Q{monto_tipo.max():,.0f}). Optimización recomendada para productos de alta rentabilidad.<br><br>
-                <b style="color: #ef4444;">PROTOCOLO DE RIESGO:</b> Detección de anomalías críticas en el canal <b>{canal_riesgoso}</b>. Se requiere monitoreo de transacciones en tiempo real y revisión de EDD.
+                {h(desc_estrategia)}<br><br>
+                <b style="color: #f59e0b;">SEGMENTACIÓN DE VALOR:</b> El canal <b>{h(canal_volumen)}</b> concentra el mayor flujo de capital (Q{h(format(monto_tipo.max(), ',.0f'))}). Optimización recomendada para productos de alta rentabilidad.<br><br>
+                <b style="color: #ef4444;">PROTOCOLO DE RIESGO:</b> Detección de anomalías críticas en el canal <b>{h(canal_riesgoso)}</b>. Se requiere monitoreo de transacciones en tiempo real y revisión de EDD.
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -323,7 +305,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
 
     if tiene_pep or tiene_cpe:
         st.markdown("---")
-        st.markdown('<div class="section-title">Asociados PEP / CPE Detectados</div>', unsafe_allow_html=True)
+        ui_components.section_title("Asociados PEP / CPE Detectados")
         st.markdown("""
         <div class="info-box" style="border-left-color: #ef4444;">
             <strong>GAFI: Personas Expuestas Políticamente (PEP) y Contratista o Proveedor del Estado (CPE).</strong>
@@ -337,8 +319,8 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
         with col_pep:
             st.markdown("""
             <div style="background:#171c23; border:1px solid #ef4444; border-top:3px solid #ef4444; padding:16px; margin-bottom:8px;">
-                <div style="color:#ef4444; font-size:11px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:8px;">
-                    ⚠ Personas Expuestas Políticamente (PEP)
+                <div style="color:#ef4444; font-size:12px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:8px;">
+                    Personas Expuestas Políticamente (PEP)
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -348,19 +330,19 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
                 cols_existentes = [c for c in cols_mostrar if c in clientes_pep.columns]
                 df_pep_show = clientes_pep[cols_existentes].copy()
                 if "Total_Mensual" in df_pep_show.columns:
-                    df_pep_show["Total_Mensual"] = df_pep_show["Total_Mensual"].apply(lambda x: f"Q{x:,.2f}")
+                    df_pep_show["Total_Mensual"] = df_pep_show["Total_Mensual"].apply(lambda x: ui_components.fmt_moneda(x, 2))
                 if "Score_Max" in df_pep_show.columns:
                     df_pep_show["Score_Max"] = df_pep_show["Score_Max"].apply(lambda x: f"{x:.2f}")
                 df_pep_show.columns = [c.replace("_", " ") for c in df_pep_show.columns]
                 st.markdown(render_html_table(df_pep_show, max_height=220), unsafe_allow_html=True)
             else:
-                st.markdown('<div style="color:#6e7681; font-size:13px; padding:8px 0;">No se detectaron clientes PEP en el período analizado.</div>', unsafe_allow_html=True)
+                st.markdown('<div style="color:#a7b0bb; font-size:13px; padding:8px 0;">No se detectaron clientes PEP en el período analizado.</div>', unsafe_allow_html=True)
 
         with col_cpe:
             st.markdown("""
             <div style="background:#171c23; border:1px solid #f97316; border-top:3px solid #f97316; padding:16px; margin-bottom:8px;">
-                <div style="color:#f97316; font-size:11px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:8px;">
-                    ⚠ Contratista o Proveedor del Estado (CPE)
+                <div style="color:#f97316; font-size:12px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:8px;">
+                    Contratista o Proveedor del Estado (CPE)
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -370,10 +352,10 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
                 cols_existentes = [c for c in cols_mostrar if c in clientes_cpe.columns]
                 df_cpe_show = clientes_cpe[cols_existentes].copy()
                 if "Total_Mensual" in df_cpe_show.columns:
-                    df_cpe_show["Total_Mensual"] = df_cpe_show["Total_Mensual"].apply(lambda x: f"Q{x:,.2f}")
+                    df_cpe_show["Total_Mensual"] = df_cpe_show["Total_Mensual"].apply(lambda x: ui_components.fmt_moneda(x, 2))
                 if "Score_Max" in df_cpe_show.columns:
                     df_cpe_show["Score_Max"] = df_cpe_show["Score_Max"].apply(lambda x: f"{x:.2f}")
                 df_cpe_show.columns = [c.replace("_", " ") for c in df_cpe_show.columns]
                 st.markdown(render_html_table(df_cpe_show, max_height=220), unsafe_allow_html=True)
             else:
-                st.markdown('<div style="color:#6e7681; font-size:13px; padding:8px 0;">No se detectaron clientes CPE en el período analizado.</div>', unsafe_allow_html=True)
+                st.markdown('<div style="color:#a7b0bb; font-size:13px; padding:8px 0;">No se detectaron clientes CPE en el período analizado.</div>', unsafe_allow_html=True)

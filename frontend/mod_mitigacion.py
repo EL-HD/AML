@@ -1,9 +1,10 @@
-import html
 
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 from frontend.mod_utils import plotly_dark_layout
+from frontend.ui_safe import h
+from frontend import ui_components
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CATÁLOGO DE ACCIONES DE MITIGACIÓN: RBA (GAFI) + ISO 31000 + COSO ERM
@@ -41,7 +42,7 @@ _COLOR_CAT = {
     "Correctivas":   "#f97316",
     "Regulatorias":  "#eab308",
     "Estratégicas":  "#3b82f6",
-    "Formularios KYC": "#a855f7",
+    "Formularios KYC": "#b47cf7",
 }
 
 
@@ -49,7 +50,7 @@ def _texto_seguro(valor):
     """Escapa texto dinámico para evitar que el HTML se renderice como contenido."""
     if pd.isna(valor):
         return "N/D"
-    return html.escape(str(valor))
+    return h(valor)
 
 def _determinar_acciones(row, cfg=None):
     """
@@ -130,7 +131,7 @@ def mostrar(df, casos):
     """, unsafe_allow_html=True)
 
     # ── MARCO NORMATIVO ────────────────────────────────────────────────────
-    st.markdown('<div class="section-title">Marco Normativo Aplicado</div>', unsafe_allow_html=True)
+    ui_components.section_title("Marco Normativo Aplicado")
     col_n1, col_n2, col_n3 = st.columns(3)
     marcos = [
         ("RBA: GAFI", "Núcleo operativo", "Evalúa el riesgo de cada cliente con enfoque basado en riesgo. Activa acciones proporcionales al nivel detectado.", "#ef4444"),
@@ -140,10 +141,10 @@ def mostrar(df, casos):
     for col, (titulo, subtitulo, desc, color) in zip([col_n1, col_n2, col_n3], marcos):
         with col:
             st.markdown(f"""
-            <div style="background:#1b2027; border-left:4px solid {color}; padding:16px; margin-bottom:8px; min-height:120px;">
-                <div style="color:{color}; font-size:13px; font-weight:700; font-family:'IBM Plex Mono',monospace;">{titulo}</div>
-                <div style="color:#f0f6fc; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin:6px 0 4px;">{subtitulo}</div>
-                <div style="color:#a08e7a; font-size:12px; line-height:1.6;">{desc}</div>
+            <div style="background:#1b2027; border-left:4px solid {h(color)}; padding:16px; margin-bottom:8px; min-height:120px;">
+                <div style="color:{h(color)}; font-size:13px; font-weight:700; font-family:'IBM Plex Mono',monospace;">{h(titulo)}</div>
+                <div style="color:#f0f6fc; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin:6px 0 4px;">{h(subtitulo)}</div>
+                <div style="color:#b8a58e; font-size:12px; line-height:1.6;">{h(desc)}</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -155,32 +156,32 @@ def mostrar(df, casos):
     umbral_feic = cfg_mit.get("umbral_feic", 45000)
     if regla_feic:
         st.markdown(f"""
-        <div style="background:#1b1027; border-left:4px solid #a855f7; padding:14px; margin-bottom:16px; font-size:12px; color:#d8c3ad;">
-            <span style="color:#a855f7; font-weight:700; font-family:'IBM Plex Mono',monospace;">VERIFICACIÓN FEIS → FEIC ACTIVA</span>
-            &nbsp;|&nbsp; Umbral configurado: <strong>Q{umbral_feic:,}</strong><br>
+        <div style="background:#1b1027; border-left:4px solid #b47cf7; padding:14px; margin-bottom:16px; font-size:12px; color:#d8c3ad;">
+            <span style="color:#b47cf7; font-weight:700; font-family:'IBM Plex Mono',monospace;">VERIFICACIÓN FEIS → FEIC ACTIVA</span>
+            &nbsp;|&nbsp; Umbral configurado: <strong>{h(ui_components.fmt_moneda(umbral_feic))}</strong><br>
             Los asociados que superen este monto mensual recibirán la acción <strong>F-01</strong>:
             actualización de FEIS a FEIC (Formulario Electrónico de Información del Cliente).
         </div>""", unsafe_allow_html=True)
 
     # ── CATÁLOGO DE ACCIONES DE MITIGACIÓN ────────────────────────────────
-    st.markdown('<div class="section-title">Catálogo de Acciones Estandarizadas</div>', unsafe_allow_html=True)
+    ui_components.section_title("Catálogo de Acciones Estandarizadas")
     col_cats = st.columns(5)
     for col, (cat_nombre, items) in zip(col_cats, _CATALOGO.items()):
         color = _COLOR_CAT[cat_nombre]
         with col:
             filas_html = "".join([
                 f"""<div style="display:flex; gap:8px; margin-bottom:8px; align-items:flex-start;">
-                    <span style="color:{color}; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:700; min-width:36px; padding-top:1px;">{i['codigo']}</span>
+                    <span style="color:{h(color)}; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700; min-width:36px; padding-top:1px;">{h(i['codigo'])}</span>
                     <div>
-                        <div style="color:#dee2ed; font-size:12px; line-height:1.4;">{i['accion']}</div>
-                        <div style="color:#6e7681; font-size:10px; font-family:'IBM Plex Mono',monospace;">{i['norma']}</div>
+                        <div style="color:#dee2ed; font-size:12px; line-height:1.4;">{h(i['accion'])}</div>
+                        <div style="color:#a7b0bb; font-size:12px; font-family:'IBM Plex Mono',monospace;">{h(i['norma'])}</div>
                     </div>
                 </div>"""
                 for i in items
             ])
             st.markdown(f"""
-            <div style="background:#171c23; border:1px solid {color}; border-top:3px solid {color}; padding:16px;">
-                <div style="color:{color}; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:12px; font-family:'IBM Plex Mono',monospace;">{cat_nombre}</div>
+            <div style="background:#171c23; border:1px solid {h(color)}; border-top:3px solid {h(color)}; padding:16px;">
+                <div style="color:{h(color)}; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:12px; font-family:'IBM Plex Mono',monospace;">{h(cat_nombre)}</div>
                 {filas_html}
             </div>
             """, unsafe_allow_html=True)
@@ -188,7 +189,7 @@ def mostrar(df, casos):
     st.markdown("---")
 
     # ── ACCIONES ASIGNADAS POR CLIENTE ────────────────────────────────────
-    st.markdown('<div class="section-title">Acciones Asignadas por Cliente</div>', unsafe_allow_html=True)
+    ui_components.section_title("Acciones Asignadas por Cliente")
 
     # Selector de nivel
     niveles_disp = ["Todos"] + sorted(casos["Nivel_Riesgo"].unique().tolist(), reverse=True)
@@ -197,7 +198,7 @@ def mostrar(df, casos):
     df_filtrado = casos if nivel_filtro == "Todos" else casos[casos["Nivel_Riesgo"] == nivel_filtro]
 
     if df_filtrado.empty:
-        st.info("No hay clientes con el nivel seleccionado.")
+        ui_components.empty_state("Sin clientes en este nivel", "No hay asociados clasificados con el nivel de riesgo seleccionado.", "Seleccione otro nivel en el filtro superior.")
         return
 
     # Construir tabla de acciones
@@ -229,11 +230,7 @@ def mostrar(df, casos):
     ]
     for col, (val, lbl, color) in zip([col_k1, col_k2, col_k3, col_k4], kpi_data):
         with col:
-            st.markdown(f"""
-            <div class="metric-card {color}">
-                <div class="metric-number">{val}</div>
-                <div class="metric-label">{lbl}</div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.kpi(lbl, val, tone=color)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -246,7 +243,7 @@ def mostrar(df, casos):
         row_datos = df_filtrado[df_filtrado["Cliente"] == cliente].iloc[0]
         nivel_c  = row_datos["Nivel_Riesgo"]
         score_c  = row_datos["Score_Max"]
-        color_nivel = {"Crítico": "#ef4444", "Alto": "#f97316", "Medio": "#eab308", "Bajo": "#22c55e"}.get(nivel_c, "#8b949e")
+        color_nivel = {"Crítico": "#ef4444", "Alto": "#f97316", "Medio": "#eab308", "Bajo": "#22c55e"}.get(nivel_c, "#a7b0bb")
         etiquetas = [f"Score: {score_c:.2f} / 10"]
         if row_datos.get("EsPEP"):
             etiquetas.append("PEP")
@@ -261,16 +258,16 @@ def mostrar(df, casos):
 
         # Encabezado cliente
         st.markdown(f"""
-        <div style="background:#171c23; border:1px solid {color_nivel}; border-left:6px solid {color_nivel};
+        <div style="background:#171c23; border:1px solid {h(color_nivel)}; border-left:6px solid {h(color_nivel)};
                     padding:14px 18px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
             <div style="display:flex; flex-direction:column; gap:6px; min-width:0;">
                 <div style="color:#f0f6fc; font-weight:700; font-size:15px; font-family:'Manrope',sans-serif;">{cliente_html}</div>
-                <div style="color:#a08e7a; font-size:11px; font-family:'IBM Plex Mono',monospace; line-height:1.5; word-break:break-word;">
+                <div style="color:#b8a58e; font-size:12px; font-family:'IBM Plex Mono',monospace; line-height:1.5; word-break:break-word;">
                     {meta_html}
                 </div>
             </div>
-            <div style="color:{color_nivel}; font-weight:700; font-size:12px; font-family:'IBM Plex Mono',monospace;
-                        border:1px solid {color_nivel}; padding:3px 10px; white-space:nowrap;">{nivel_html}</div>
+            <div style="color:{h(color_nivel)}; font-weight:700; font-size:12px; font-family:'IBM Plex Mono',monospace;
+                        border:1px solid {h(color_nivel)}; padding:3px 10px; white-space:nowrap;">{nivel_html}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -278,13 +275,13 @@ def mostrar(df, casos):
         filas_acc = ""
         for _, acc in acciones_cliente.iterrows():
             cat = acc["Categoría"]
-            color_cat = _COLOR_CAT.get(cat, "#8b949e")
+            color_cat = _COLOR_CAT.get(cat, "#a7b0bb")
             filas_acc += f"""
             <tr>
-                <td style="padding:9px 14px; color:{color_cat}; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:700;">{_texto_seguro(acc['Código'])}</td>
-                <td style="padding:9px 14px; color:{color_cat}; font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">{_texto_seguro(acc['Categoría'])}</td>
+                <td style="padding:9px 14px; color:{h(color_cat)}; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700;">{_texto_seguro(acc['Código'])}</td>
+                <td style="padding:9px 14px; color:{h(color_cat)}; font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">{_texto_seguro(acc['Categoría'])}</td>
                 <td style="padding:9px 14px; color:#dee2ed; font-size:13px;">{_texto_seguro(acc['Acción'])}</td>
-                <td style="padding:9px 14px; color:#6e7681; font-family:'IBM Plex Mono',monospace; font-size:11px;">{_texto_seguro(acc['Norma'])}</td>
+                <td style="padding:9px 14px; color:#a7b0bb; font-family:'IBM Plex Mono',monospace; font-size:12px;">{_texto_seguro(acc['Norma'])}</td>
             </tr>"""
 
         st.markdown(f"""
@@ -297,17 +294,17 @@ def mostrar(df, casos):
                     <th style="width:160px;">Referencia Normativa</th>
                 </tr>
             </thead>
-            <tbody>{filas_acc}</tbody>
+            <tbody>{h(filas_acc)}</tbody>
         </table>
         """, unsafe_allow_html=True)
 
     # ── GRÁFICO: Distribución de acciones por categoría ───────────────────
     st.markdown("---")
-    st.markdown('<div class="section-title">Distribución de Acciones por Categoría</div>', unsafe_allow_html=True)
+    ui_components.section_title("Distribución de Acciones por Categoría")
 
     conteo_cat = df_acciones["Categoría"].value_counts().reset_index()
     conteo_cat.columns = ["Categoría", "Cantidad"]
-    colores_bar = [_COLOR_CAT.get(c, "#8b949e") for c in conteo_cat["Categoría"]]
+    colores_bar = [_COLOR_CAT.get(c, "#a7b0bb") for c in conteo_cat["Categoría"]]
 
     fig = go.Figure(go.Bar(
         x=conteo_cat["Cantidad"],

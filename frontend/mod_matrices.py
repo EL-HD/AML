@@ -1,11 +1,13 @@
 import streamlit as st
 import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout, render_html_table
+from frontend.ui_safe import h
+from frontend import ui_components
 
 def mostrar(casos, matriz_alertas):
     st.markdown("""<div class="info-box"><strong>MATRICES DE RIESGO</strong>: Arquitectura de decisión IMPERATOR. Clasificación técnica por perfiles de riesgo y tipologías de alerta analitica. Optimizado para calibración de umbrales y priorización táctica.</div>""", unsafe_allow_html=True)
 
-    st.markdown('<div class="section-title">Matriz de Riesgo por Cliente</div>', unsafe_allow_html=True)
+    ui_components.section_title("Matriz de Riesgo por Cliente")
     st.markdown("""
     <div class="glossary">
         <div class="glossary-title">DICCIONARIO DE DATOS</div>
@@ -24,7 +26,7 @@ def mostrar(casos, matriz_alertas):
 
     tabla_casos = casos_view.sort_values("Score_Max", ascending=False).reset_index(drop=True).copy()
     if "Total_Mensual" in tabla_casos.columns:
-        tabla_casos["Total_Mensual"] = tabla_casos["Total_Mensual"].map(lambda v: f"Q{v:,.2f}")
+        tabla_casos["Total_Mensual"] = tabla_casos["Total_Mensual"].map(lambda v: ui_components.fmt_moneda(v, 2))
     if "Score_Max" in tabla_casos.columns:
         tabla_casos["Score_Max"] = tabla_casos["Score_Max"].map(lambda v: f"{v:.2f} pts")
     for col in ["ST_Max", "SC_Max", "SB_Max", "SN_Max"]:
@@ -41,7 +43,7 @@ def mostrar(casos, matriz_alertas):
     st.markdown(render_html_table(tabla_casos, max_height=520), unsafe_allow_html=True)
 
     st.markdown("<br><br>", unsafe_allow_html=True)
-    st.markdown('<div class="section-title">Matriz de Tipos de Alerta</div>', unsafe_allow_html=True)
+    ui_components.section_title("Matriz de Tipos de Alerta")
     st.markdown("""<div class="glossary"><div class="glossary-title">DICCIONARIO DE REGLAS</div><div class="glossary-item"><span class="glossary-key">Tipo de Alerta</span><span>Regla IMPERATOR aplicada.</span></div><div class="glossary-item"><span class="glossary-key">Cantidad</span><span>Detecciones activas.</span></div><div class="glossary-item"><span class="glossary-key">Nivel de Impacto</span><span>Magnitud de severidad.</span></div><div class="glossary-item"><span class="glossary-key">Peso en Score</span><span>Ponderación analítica.</span></div><div class="glossary-item"><span class="glossary-key">Descripción</span><span>Lógica de detección técnica.</span></div></div>""", unsafe_allow_html=True)
 
     # ── Tabla limpia HTML: texto blanco garantizado ──
@@ -58,11 +60,11 @@ def mostrar(casos, matriz_alertas):
             imp_color = "#22c55e"
         filas_html += f"""
         <tr>
-            <td style="font-weight: 600;">{row['Tipo de Alerta']}</td>
-            <td style='text-align:center; font-family:IBM Plex Mono,monospace; font-weight:600; color:{imp_color};'>{int(row['Cantidad'])}</td>
-            <td><span style='color:{imp_color}; font-weight:600; font-family:IBM Plex Mono,monospace;'>{imp}</span></td>
-            <td style='text-align:center; font-family:IBM Plex Mono,monospace;'>{int(row['Peso en Score'])}</td>
-            <td style='color:#d8c3ad; font-size:12px;'>{row['Descripción']}</td>
+            <td style="font-weight: 600;">{h(row['Tipo de Alerta'])}</td>
+            <td style='text-align:center; font-family:IBM Plex Mono,monospace; font-weight:600; color:{h(imp_color)};'>{h(int(row['Cantidad']))}</td>
+            <td><span style='color:{h(imp_color)}; font-weight:600; font-family:IBM Plex Mono,monospace;'>{h(imp)}</span></td>
+            <td style='text-align:center; font-family:IBM Plex Mono,monospace;'>{h(int(row['Peso en Score']))}</td>
+            <td style='color:#d8c3ad; font-size:12px;'>{h(row['Descripción'])}</td>
         </tr>"""
 
     st.markdown(f"""
@@ -82,7 +84,7 @@ def mostrar(casos, matriz_alertas):
 
     # Gráfica de pesos
     st.markdown("---")
-    st.markdown('<div class="section-title">Contribución al Score por Tipo de Alerta</div>', unsafe_allow_html=True)
+    ui_components.section_title("Contribución al Score por Tipo de Alerta")
 
     contrib = (matriz_alertas["Cantidad"] * matriz_alertas["Peso en Score"]).tolist()
     tipos_contrib = matriz_alertas["Tipo de Alerta"].str.replace(r'\s*\(.*\)', '', regex=True).tolist()

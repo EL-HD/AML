@@ -1,6 +1,8 @@
 import streamlit as st
 import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout
+from frontend.ui_safe import h
+from frontend import ui_components
 
 TIPOS_CLIENTE = [
     "Persona Individual",
@@ -32,30 +34,13 @@ def mostrar(df, casos, cfg):
     color_card = "red" if "Crítico" in nivel else ("amber" if "Alto" in nivel else ("blue" if "Medio" in nivel else "green"))
 
     with col1:
-        st.markdown(f"""
-        <div class="metric-card {color_card}">
-            <div class="metric-number">{nivel}</div>
-            <div class="metric-label">Nivel de Riesgo</div>
-        </div>""", unsafe_allow_html=True)
+        ui_components.kpi("Nivel de Riesgo", nivel, tone=color_card)
     with col2:
-        st.markdown(f"""
-        <div class="metric-card amber">
-            <div class="metric-number">{int(info_cliente['Score_Max'])}</div>
-            <div class="metric-label">Score Máximo</div>
-            <div class="metric-sub">sobre 12 posibles</div>
-        </div>""", unsafe_allow_html=True)
+        ui_components.kpi("Score Máximo", int(info_cliente['Score_Max']), "sobre 12 posibles", tone="amber")
     with col3:
-        st.markdown(f"""
-        <div class="metric-card blue">
-            <div class="metric-number">{int(info_cliente['Transacciones'])}</div>
-            <div class="metric-label">Transacciones</div>
-        </div>""", unsafe_allow_html=True)
+        ui_components.kpi("Transacciones", int(info_cliente['Transacciones']), tone="blue")
     with col4:
-        st.markdown(f"""
-        <div class="metric-card green">
-            <div class="metric-number">Q{info_cliente['Total_Mensual']:,.0f}</div>
-            <div class="metric-label">Total Mensual</div>
-        </div>""", unsafe_allow_html=True)
+        ui_components.kpi("Total Mensual", ui_components.fmt_moneda(info_cliente['Total_Mensual'], 0), tone="green")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -73,8 +58,8 @@ def mostrar(df, casos, cfg):
         with col_u2:
             es_pep_ubo = info_cliente.get("EsPEP_UBO", False)
             if es_pep_ubo:
-                st.error("🔴 UBO es PEP: DDA Obligatoria (GAFI Rec. 12 / Art. 25a Ley 6593)")
-                st.caption(f"⚠️ SC incluye penalización adicional por Beneficiario Final PEP (Art. 25a)")
+                st.error("UBO es PEP: DDA Obligatoria (GAFI Rec. 12 / Art. 25a Ley 6593)")
+                st.caption(f"SC incluye penalización adicional por Beneficiario Final PEP (Art. 25a)")
 
             fuente_ubo = info_cliente.get("Fuente_Verificacion_UBO", "N/D")
             st.markdown(f"**Fuente de verificación:** {fuente_ubo}")
@@ -102,11 +87,11 @@ def mostrar(df, casos, cfg):
     nivel_c          = info_cliente["Nivel_Riesgo"]
 
     # ── RESUMEN DEL CLIENTE (MANUAL) ──────────────────────────────
-    st.markdown('<div class="section-title">Resumen del Cliente</div>', unsafe_allow_html=True)
+    ui_components.section_title("Resumen del Cliente")
 
     # Construcción de resumen manual basado en reglas
     resumen_manual = f"El cliente presenta un nivel de riesgo {nivel_c} con un score acumulado de {score_max_c}/12. "
-    resumen_manual += f"En el período analizado, realizó {transac_c} transacciones por un volumen total de Q{total_c:,.2f}, frente a un perfil esperado de Q{perfil_c:,.2f}. "
+    resumen_manual += f"En el período analizado, realizó {transac_c} transacciones por un volumen total de {ui_components.fmt_moneda(total_c, 2)}, frente a un perfil esperado de {ui_components.fmt_moneda(perfil_c, 2)}. "
 
     alertas_list = []
     if picos_count > 0: alertas_list.append(f"{picos_count} pico(s) estadísticos(s)")
@@ -142,12 +127,12 @@ def mostrar(df, casos, cfg):
     )
 
     st.markdown(f"""
-    <div style="background-color: #1b2027; border: 1px solid {nivel_color}; border-radius: 0px; padding: 24px; border-left: 8px solid {nivel_color};">
-        <div style="font-size: 11px; color: #f59e0b; text-transform: uppercase; letter-spacing: 2px; font-family: 'IBM Plex Mono', monospace; margin-bottom: 15px;">
+    <div style="background-color: #1b2027; border: 1px solid {h(nivel_color)}; border-radius: 0px; padding: 24px; border-left: 8px solid {h(nivel_color)};">
+        <div style="font-size:12px; color: #f59e0b; text-transform: uppercase; letter-spacing: 2px; font-family: 'IBM Plex Mono', monospace; margin-bottom: 15px;">
             <span class="pulse-dot"></span> RESUMEN TÉCNICO IMPERATOR INTELLIGENCE
         </div>
         <div style="color: #dee2ed; font-size: 14px; line-height: 1.8;">
-            {resumen_manual}
+            {h(resumen_manual)}
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -155,7 +140,7 @@ def mostrar(df, casos, cfg):
     st.markdown("<br>", unsafe_allow_html=True)
 
     # Tendencia
-    st.markdown('<div class="section-title">Tendencia de Montos</div>', unsafe_allow_html=True)
+    ui_components.section_title("Tendencia de Montos")
     st.markdown("""
     <div class="info-box">
         Evolución de los montos transaccionados por el cliente. La línea punteada indica su <strong>perfil de riesgo</strong>
@@ -174,7 +159,7 @@ def mostrar(df, casos, cfg):
     ))
     fig_tend.add_trace(go.Scatter(
         x=datos["Fecha_str"], y=[perfil_val]*len(datos),
-        mode='lines', name=f'Perfil: Q{perfil_val:,.0f}',
+        mode='lines', name=f'Perfil: {ui_components.fmt_moneda(perfil_val, 0)}',
         line=dict(color='#f59e0b', width=1.5, dash='dash'),
         hovertemplate="Perfil: <b>Q%{y:,.0f}</b><extra></extra>",
     ))
@@ -187,7 +172,7 @@ def mostrar(df, casos, cfg):
         name='Exceso'
     ))
     fig_tend.update_layout(plotly_dark_layout(
-        yaxis_title="Monto (Q)", height=320,
+        yaxis_title=ui_components.etiqueta_monto("Monto"), height=320,
         xaxis=dict(tickangle=-45, gridcolor='#30353d', linecolor='#30353d', tickfont=dict(color='#d8c3ad', size=9)),
     ))
     st.plotly_chart(fig_tend, use_container_width=True)
@@ -197,7 +182,7 @@ def mostrar(df, casos, cfg):
     col_g1, col_g2 = st.columns(2)
 
     with col_g1:
-        st.markdown('<div class="section-title">Detección de Picos Anómalos</div>', unsafe_allow_html=True)
+        ui_components.section_title("Detección de Picos Anómalos")
         st.markdown("""
         <div class="info-box">
             Transacciones que superan la media histórica + 2 desviaciones estándar del cliente.
@@ -222,10 +207,10 @@ def mostrar(df, casos, cfg):
                 x=picos["Fecha_str"], y=picos["Monto"],
                 mode='markers', name=f'{len(picos)} pico(s) anómalo(s)',
                 marker=dict(size=12, color='#ef4444', line=dict(color='#fca5a5', width=1.5)),
-                hovertemplate="<b>⚠ Pico anómalo</b><br>%{x}<br>Monto: Q%{y:,.2f}<extra></extra>",
+                hovertemplate="<b>Pico anómalo</b><br>%{x}<br>Monto: Q%{y:,.2f}<extra></extra>",
             ))
-        fig_picos.add_hline(y=media, line=dict(color='#8b949e', dash='dot', width=1),
-                            annotation_text="Media", annotation_font_color='#8b949e')
+        fig_picos.add_hline(y=media, line=dict(color='#a7b0bb', dash='dot', width=1),
+                            annotation_text="Media", annotation_font_color='#a7b0bb')
         fig_picos.add_hline(y=media + 2*std, line=dict(color='#ef4444', dash='dash', width=1),
                             annotation_text="+2 Std", annotation_font_color='#ef4444')
         fig_picos.update_layout(plotly_dark_layout(
@@ -237,7 +222,7 @@ def mostrar(df, casos, cfg):
 
 
     with col_g2:
-        st.markdown('<div class="section-title">Frecuencia Diaria de Operaciones</div>', unsafe_allow_html=True)
+        ui_components.section_title("Frecuencia Diaria de Operaciones")
         st.markdown("""
         <div class="info-box">
             Número de transacciones por día. Días con ≥5 operaciones activan la alerta de <strong>smurfing</strong>

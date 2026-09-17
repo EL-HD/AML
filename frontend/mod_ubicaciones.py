@@ -1,5 +1,8 @@
 import streamlit as st
-import pandas as pd
+
+from frontend import permisos
+from frontend.ui_safe import h
+from frontend import ui_components
 
 def mostrar():
     st.markdown("""
@@ -19,14 +22,16 @@ def mostrar():
         ["Huehuetenango", "San Marcos", "Izabal", "Petén", "Escuintla"]
     )
 
+    puede_editar = permisos.exigir_o_avisar("gestionar_ubicaciones")
+
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.markdown('<div class="section-title">➕ Agregar Nueva Zona</div>', unsafe_allow_html=True)
+        ui_components.section_title("Agregar nueva zona")
         nueva_ubic = st.text_input("Nombre de la ubicación (Departamento o Municipio):", placeholder="Ej. El Progreso")
         
         c_add, _ = st.columns([1, 2])
-        if c_add.button("Añadir a Vigilancia", type="primary", use_container_width=True):
+        if c_add.button("Añadir a Vigilancia", type="primary", use_container_width=True, disabled=not puede_editar):
             if nueva_ubic:
                 if nueva_ubic not in st.session_state["aml_config"]["ubicaciones_manuales"]:
                     st.session_state["aml_config"]["ubicaciones_manuales"].append(nueva_ubic)
@@ -38,7 +43,7 @@ def mostrar():
                 st.error("Ingrese un nombre válido.")
     
     with col2:
-        st.markdown('<div class="section-title">🚩 Zonas Bajo Vigilancia</div>', unsafe_allow_html=True)
+        ui_components.section_title("Zonas bajo vigilancia")
         if not st.session_state["aml_config"]["ubicaciones_manuales"]:
             st.info("No hay ubicaciones configuradas.")
         else:
@@ -47,16 +52,16 @@ def mostrar():
                 c_text, c_del = container.columns([4, 1])
                 c_text.markdown(f"""
                     <div style="background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 0px; margin-bottom: 4px; border-left: 3px solid #f59e0b;">
-                        {loc}
+                        {h(loc)}
                     </div>
                 """, unsafe_allow_html=True)
-                if c_del.button("🗑️", key=f"del_{i}"):
+                if c_del.button("Quitar", key=f"del_{i}", disabled=not puede_editar):
                     st.session_state["aml_config"]["ubicaciones_manuales"].pop(i)
                     st.rerun()
 
     st.markdown("---")
     st.markdown("""
-    <div style="font-size: 13px; color: #8b949e;">
+    <div style="font-size: 13px; color: #a7b0bb;">
         <strong>Nota:</strong> Estas ubicaciones se aplican globalmente al procesamiento de datos. 
         Si el archivo Excel ya contiene una columna <code>UbicacionRiesgo</code> con valores 'SI', 
         estas también serán tomadas en cuenta.

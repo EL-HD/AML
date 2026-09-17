@@ -3,6 +3,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import math
 from frontend.mod_utils import render_html_table
+from frontend.ui_safe import h
+from frontend import ui_components
 
 try:
     import networkx as nx
@@ -141,7 +143,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
     df_red = df_red[df_red["Monto"] >= monto_min]
 
     if df_red.empty:
-        st.info("No hay transacciones con los filtros aplicados.")
+        ui_components.empty_state("Sin transacciones para los filtros", "Ninguna operación cumple los criterios seleccionados.", "Amplíe el rango de fechas o reduzca el nivel mínimo de riesgo.")
         return
 
     # Mapa de scores por cliente
@@ -213,18 +215,19 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
     ]
     for col, (val, lbl, color) in zip([col_k1, col_k2, col_k3, col_k4], kpi_vals):
         with col:
-            st.markdown(f"""
-            <div class="metric-card {color}">
-                <div class="metric-number">{val}</div>
-                <div class="metric-label">{lbl}</div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.kpi(lbl, val, tone=color)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    if cliente_foco != "Todos":
+        foco_html = (f"La red está centrada en <b>{h(cliente_foco)}</b> con profundidad de "
+                     f"<b>{h(profundidad)} hop(s)</b>.")
+    else:
+        foco_html = "Para una trazabilidad más exacta, conviene enfocar un cliente y bajar la profundidad a 1 o 2 hops."
     st.markdown(f"""
     <div class="info-box" style="margin-top:0;">
-        <b>Vista aplicada:</b> se muestran hasta <b>{G.number_of_edges()}</b> relaciones agregadas por par origen-destino.
-        {"La red está centrada en <b>" + cliente_foco + "</b> con profundidad de <b>" + str(profundidad) + " hop(s)</b>." if cliente_foco != "Todos" else "Para una trazabilidad más exacta, conviene enfocar un cliente y bajar la profundidad a 1 o 2 hops."}
+        <b>Vista aplicada:</b> se muestran hasta <b>{h(G.number_of_edges())}</b> relaciones agregadas por par origen-destino.
+        {foco_html}
     </div>
     """, unsafe_allow_html=True)
 
@@ -233,7 +236,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
     try:
         # Intentar layout spring con networkx
         pos = nx.spring_layout(G, seed=42, k=2.5)
-    except Exception:
+    except (ValueError, nx.NetworkXException):
         pos = _layout_circular(nodos)
 
     # ── Trazar aristas ─────────────────────────────────────────────────────
@@ -267,10 +270,10 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
             mode="markers+text",
             marker=dict(symbol="arrow", size=10, color="#f59e0b",
                         angle=math.degrees(math.atan2(y1 - y0, x1 - x0))),
-            text=[f"Q{monto_arista:,.0f}<br>{n_tx_arista} tx"] if mostrar_etiquetas else [""],
+            text=[f"{h(ui_components.fmt_moneda(monto_arista, 0))}<br>{h(n_tx_arista)} tx"] if mostrar_etiquetas else [""],
             textposition="top center",
-            textfont=dict(color="#8b949e", size=9),
-            hovertemplate=f"<b>{u} → {v}</b><br>Monto: Q{monto_arista:,.0f}<br>Transacciones: {n_tx_arista}<extra></extra>",
+            textfont=dict(color="#a7b0bb", size=9),
+            hovertemplate=f"<b>{h(u)} → {h(v)}</b><br>Monto: {h(ui_components.fmt_moneda(monto_arista, 0))}<br>Transacciones: {h(n_tx_arista)}<extra></extra>",
             showlegend=False,
         ))
 
@@ -293,11 +296,11 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
         node_sizes.append(max(18, min(45, 18 + score * 2.5)))
         node_text.append(nodo[:12] + "…" if len(nodo) > 12 else nodo)
         node_hover.append(
-            f"<b>{nodo}</b><br>"
-            f"Nivel: <b>{nivel}</b><br>"
-            f"Score: <b>{score:.2f}/10</b><br>"
-            f"Envía a: <b>{grado_salida}</b> nodo(s)<br>"
-            f"Recibe de: <b>{grado_entrada}</b> nodo(s)"
+            f"<b>{h(nodo)}</b><br>"
+            f"Nivel: <b>{h(nivel)}</b><br>"
+            f"Score: <b>{h(format(score, '.2f'))}/10</b><br>"
+            f"Envía a: <b>{h(grado_salida)}</b> nodo(s)<br>"
+            f"Recibe de: <b>{h(grado_entrada)}</b> nodo(s)"
         )
 
     node_trace = go.Scatter(
@@ -336,7 +339,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
     st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("---")
-    st.markdown('<div class="section-title">Relaciones Visibles y Trazabilidad Base</div>', unsafe_allow_html=True)
+    ui_components.section_title("Relaciones Visibles y Trazabilidad Base")
     st.markdown("""
     <div class="info-box">
         Esta tabla suele ser la vista más útil cuando la red ya tiene demasiados nodos: resume cada relación,
@@ -352,7 +355,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
         "Nivel_Origen": "Nivel origen",
         "Nivel_Destino": "Nivel destino",
     }).copy()
-    df_relaciones["Monto total"] = df_relaciones["Monto total"].map(lambda v: f"Q{v:,.2f}")
+    df_relaciones["Monto total"] = df_relaciones["Monto total"].map(lambda v: ui_components.fmt_moneda(v, 2))
     st.markdown(render_html_table(df_relaciones, max_height=520), unsafe_allow_html=True)
 
     # Leyenda de colores
@@ -371,7 +374,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
 
     # ── TABLA DE RUTAS MULTI-HOP ───────────────────────────────────────────
     st.markdown("---")
-    st.markdown('<div class="section-title">Rutas Multi-Hop Detectadas</div>', unsafe_allow_html=True)
+    ui_components.section_title("Rutas Multi-Hop Detectadas")
     st.markdown("""
     <div class="info-box" style="border-left-color: #ef4444;">
         <strong>Análisis de encadenamiento:</strong> Rutas donde el dinero pasa por ≥2 clientes intermedios.
@@ -405,18 +408,18 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
                             })
                             if len(rutas) >= max_rutas:
                                 break
-                except Exception:
-                    pass
+                except (nx.NetworkXNoPath, nx.NodeNotFound):
+                    continue
 
         if rutas:
             df_rutas = pd.DataFrame(rutas).drop_duplicates(subset=["Ruta"]).sort_values(["Saltos", "Score máx. en ruta"], ascending=[False, False])
             st.markdown(render_html_table(df_rutas, max_height=420), unsafe_allow_html=True)
         else:
-            st.markdown('<div style="color:#6e7681; font-size:13px; padding:8px 0;">No se detectaron rutas multi-hop con los filtros actuales.</div>', unsafe_allow_html=True)
+            st.markdown('<div style="color:#a7b0bb; font-size:13px; padding:8px 0;">No se detectaron rutas multi-hop con los filtros actuales.</div>', unsafe_allow_html=True)
 
     # ── CENTRALIDAD DE NODOS ───────────────────────────────────────────────
     st.markdown("---")
-    st.markdown('<div class="section-title">Centralidad de Nodos (Importancia en la Red)</div>', unsafe_allow_html=True)
+    ui_components.section_title("Centralidad de Nodos (Importancia en la Red)")
     st.markdown("""
     <div class="info-box">
         La <b>centralidad de intermediario (betweenness)</b> identifica nodos que actúan como puente en la red.

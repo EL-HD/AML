@@ -1,5 +1,7 @@
 import streamlit as st
 from frontend.mod_utils import render_html_table
+from frontend.ui_safe import h
+from frontend import ui_components
 
 UMBRAL_RTE_USD = 10_000  # Art. 31 Ley 6593
 
@@ -68,20 +70,23 @@ def mostrar(df):
         columnas_mostrar.insert(columnas_mostrar.index("Monto") + 1, "Tipo_Instrumento")
 
     columnas_mostrar += bool_cols + pilares_cols + ["Score"]
+    # Solo columnas presentes: Es_RTE existe únicamente si el archivo trae Tipo_Instrumento.
+    columnas_mostrar = [c for c in columnas_mostrar if c in df_view.columns]
 
     if n_rte > 0:
-        st.warning(f"⚠️ {n_rte} transacción(es) en efectivo ≥ USD {UMBRAL_RTE_USD:,}: Requieren RTE ante la IVE (Art. 31 Ley 6593)")
+        st.warning(f"{n_rte} transacción(es) en efectivo iguales o mayores a USD {UMBRAL_RTE_USD:,} "
+                   "(umbral legal expresado en dólares): requieren RTE ante la IVE (Art. 31 Ley 6593).")
 
     st.markdown(f"""
     <div class="warning-box" style="margin-top:10px;">
-        <strong>{len(df_view):,} transacción(es)</strong> visibles en la bitácora actual.
+        <strong>{h(format(len(df_view), ','))} transacción(es)</strong> visibles en la bitácora actual.
         Las columnas de validación muestran <strong>Si</strong> cuando la condición aplica y <strong>--</strong> cuando no fue activada en el análisis.
     </div>
     """, unsafe_allow_html=True)
     tabla = df_view[columnas_mostrar].sort_values("Score", ascending=False).reset_index(drop=True).copy()
     rename_cols = {
-        "Monto": "Monto (Q)",
-        "Perfil": "Perfil (Q)",
+        "Monto": ui_components.etiqueta_monto("Monto"),
+        "Perfil": ui_components.etiqueta_monto("Perfil"),
         "Score": "Score",
         "_ST": "S_T",
         "_SC": "S_C",
@@ -92,7 +97,7 @@ def mostrar(df):
     }
     for col in ["Monto", "Perfil"]:
         if col in tabla.columns:
-            tabla[col] = tabla[col].map(lambda v: f"Q{v:,.2f}")
+            tabla[col] = tabla[col].map(lambda v: ui_components.fmt_moneda(v, 2))
     for col in ["Score"]:
         if col in tabla.columns:
             tabla[col] = tabla[col].map(lambda v: f"{v:.2f} pts")

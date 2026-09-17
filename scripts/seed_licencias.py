@@ -33,6 +33,7 @@ LICENCIAS_BASE = [
         "mail": "hdiazavila27@gmail.com",
         "empresa": "Sovereign AML",
         "dias_vigencia": 3650,  # ~10 años
+        "rol": "admin",
     },
     {
         "user": "invitado",
@@ -40,6 +41,7 @@ LICENCIAS_BASE = [
         "mail": "invitado@sovereign-aml.com",
         "empresa": "Sovereign AML - Demo",
         "dias_vigencia": 365,  # 1 año
+        "rol": "analista",
     },
 ]
 
@@ -76,6 +78,7 @@ def upsert_licencia(db, config: dict) -> str:
         existente.fecha_compra = hoy
         existente.fecha_expiracion = fecha_expiracion
         existente.password_hash = crud.get_password_hash(password)
+        existente.rol = config.get("rol", "analista")
         db.commit()
         return "actualizada"
 
@@ -89,6 +92,7 @@ def upsert_licencia(db, config: dict) -> str:
         fecha_compra=hoy,
         fecha_expiracion=fecha_expiracion,
         licence_id=uuid.uuid4(),
+        rol=config.get("rol", "analista"),
     )
     crud.create_licencia(db, licencia=nueva)
     return "creada"

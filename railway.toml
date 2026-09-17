@@ -3,4 +3,8 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "supervisord -c /app/supervisord.conf"
+# Migra (idempotente) antes de levantar API + Streamlit; si falla, el contenedor no inicia.
+startCommand = "sh -c 'python scripts/db_migrate.py && exec supervisord -c /app/supervisord.conf'"
+# Si el nuevo despliegue no responde, Railway conserva el anterior.
+healthcheckPath = "/_stcore/health"
+healthcheckTimeout = 120

@@ -1,8 +1,13 @@
 from sqlalchemy import Column, Integer, String, Date, DateTime, Boolean, text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Uuid as UUID  # tipo genérico: UUID nativo en PostgreSQL, CHAR(32) en SQLite (pruebas)
 from .database import Base
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
+
+
+def ahora_utc() -> datetime:
+    """Marca de tiempo con zona horaria UTC para toda bitácora (trazabilidad forense)."""
+    return datetime.now(timezone.utc)
 
 class Licencia(Base):
     __tablename__ = "Licencias"
@@ -18,13 +23,14 @@ class Licencia(Base):
     fecha_expiracion = Column("fechaexpiracion", Date, nullable=False)
     empresa = Column("empresa", String(150), nullable=False)
     password_hash = Column("passwordhash", String, nullable=False)
+    rol = Column("rol", String(20), nullable=False, default="analista", server_default="analista")
 
 class BitacoraSesions(Base):
     __tablename__ = "BitacoraSesions"
     __table_args__ = {"schema": "public"}
 
     sessionid = Column("sessionid", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    last_activity = Column("last_activity", DateTime, nullable=False, default=datetime.now)
+    last_activity = Column("last_activity", DateTime, nullable=False, default=ahora_utc)
     licenciaid = Column("licenciaid", UUID(as_uuid=True), nullable=False)
 
 
@@ -36,7 +42,7 @@ class BitacoraAuditoria(Base):
     id              = Column("id",              UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     licenciaid      = Column("licenciaid",      UUID(as_uuid=True), nullable=False)
     username        = Column("username",        String(100),        nullable=False)
-    timestamp       = Column("timestamp",       DateTime,           nullable=False, default=datetime.now)
+    timestamp       = Column("timestamp",       DateTime,           nullable=False, default=ahora_utc)
     modulo_accedido = Column("modulo_accedido", String(100),        nullable=False)
     accion          = Column("accion",          String(100),        nullable=False, default="VISUALIZACION")
 
@@ -59,7 +65,7 @@ class RiesgoSegmento(Base):
     segmento   = Column("segmento",   String(120), nullable=False)
     variable   = Column("variable",   String(120), nullable=False)
     creado_por = Column("creado_por", String(100), nullable=False)
-    creado_en  = Column("creado_en",  DateTime,    nullable=False, default=datetime.now)
+    creado_en  = Column("creado_en",  DateTime,    nullable=False, default=ahora_utc)
 
 
 class RiesgoEvento(Base):
@@ -84,8 +90,8 @@ class RiesgoEvento(Base):
     nivel_residual      = Column("nivel_residual",      Integer, nullable=False)
     requiere_plan_accion = Column("requiere_plan_accion", Boolean, nullable=False, default=False)
     creado_por          = Column("creado_por",          String(100), nullable=False)
-    creado_en           = Column("creado_en",           DateTime, nullable=False, default=datetime.now)
-    actualizado_en      = Column("actualizado_en",      DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
+    creado_en           = Column("creado_en",           DateTime, nullable=False, default=ahora_utc)
+    actualizado_en      = Column("actualizado_en",      DateTime, nullable=False, default=ahora_utc, onupdate=ahora_utc)
 
 
 class RiesgoControl(Base):
@@ -108,8 +114,8 @@ class RiesgoControl(Base):
     ponderacion            = Column("ponderacion",            Integer, nullable=False)
     nivel_ponderacion      = Column("nivel_ponderacion",      Integer, nullable=False)
     creado_por             = Column("creado_por",             String(100), nullable=False)
-    creado_en              = Column("creado_en",              DateTime, nullable=False, default=datetime.now)
-    actualizado_en         = Column("actualizado_en",         DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
+    creado_en              = Column("creado_en",              DateTime, nullable=False, default=ahora_utc)
+    actualizado_en         = Column("actualizado_en",         DateTime, nullable=False, default=ahora_utc, onupdate=ahora_utc)
 
 
 class RiesgoEventoControl(Base):
@@ -121,7 +127,7 @@ class RiesgoEventoControl(Base):
     licenciaid = Column("licenciaid", UUID(as_uuid=True), nullable=False, index=True)
     evento_id  = Column("evento_id",  UUID(as_uuid=True), nullable=False, index=True)
     control_id = Column("control_id", UUID(as_uuid=True), nullable=False, index=True)
-    creado_en  = Column("creado_en",  DateTime, nullable=False, default=datetime.now)
+    creado_en  = Column("creado_en",  DateTime, nullable=False, default=ahora_utc)
 
 
 class RiesgoPlanAccion(Base):
@@ -138,8 +144,8 @@ class RiesgoPlanAccion(Base):
     fecha_fin         = Column("fecha_fin",         Date, nullable=False)
     porcentaje_avance = Column("porcentaje_avance", Integer, nullable=False, default=0)
     creado_por        = Column("creado_por",        String(100), nullable=False)
-    creado_en         = Column("creado_en",         DateTime, nullable=False, default=datetime.now)
-    actualizado_en    = Column("actualizado_en",    DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
+    creado_en         = Column("creado_en",         DateTime, nullable=False, default=ahora_utc)
+    actualizado_en    = Column("actualizado_en",    DateTime, nullable=False, default=ahora_utc, onupdate=ahora_utc)
 
 
 # ═══════════════════════════════════════════════════════════════════════════

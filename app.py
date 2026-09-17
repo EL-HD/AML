@@ -1,8 +1,24 @@
 import streamlit as st
+from pathlib import Path as _Path
+from frontend.ui_safe import h
+
+_RUTA_LOGO = _Path(__file__).resolve().parent / "Logo AML.png"
+
+
+@st.cache_data(show_spinner=False)
+def _logo_base64() -> str:
+    """Logotipo en base64, leído una sola vez por proceso (U-07)."""
+    import base64 as _b64
+    try:
+        return _b64.b64encode(_RUTA_LOGO.read_bytes()).decode("ascii")
+    except OSError:
+        return ""
+
+
 st.set_page_config(
-    page_title="SOVEREIGN AML | Intelligence Platform",
+    page_title="Sovereign AML | Plataforma de cumplimiento",
     layout="wide",
-    page_icon="🔍",
+    page_icon=str(_RUTA_LOGO) if _RUTA_LOGO.exists() else None,
     initial_sidebar_state="collapsed"
 )
 import pandas as pd
@@ -13,20 +29,19 @@ import plotly.graph_objects as go
 import streamlit.components.v1 as components
 import requests
 import base64
-import hashlib
-import hmac
-import json
 import re
-import tempfile
-import time
+import io
 import uuid
-from pathlib import Path
 import os
 from datetime import date, datetime, timedelta
 
 
 # --- Importaciones Modulares ---
 from backend.procesador import validar_columnas, procesar_transacciones
+from backend import auditoria, config_aml, crud, schemas, session_token
+from backend.database import SessionLocal
+from sqlalchemy.exc import SQLAlchemyError
+import logging
 from frontend import (
     mod_resumen, mod_alertas, mod_transacciones,
     mod_cliente, mod_matrices, mod_manual,
@@ -35,6 +50,7 @@ from frontend import (
     mod_imperator_diagnostics, mod_sesion, mod_riesgo_ldft
 )
 from frontend.mod_sesion import _registrar_acceso_auditoria
+from frontend import cache_analisis, exportacion, navegacion, permisos, theme, ui_components
 
 def _auditar(modulo: str, accion: str = "VISUALIZACION") -> None:
     """Registra acceso de sesión activa: Art. 19 Ley 6593."""
@@ -52,6 +68,8 @@ if "access_token" not in st.session_state:
     st.session_state.access_token = None
 if "user_data" not in st.session_state:
     st.session_state.user_data = None
+if "session_id" not in st.session_state:
+    st.session_state.session_id = None
 if "last_activity_at" not in st.session_state:
     st.session_state.last_activity_at = datetime.now()
 
@@ -62,70 +80,46 @@ SESSION_RESTORE_QUERY_PARAM = "restore_session"
 SESSION_RESTORE_PAYLOAD_PARAM = "restore_payload"
 SESSION_STORAGE_KEY = "sovereign_aml_session"
 ANALYSIS_CACHE_QUERY_PARAM = "analysis_cache"
-ANALYSIS_CACHE_DIR = Path(tempfile.gettempdir()) / "sovereign_aml_cache"
-ANALYSIS_CACHE_TTL_SECONDS = SESSION_TIMEOUT_SECONDS
 
 
-def _safe_cache_id(value):
-    value = str(value or "")
-    return value if re.fullmatch(r"[a-f0-9-]{36}", value) else None
+def _licence_id_actual():
+    user_data = st.session_state.get("user_data") or {}
+    return user_data.get("licence_id") if isinstance(user_data, dict) else None
 
 
 if "analysis_cache_id" not in st.session_state:
-    st.session_state.analysis_cache_id = _safe_cache_id(
+    st.session_state.analysis_cache_id = cache_analisis.uuid_seguro(
         st.query_params.get(ANALYSIS_CACHE_QUERY_PARAM)
     ) or str(uuid.uuid4())
 elif st.query_params.get(ANALYSIS_CACHE_QUERY_PARAM):
-    st.session_state.analysis_cache_id = _safe_cache_id(
+    st.session_state.analysis_cache_id = cache_analisis.uuid_seguro(
         st.query_params.get(ANALYSIS_CACHE_QUERY_PARAM)
     ) or st.session_state.analysis_cache_id
-
-
-def _cache_path(cache_id=None):
-    cache_id = _safe_cache_id(cache_id or st.session_state.get("analysis_cache_id"))
-    if not cache_id:
-        return None
-    return ANALYSIS_CACHE_DIR / f"{cache_id}.saml"
-
-
-def _cleanup_analysis_cache():
-    ANALYSIS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    now = time.time()
-    for path in ANALYSIS_CACHE_DIR.glob("*.saml"):
-        try:
-            if now - path.stat().st_mtime > ANALYSIS_CACHE_TTL_SECONDS:
-                path.unlink()
-        except OSError:
-            pass
 
 
 def save_analysis_cache():
     if "data_raw" not in st.session_state or "aml_config" not in st.session_state:
         return
-    path = _cache_path()
-    if not path:
-        return
-    ANALYSIS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     bytes_saml = mod_sesion.exportar_sesion(
         st.session_state["data_raw"],
         st.session_state["aml_config"],
         st.session_state.get("archivo_nombre", "analisis")
     )
-    path.write_bytes(bytes_saml)
+    cache_analisis.guardar(_licence_id_actual(), st.session_state.get("analysis_cache_id"), bytes_saml)
 
 
 def restore_analysis_cache():
     if "data" in st.session_state:
         return False
-    path = _cache_path()
-    if not path or not path.exists():
+    contenido = cache_analisis.cargar(_licence_id_actual(), st.session_state.get("analysis_cache_id"))
+    if contenido is None:
         return False
-    if time.time() - path.stat().st_mtime > ANALYSIS_CACHE_TTL_SECONDS:
+    try:
+        df_raw, cfg_restaurado, session_meta = mod_sesion.importar_sesion(io.BytesIO(contenido))
+    except ValueError as exc:
         clear_analysis_cache()
+        st.warning(f"No se pudo restaurar el análisis temporal: {exc}")
         return False
-
-    with path.open("rb") as f:
-        df_raw, cfg_restaurado, session_meta = mod_sesion.importar_sesion(f)
 
     st.session_state["aml_config"] = cfg_restaurado
     es_valido, faltantes = validar_columnas(df_raw)
@@ -141,63 +135,49 @@ def restore_analysis_cache():
     st.session_state["archivo_nombre"] = session_meta.get("nombre_archivo", "analisis.xlsx")
     st.session_state["session_meta"] = session_meta
     st.session_state["from_cache"] = True
-    path.touch()
     return True
 
 
 def clear_analysis_cache():
-    path = _cache_path()
-    if path and path.exists():
-        try:
-            path.unlink()
-        except OSError:
-            pass
+    cache_analisis.eliminar(_licence_id_actual(), st.session_state.get("analysis_cache_id"))
 
 
-def _session_sign_key() -> bytes | None:
-    """Retorna la clave para firmar payloads de sesión, o None si no está configurada."""
-    key = os.getenv("SESSION_SIGN_KEY", "")
-    return key.encode() if key else None
+def _usuario_a_dict(usuario) -> dict:
+    """Serializa una Licencia ORM con la misma forma que devuelve la API de autenticación."""
+    return schemas.Licencia.model_validate(usuario).model_dump(mode="json")
 
 
-def _encode_session_payload(user_data) -> str:
-    """Codifica user_data en base64 y le añade firma HMAC-SHA256 (C1 fix)."""
-    payload = json.dumps(user_data or {}, ensure_ascii=False).encode("utf-8")
-    b64 = base64.urlsafe_b64encode(payload).decode("ascii")
-    key = _session_sign_key()
-    if not key:
-        return b64
-    sig = hmac.new(key, b64.encode("ascii"), digestmod=hashlib.sha256).hexdigest()
-    return f"{b64}.{sig}"
-
-
-def _decode_session_payload(token: str):
-    """Verifica la firma HMAC y decodifica el payload de sesión (C1 fix)."""
+def _restaurar_desde_token(token: str):
+    """
+    Restaura la sesión únicamente si el token está firmado, vigente y su session_id
+    sigue siendo la sesión más reciente de la licencia (control de sesión única).
+    Devuelve (user_data, session_id) o (None, None).
+    """
+    datos = session_token.verificar_restauracion(token)
+    if not datos:
+        return None, None
+    db = SessionLocal()
     try:
-        key = _session_sign_key()
-        if key:
-            parts = token.rsplit(".", 1)
-            if len(parts) != 2:
-                return None
-            b64, sig = parts
-            expected = hmac.new(key, b64.encode("ascii"), digestmod=hashlib.sha256).hexdigest()
-            if not hmac.compare_digest(sig, expected):
-                return None
-        else:
-            b64 = token
-        data = base64.urlsafe_b64decode(b64.encode("ascii"))
-        parsed = json.loads(data.decode("utf-8"))
-        return parsed if isinstance(parsed, dict) else None
-    except Exception:
-        return None
+        usuario = crud.sesion_vigente(db, datos["sid"])
+        if usuario is None or str(usuario.licence_id) != datos["lid"]:
+            return None, None
+        if usuario.fecha_expiracion < date.today():
+            return None, None
+        return _usuario_a_dict(usuario), datos["sid"]
+    except SQLAlchemyError:
+        logging.getLogger(__name__).exception("No se pudo validar la sesión restaurada en la base de datos.")
+        return None, None
+    finally:
+        db.close()
 
 
 def _logout_session(timed_out=False):
+    clear_analysis_cache()
     st.session_state.authenticated = False
     st.session_state.user_data = None
     st.session_state.access_token = None
+    st.session_state.session_id = None
     st.session_state.last_activity_at = datetime.now()
-    clear_analysis_cache()
     for key in ["data", "data_raw", "aml_config", "archivo_nombre",
                 "pep_cpe_info", "session_meta", "from_cache",
                 "analysis_cache_id"]:
@@ -206,7 +186,7 @@ def _logout_session(timed_out=False):
         st.session_state.session_timeout_alert = True
 
 
-_cleanup_analysis_cache()
+cache_analisis.limpiar_expirados()
 
 
 if st.query_params.get(SESSION_TIMEOUT_QUERY_PARAM) == "1":
@@ -215,31 +195,38 @@ if st.query_params.get(SESSION_TIMEOUT_QUERY_PARAM) == "1":
 
 
 if st.query_params.get(SESSION_RESTORE_QUERY_PARAM) == "1":
-    restored_user = _decode_session_payload(st.query_params.get(SESSION_RESTORE_PAYLOAD_PARAM, ""))
+    restored_user, restored_sid = _restaurar_desde_token(
+        str(st.query_params.get(SESSION_RESTORE_PAYLOAD_PARAM, ""))
+    )
     if restored_user:
         st.session_state.authenticated = True
         st.session_state.user_data = restored_user
         st.session_state.access_token = None
+        st.session_state.session_id = restored_sid
         st.session_state.last_activity_at = datetime.now()
-    if SESSION_RESTORE_QUERY_PARAM in st.query_params:
-        del st.query_params[SESSION_RESTORE_QUERY_PARAM]
-    if SESSION_RESTORE_PAYLOAD_PARAM in st.query_params:
-        del st.query_params[SESSION_RESTORE_PAYLOAD_PARAM]
-    if restored_user:
-        st.rerun()
+    else:
+        st.session_state.clear_browser_session = True
+    for param in (SESSION_RESTORE_QUERY_PARAM, SESSION_RESTORE_PAYLOAD_PARAM):
+        if param in st.query_params:
+            del st.query_params[param]
+    st.rerun()
 
 
 if st.session_state.authenticated:
     now = datetime.now()
     inactive_for = now - st.session_state.get("last_activity_at", now)
     if inactive_for > timedelta(seconds=SESSION_TIMEOUT_SECONDS):
+        _auditar("Sesión", "LOGOUT_INACTIVIDAD")
         _logout_session(timed_out=True)
         st.rerun()
     st.session_state.last_activity_at = now
 
 
 def session_timeout_guard():
-    session_payload = _encode_session_payload(st.session_state.get("user_data", {}))
+    user_data = st.session_state.get("user_data") or {}
+    session_payload = session_token.firmar_restauracion(
+        user_data.get("licence_id"), st.session_state.get("session_id")
+    ) or ""
     analysis_cache_id = st.session_state.get("analysis_cache_id", "")
     components.html(f"""
     <script>
@@ -260,6 +247,10 @@ def session_timeout_guard():
         }}
 
         function persistSession() {{
+            if (!SESSION_PAYLOAD) {{
+                window.parent.localStorage.removeItem(STORAGE_KEY);
+                return;
+            }}
             window.parent.localStorage.setItem(STORAGE_KEY, JSON.stringify({{
                 payload: SESSION_PAYLOAD,
                 analysisCacheId: ANALYSIS_CACHE_ID,
@@ -333,129 +324,61 @@ def clear_browser_session():
     </script>
     """, height=0, width=0)
 
+def _cabeceras_origen() -> dict:
+    """Propaga la IP real del navegador a la API (X-Forwarded-For) para el límite de intentos."""
+    try:
+        cabeceras = st.context.headers
+    except (AttributeError, RuntimeError):
+        return {}
+    origen = cabeceras.get("X-Forwarded-For") or cabeceras.get("x-forwarded-for")
+    return {"X-Forwarded-For": origen} if origen else {}
+
+
+def _procesar_login(user: str, pwd: str) -> None:
+    """Llama a la API de autenticación y muestra mensajes accionables por tipo de fallo."""
+    if not user or not pwd:
+        st.error("Ingrese usuario y contraseña.")
+        return
+    api_url = os.getenv("AUTH_API_URL", "http://localhost:8000")
+    try:
+        response = requests.post(
+            f"{api_url}/auth/validate",
+            json={"username": user, "password": pwd},
+            headers=_cabeceras_origen(),
+            timeout=10,
+        )
+    except requests.Timeout:
+        st.error("El servidor de autenticación tardó demasiado en responder. Intente nuevamente en unos segundos.")
+        return
+    except requests.RequestException:
+        st.error("No se pudo conectar con el servidor de autenticación. Verifique el servicio o contacte al administrador.")
+        return
+
+    if response.status_code == 429:
+        detalle = response.json().get("detail") if response.headers.get("content-type", "").startswith("application/json") else None
+        st.error(detalle or "Demasiados intentos. Espere unos minutos antes de volver a intentar.")
+        return
+    if response.status_code != 200:
+        st.error(f"El servidor de autenticación devolvió un error (HTTP {response.status_code}). Contacte al administrador.")
+        return
+    try:
+        data = response.json()
+    except ValueError:
+        st.error("Respuesta inválida del servidor de autenticación.")
+        return
+    if not (data.get("exists") and data.get("is_active") and data.get("licencia")):
+        st.error(data.get("message", "Acceso denegado."))
+        return
+    st.session_state.authenticated = True
+    st.session_state.user_data = data.get("licencia")
+    st.session_state.access_token = data.get("access_token")
+    st.session_state.session_id = data.get("session_id")
+    st.session_state.last_activity_at = datetime.now()
+    st.rerun()
+
+
 def login_flow():
-    # --- CSS para Login Premium (Sovereign AML New Design) ---
-    st.markdown("""
-    <style>
-        /* Fondo de la App */
-        .stApp { background-color: #0f141b !important; }
-        
-        /* DESAPARECER SIDEBAR COMPLETAMENTE EN LOGIN */
-        [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"] {
-            display: none !important;
-            width: 0px !important;
-        }
-        
-        /* Ajustar contenedor principal al centro total */
-        [data-testid="stMain"] {
-            margin-left: 0px !important;
-            width: 100% !important;
-        }
-
-        /* Ocultar elementos innecesarios de Streamlit */
-        [data-testid="stWidgetLabel"] { display: none; }
-        [data-testid="stForm"] {
-            background-color: #1a1f26 !important;
-            border: none !important;
-            border-left: 2px solid #f59e0b !important;
-            padding: 3rem !important;
-            border-radius: 0px !important;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
-        }
-        
-        /* Estilo de los Inputs */
-        .stTextInput input {
-            background-color: rgba(15, 20, 27, 0.8) !important;
-            border: none !important;
-            border-bottom: 1px solid #30353d !important;
-            color: #ffffff !important;
-            border-radius: 0px !important;
-            padding: 1rem 1rem !important;
-            font-family: 'IBM Plex Mono', monospace !important;
-        }
-        .stTextInput input:focus {
-            border-bottom: 1px solid #f59e0b !important;
-            box-shadow: none !important;
-        }
-        
-        /* Botón de Iniciar Sesión */
-        div.stButton > button {
-            background-color: #f59e0b !important;
-            color: #0f141b !important;
-            border-radius: 0px !important;
-            height: 3.5rem !important;
-            font-weight: 700 !important;
-            letter-spacing: 0.1em !important;
-            text-transform: uppercase !important;
-            border: none !important;
-            transition: all 0.3s ease !important;
-            margin-top: 1rem !important;
-        }
-        div.stButton > button:hover {
-            background-color: #fbbf24 !important;
-            color: #0f141b !important;
-        }
-
-        .brand-title { 
-            color: #ffffff; 
-            font-size: 2.5rem; 
-            font-weight: 300; 
-            letter-spacing: -0.05em; 
-            text-align: center;
-            margin-bottom: 0.5rem;
-            text-transform: uppercase;
-        }
-        .brand-title span { font-weight: 900; color: #f59e0b; }
-        
-        .brand-subtitle { 
-            color: #8b949e; 
-            font-size: 0.6rem; 
-            letter-spacing: 0.4em; 
-            text-align: center; 
-            text-transform: uppercase;
-            margin-bottom: 3rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .login-label {
-            color: #8b949e;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            margin-bottom: 0.5rem;
-            margin-top: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .footer-notice {
-            margin-top: 4rem;
-            text-align: center;
-            color: rgba(139, 148, 158, 0.4);
-            font-size: 0.6rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            line-height: 1.5;
-        }
-        .security-badge {
-            background-color: #171c23;
-            border: 1px solid rgba(160, 142, 122, 0.1);
-            padding: 0.6rem 1.25rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.75rem;
-            color: #8b949e;
-            font-size: 0.6rem;
-            letter-spacing: 0.25em;
-            margin-bottom: 1rem;
-        }
-    </style>
-    """, unsafe_allow_html=True)
+    theme.cargar_estilos("styles.css", "login.css")
 
     # --- Interfaz de Login ---
     _, col, _ = st.columns([1.5, 1.2, 1.5])
@@ -472,74 +395,41 @@ def login_flow():
 
         st.markdown("""
             <div class="brand-title">SOVEREIGN <span>AML</span></div>
-            <div class="brand-subtitle">
-                ANALYTICAL INTELLIGENCE PLATFORM
-            </div>
+            <div class="brand-subtitle">Plataforma de análisis para la prevención de LD/FT</div>
         """, unsafe_allow_html=True)
-        
-        import base64
-        import os
-        logo_b64 = ""
-        logo_path = os.path.join(os.path.dirname(__file__), "Logo AML.png")
-        if os.path.exists(logo_path):
-            with open(logo_path, "rb") as f:
-                logo_b64 = base64.b64encode(f.read()).decode()
-                
+
+        logo_b64 = _logo_base64()
+
         with st.form("login_form", clear_on_submit=False):
             st.markdown(f"""
-                <div style="text-align: center; margin-bottom: 2rem;">
-                    <img src="data:image/png;base64,{logo_b64}" 
-                         style="height: 6rem; margin-bottom: 1.5rem; filter: drop-shadow(0 0 15px rgba(245, 158, 11, 0.3));">
-                    <div style="color: white; font-size: 1.5rem; font-weight: 600;">Acceso al Sistema</div>
-                    <div style="color: #8b949e; font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase;">SISTEMA IMPERATOR ENGINE</div>
+                <div class="login-brand">
+                    <img src="data:image/png;base64,{h(logo_b64)}" alt="Logotipo Sovereign AML" class="login-logo">
+                    <div class="login-title">Acceso al sistema</div>
+                    <div class="login-kicker">Motor de análisis IMPERATOR</div>
                 </div>
             """, unsafe_allow_html=True)
 
+            user = st.text_input("Nombre de usuario", placeholder="Usuario", key="login_user",
+                                 autocomplete="username")
+            pwd = st.text_input("Contraseña", type="password", placeholder="Contraseña", key="login_pwd",
+                                autocomplete="current-password")
 
-            st.markdown('<div class="login-label">Nombre de Usuario</div>', unsafe_allow_html=True)
-            user = st.text_input("USUARIO", placeholder="UserName", key="login_user")
-            
-            st.markdown('<div class="login-label">Contraseña</div>', unsafe_allow_html=True)
-            pwd = st.text_input("CONTRASEÑA", type="password", placeholder="••••••••", key="login_pwd")
-            
             st.markdown("<br>", unsafe_allow_html=True)
-            submit = st.form_submit_button("INICIAR SESIÓN →", use_container_width=True)
-            
+            submit = st.form_submit_button("Iniciar sesión", use_container_width=True)
+
             if submit:
-                try:
-                    api_url = os.getenv("AUTH_API_URL", "http://localhost:8000")
-                    endpoint = f"{api_url}/auth/validate"
-                    response = requests.post(endpoint, json={"username": user, "password": pwd})
-                    
-                    if response.status_code == 200:
-                        data = response.json()
-                        if data.get("exists") and data.get("is_active"):
-                            st.session_state.authenticated = True
-                            st.session_state.user_data = data.get("licencia")
-                            st.session_state.access_token = data.get("access_token")
-                            st.session_state.last_activity_at = datetime.now()
-                            st.rerun()
-                        else:
-                            st.error(data.get("message", "Acceso denegado."))
-                    else:
-                        st.error("Error de conexión con la API.")
-                except Exception:
-                    st.error("No se pudo conectar con el servidor de autenticación. Intente nuevamente.")
-            
+                _procesar_login(user, pwd)
+
             st.markdown("""
-                <div style="text-align: center; margin-top: 2rem;">
-                    <a href="#" style="color: #8b949e; font-size: 0.7rem; text-decoration: none; text-transform: uppercase; letter-spacing: 0.1em;">
-                       ¿Olvidó su contraseña?
-                    </a>
+                <div class="login-help">
+                    Si olvidó su contraseña o su licencia expiró, contacte al administrador del sistema.
                 </div>
             """, unsafe_allow_html=True)
-        
+
         st.markdown("""
-            <div class="footer-notice">
-                <div class="security-badge">
-                    ACCESO RESTRINGIDO - NIVEL 4 CID
-                </div>
-                <div>EL ACCESO NO AUTORIZADO A ESTE SISTEMA DE INTELIGENCIA ESTÁ ESTRICTAMENTE PROHIBIDO POR LA NORMATIVA SOVEREIGN-V3.</div>
+            <div class="legal-notice">
+                Uso exclusivo de personal autorizado. Los accesos y acciones quedan registrados
+                conforme a la normativa de prevención de lavado de dinero y financiamiento del terrorismo.
             </div>
         """, unsafe_allow_html=True)
 
@@ -560,672 +450,106 @@ session_timeout_guard()
 # TEMA Y CONFIGURACIÓN VISUAL
 # ============================================================
 
-# --- Sidebar: Info de Licencia y Logout ---
-with st.sidebar:
-    st.markdown("---")
-    if st.session_state.authenticated and st.session_state.user_data:
-        lic = st.session_state.user_data
-        st.markdown(f"""
-        <div class='sidebar-card sidebar-license'>
-            <div class='sidebar-label'>Licencia Activa</div>
-            <div class='sidebar-primary'>{lic['name']}</div>
-            <div class='sidebar-accent'>{lic['mail']}</div>
-            <div class='sidebar-label sidebar-spaced'>Empresa</div>
-            <div class='sidebar-value'>{lic['empresa']}</div>
-            <div class='sidebar-label sidebar-spaced'>Expira</div>
-            <div class='sidebar-value'>{lic['fecha_expiracion']}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        if st.button("CERRAR SESIÓN", use_container_width=True):
-            _logout_session()
-            st.session_state.clear_browser_session = True
-            st.rerun()
-    st.markdown("---")
+# Sistema de diseño (frontend/theme): tokens + styles.css, cargado una sola vez
+theme.cargar_estilos()
 
-# CSS personalizado - SOVEREIGN INTELLIGENCE FRAMEWORK
-st.markdown("""
-<style>
-    /* ---- FUENTES: Manrope & IBM Plex Mono ---- */
-    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Manrope:wght@400;500;600;700;800&display=swap');
 
-    html, body, [class*="css"] {
-        font-family: 'Manrope', sans-serif;
-    }
+@st.cache_data(show_spinner=False, max_entries=8, ttl=SESSION_TIMEOUT_SECONDS)
+def _leer_excel(contenido: bytes, nombre: str) -> pd.DataFrame:
+    """Lectura del Excel cacheada por contenido (evita releer en cada rerun, U-07)."""
+    return pd.read_excel(io.BytesIO(contenido), nrows=mod_sesion.MAX_FILAS + 1)
 
-    /* ---- TEMA OSCURO: Chromatic Tectonics ---- */
-    .stApp {
-        background-color: #0f141b;
-        color: #dee2ed;
-    }
 
-    /* ---- SIDEBAR: Tonal Stacking ---- */
-    [data-testid="stSidebar"] {
-        background-color: #0f141b;
-        border-right: 1px solid rgba(83, 68, 52, 0.15);
-    }
+@st.cache_data(show_spinner=False)
+def _plantilla_excel() -> bytes:
+    """Plantilla descargable con las columnas requeridas y una fila de ejemplo (U-10)."""
+    ejemplo = pd.DataFrame([{
+        "Fecha": "2026-01-15", "Cliente": "Cliente Ejemplo S.A.", "EsPEP": "NO", "EsCPE": "NO",
+        "Monto": 15000.00, "Perfil": 20000.00, "Ubicacion": "Guatemala", "UbicacionRiesgo": "NO",
+        "TipoOperacion": "Depósito", "Cliente_Destino": "Proveedor Ejemplo",
+    }])
+    return exportacion.xlsx_bytes(ejemplo, hoja="Transacciones")
 
-    [data-testid="stSidebar"] * {
-        letter-spacing: 0;
-    }
 
-    [data-testid="stSidebar"] hr {
-        border-color: rgba(83, 68, 52, 0.18);
-        margin: 1.35rem 0;
-    }
+def _estado_motor() -> tuple:
+    """Estado real del motor para el encabezado: datos cargados y API de autenticación disponible."""
+    datos_cargados = "data" in st.session_state
+    return datos_cargados, ("DATOS CARGADOS" if datos_cargados else "SIN DATOS CARGADOS")
 
-    [data-testid="stSidebar"] .sidebar-brand {
-        color: #f59e0b !important;
-        font-size: 22px;
-        font-weight: 800;
-        line-height: 1.2;
-        margin: 0 0 4px;
-        letter-spacing: 0.2px;
-    }
-
-    .sidebar-brand-subtitle,
-    .sidebar-footer {
-        color: #d8c3ad;
-        font-size: 13px;
-        line-height: 1.55;
-        margin: 0;
-    }
-
-    .sidebar-section-label {
-        color: #a08e7a;
-        font-size: 12.5px;
-        line-height: 1.4;
-        letter-spacing: 1.2px !important;
-        text-transform: uppercase;
-        font-family: 'IBM Plex Mono', monospace;
-        margin: 0 0 8px;
-    }
-
-    .sidebar-section-title {
-        color: #d8c3ad;
-        font-size: 15px;
-        line-height: 1.35;
-        font-weight: 700;
-        margin: 0 0 10px;
-    }
-
-    .sidebar-card {
-        background: #171c23;
-        border-left: 3px solid #f59e0b;
-        padding: 16px 18px;
-        margin-bottom: 10px;
-    }
-
-    .sidebar-label {
-        margin: 0 0 8px;
-        color: #9aa4b2;
-        font-size: 13px;
-        line-height: 1.35;
-        text-transform: uppercase;
-        letter-spacing: 0.5px !important;
-        font-weight: 600;
-    }
-
-    .sidebar-spaced {
-        margin-top: 18px;
-    }
-
-    .sidebar-primary {
-        margin: 0 0 4px;
-        color: #ffffff;
-        font-size: 15px;
-        line-height: 1.35;
-        font-weight: 700;
-    }
-
-    .sidebar-value,
-    .sidebar-accent,
-    .sidebar-body,
-    .sidebar-params {
-        font-size: 14px;
-        line-height: 1.6;
-    }
-
-    .sidebar-value {
-        margin: 0;
-        color: #dee2ed;
-    }
-
-    .sidebar-accent {
-        margin: 0;
-        color: #f59e0b;
-    }
-
-    .sidebar-body {
-        color: #a08e7a;
-        margin: 0;
-    }
-
-    .sidebar-card-title {
-        color: #dee2ed;
-        font-size: 14px;
-        line-height: 1.4;
-        font-weight: 700;
-        margin: 0 0 6px;
-    }
-
-    .sidebar-params {
-        color: #b8c0cc;
-        font-family: 'IBM Plex Mono', monospace;
-        margin: 0;
-    }
-
-    [data-testid="stSidebar"] div.stButton > button,
-    [data-testid="stSidebar"] div.stDownloadButton > button {
-        min-height: 48px !important;
-        font-size: 14px !important;
-        line-height: 1.2 !important;
-    }
-
-    /* ---- HEADERS & TITLES ---- */
-    h1, h2, h3 {
-        color: #f0f6fc;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-    }
-
-    /* ---- COMPONENTES: Sharp Edges & Tonal Layering ---- */
-    div.stButton > button {
-        border-radius: 0px !important;
-        background-color: #f59e0b !important;
-        color: #472a00 !important;
-        border: none !important;
-        font-weight: 700 !important;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        transition: all 0.2s ease;
-    }
-    div.stButton > button:hover {
-        background-color: #fbbf24 !important;
-        box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
-    }
-
-    div.stDownloadButton > button {
-        border-radius: 0px !important;
-        background: linear-gradient(90deg, #f59e0b 0%, #f97316 100%) !important;
-        color: #fff8eb !important;
-        border: none !important;
-        font-weight: 800 !important;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        transition: all 0.2s ease;
-    }
-
-    div.stDownloadButton > button:hover {
-        background: linear-gradient(90deg, #fbbf24 0%, #fb923c 100%) !important;
-        box-shadow: 0 0 18px rgba(245, 158, 11, 0.28);
-    }
-
-    /* ---- TARJETAS Y CONTENEDORES ---- */
-    .metric-card {
-        background-color: #171c23; /* surface-container-low */
-        border: none;
-        border-radius: 0px;
-        padding: 24px;
-        margin-bottom: 20px;
-        position: relative;
-    }
-    
-    .metric-card.amber { border-left: 4px solid #f59e0b; background-color: #1b2027; }
-    .metric-card.red   { border-left: 4px solid #ef4444; background-color: #1b2027; }
-    .metric-card.blue  { border-left: 4px solid #3b82f6; background-color: #1b2027; }
-    .metric-card.green { border-left: 4px solid #10b981; background-color: #1b2027; }
-
-    .metric-number {
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 32px;
-        font-weight: 700;
-        color: #dee2ed;
-    }
-
-    .metric-label {
-        color: #d8c3ad; /* on_surface_variant */
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        margin-bottom: 4px;
-    }
-
-    /* ---- INFO BOXES: Institutional Kit ---- */
-    .info-box {
-        background-color: #1b2027; /* surface-container */
-        border-left: 2px solid #3b82f6;
-        padding: 16px;
-        font-size: 13px;
-        color: #d8c3ad;
-        margin-bottom: 16px;
-    }
-    
-    .warning-box {
-        background-color: #1b2027;
-        border-left: 2px solid #f59e0b;
-        padding: 16px;
-        font-size: 13px;
-        color: #d8c3ad;
-        margin-bottom: 16px;
-    }
-
-    /* ---- DATA TABLES ---- */
-    [data-testid="stDataFrame"] {
-        border-radius: 0px !important;
-        border: 1px solid #30353d !important;
-    }
-    
-    [data-testid="stDataFrame"] * {
-        font-family: 'IBM Plex Mono', monospace !important;
-        font-size: 12px !important;
-        color: #dee2ed !important;
-    }
-
-    /* ---- FORM CONTROLS: HIGHER CONTRAST ---- */
-    [data-testid="stWidgetLabel"] p,
-    [data-testid="stWidgetLabel"] span {
-        color: #d8c3ad !important;
-        font-weight: 600 !important;
-    }
-
-    [data-testid="stCheckbox"] label,
-    [data-testid="stCheckbox"] span {
-        color: #d8c3ad !important;
-        font-weight: 600 !important;
-    }
-
-    [data-baseweb="select"] > div {
-        background-color: #171c23 !important;
-        border-color: #534434 !important;
-    }
-
-    [data-baseweb="select"] * {
-        color: #dee2ed !important;
-    }
-
-    [data-baseweb="tag"] {
-        background-color: #1b2027 !important;
-        border: 1px solid #534434 !important;
-    }
-
-    [data-baseweb="slider"] [role="slider"] {
-        background: #ff5a5f !important;
-        box-shadow: 0 0 0 3px rgba(255, 90, 95, 0.18) !important;
-    }
-
-    [data-baseweb="slider"] [data-testid="stTickBar"] {
-        background-color: #30353d !important;
-    }
-
-    /* ---- TABS: REPORT MODULE VISIBILITY ---- */
-    [data-testid="stTabs"] [role="tablist"] {
-        gap: 14px;
-        border-bottom: 1px solid rgba(83, 68, 52, 0.18);
-        margin-bottom: 8px;
-    }
-
-    [data-testid="stTabs"] [role="tab"] {
-        color: #a08e7a !important;
-        font-weight: 700 !important;
-        font-size: 16px !important;
-        padding: 10px 4px 12px !important;
-    }
-
-    [data-testid="stTabs"] [role="tab"]:hover {
-        color: #f0f6fc !important;
-    }
-
-    [data-testid="stTabs"] [aria-selected="true"] {
-        color: #f59e0b !important;
-        border-bottom-color: #f59e0b !important;
-    }
-
-    /* ---- PULSE ANIMATION ---- */
-    @keyframes pulse {
-        0% { transform: scale(1); opacity: 1; }
-        50% { transform: scale(1.2); opacity: 0.7; }
-        100% { transform: scale(1); opacity: 1; }
-    }
-    .pulse-dot {
-        width: 8px;
-        height: 8px;
-        background-color: #f59e0b;
-        border-radius: 50%;
-        display: inline-block;
-        box-shadow: 0 0 10px rgba(245, 158, 11, 0.8);
-        animation: pulse 2s infinite;
-        margin-right: 8px;
-    }
-
-    /* ---- GLOSSARY & LISTS ---- */
-    .glossary {
-        background-color: #171c23;
-        padding: 20px;
-        border-left: 2px solid #a08e7a;
-        margin-bottom: 24px;
-        border-radius: 0px;
-    }
-    .glossary-title {
-        color: #f0f6fc;
-        font-family: 'IBM Plex Mono', monospace;
-        font-weight: 700;
-        margin-bottom: 15px;
-        text-transform: uppercase;
-        font-size: 12px;
-        letter-spacing: 1.5px;
-    }
-    .glossary-item {
-        display: flex;
-        gap: 20px;
-        margin-bottom: 10px;
-        font-size: 12px;
-        align-items: flex-start;
-    }
-    .glossary-key {
-        font-family: 'IBM Plex Mono', monospace;
-        font-weight: 600;
-        color: #f59e0b;
-        min-width: 130px;
-        flex-shrink: 0;
-    }
-    .glossary-item span:last-child {
-        color: #d8c3ad;
-    }
-
-    /* ---- SECTION HEADERS ---- */
-    .section-title {
-        font-family: 'Manrope', sans-serif;
-        font-size: 18px;
-        font-weight: 700;
-        color: #f0f6fc;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-    .section-title::before {
-        content: '';
-        display: inline-block;
-        width: 4px;
-        height: 18px;
-        background-color: #f59e0b;
-    }
-
-    /* ---- MAIN WELCOME VIEW ---- */
-    .welcome-panel {
-        max-width: 900px;
-        margin: 20px auto 30px;
-        text-align: center;
-    }
-
-    .welcome-kicker {
-        font-family: 'IBM Plex Mono', monospace;
-        font-weight: 800;
-        font-size: 16px;
-        letter-spacing: 2.5px;
-        color: #f59e0b;
-        text-transform: uppercase;
-    }
-
-    .welcome-rule {
-        width: 96px;
-        height: 2px;
-        background: linear-gradient(90deg, transparent, #f59e0b, transparent);
-        margin: 14px auto 18px;
-    }
-
-    .welcome-title {
-        color: #f0f6fc;
-        font-size: 24px;
-        line-height: 1.35;
-        font-weight: 700;
-        margin-bottom: 10px;
-    }
-
-    .welcome-copy {
-        color: #b8c0cc;
-        font-size: 16px;
-        line-height: 1.7;
-        max-width: 720px;
-        margin: 0 auto;
-    }
-
-    .upload-requirements {
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 14px;
-        color: #c7d0db;
-        margin-bottom: 18px;
-        line-height: 1.9;
-    }
-
-    .upload-help {
-        color: #9aa4b2;
-        font-size: 15px;
-        text-align: center;
-        font-family: 'Manrope', sans-serif;
-        line-height: 1.7;
-        margin-top: 26px;
-    }
-
-    /* ---- CUSTOM TABLES (HTML) ---- */
-    .aml-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-family: 'Manrope', sans-serif;
-        font-size: 13px;
-    }
-    .aml-table th {
-        background-color: #1b2027; /* surface-container */
-        color: #f59e0b;
-        text-align: left;
-        padding: 12px 16px;
-        text-transform: uppercase;
-        font-size: 11px;
-        letter-spacing: 1.5px;
-        font-family: 'IBM Plex Mono', monospace;
-    }
-    .aml-table td {
-        padding: 12px 16px;
-        border-bottom: 1px solid rgba(83, 68, 52, 0.1);
-        color: #dee2ed;
-    }
-    .aml-table tr:hover {
-        background-color: rgba(245, 158, 11, 0.05);
-    }
-
-    .footer {
-        border-top: 1px solid #30353d;
-        padding: 24px;
-        text-align: center;
-        color: #d8c3ad;
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 11px;
-    }
-
-    /* ---- FIX NAVEGACIÓN RADIO BUTTON TEXT ---- */
-    div[data-testid="stRadio"] label, 
-    div[data-testid="stRadio"] div[data-testid="stMarkdownContainer"] p {
-        color: #d8c3ad !important;
-        font-size: 15px !important;
-        line-height: 1.4 !important;
-        font-weight: 600 !important;
-    }
-
-    /* ---- FIX BROWSE FILES BUTTON TEXT ---- */
-    div[data-testid="stFileUploader"] section button {
-        color: #171c23 !important;
-        background-color: #dee2ed !important;
-        font-weight: 600 !important;
-    }
-</style>
-""", unsafe_allow_html=True)
 
 # ============================================================
 # HEADER SOVEREIGN
 # ============================================================
-st.markdown("""
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #30353d; padding-bottom: 15px;">
+_motor_on, _motor_texto = _estado_motor()
+st.markdown(f"""
+<div class="app-header">
     <div>
-        <h1 style="margin: 0; font-size: 32px; letter-spacing: -1px; font-weight: 300;">SOVEREIGN <span style="font-weight: 800; color: #f59e0b;">AML</span></h1>
-        <p style="margin: 0; color: #d8c3ad; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;">
-            <span class="pulse-dot"></span> ANALYTICAL INTELLIGENCE PLATFORM
-        </p>
+        <h1 class="app-title">SOVEREIGN <span>AML</span></h1>
+        <p class="app-subtitle">Plataforma de análisis para la prevención de LD/FT</p>
     </div>
-    <div style="text-align: right;">
-        <div style="color: #f59e0b; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1px; display:flex; align-items:center; justify-content:flex-end; gap:8px;">
-            <span style="width:10px; height:10px; border-radius:50%; background:radial-gradient(circle at 35% 35%, #86efac 0%, #22c55e 45%, #15803d 100%); box-shadow:0 0 0 3px rgba(34,197,94,0.15), 0 0 14px rgba(34,197,94,0.55); display:inline-block;"></span>
-            <span>IMPERATOR ENGINE ACTIVE</span>
-        </div>
-        <div style="color: #d8c3ad; font-family: 'IBM Plex Mono', monospace; font-size: 10px;">CORE VERSION v3.0.0</div>
+    <div class="app-header-right">
+        <div class="engine-status {h('on' if _motor_on else 'off')}"><span class="dot"></span><span>MOTOR IMPERATOR · {h(_motor_texto)}</span></div>
+        <div class="app-version">Versión 3.0.0 · Rol: {h(permisos.etiqueta_rol())}</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # ============================================================
-# SIDEBAR
+# SIDEBAR: licencia compacta, navegación agrupada, exportación
 # ============================================================
 with st.sidebar:
     st.markdown("<div class='sidebar-brand'>SOVEREIGN AML</div>", unsafe_allow_html=True)
-    st.markdown("<div class='sidebar-brand-subtitle'>Powered by IMPERATOR Intelligence</div>", unsafe_allow_html=True)
-    st.markdown("---")
-
-    st.markdown("<div class='sidebar-section-label'>AML Intelligence</div>", unsafe_allow_html=True)
-    st.markdown("<div class='sidebar-section-title'>Motor de Cumplimiento</div>", unsafe_allow_html=True)
-    st.markdown("""
-    <div class='sidebar-card'>
-        <div class='sidebar-card-title'>Monitoreo AML centralizado</div>
-        <div class='sidebar-body'>
-            Plataforma para analizar transacciones, priorizar alertas, perfilar clientes y documentar hallazgos de riesgo en un solo flujo operativo.
-        </div>
+    lic = st.session_state.user_data or {}
+    st.markdown(f"""
+    <div class='sidebar-card sidebar-license'>
+        <div class='sidebar-primary'>{h(lic.get('name', ''))}</div>
+        <div class='sidebar-accent'>{h(lic.get('mail', ''))}</div>
+        <div class='sidebar-value'>{h(lic.get('empresa', ''))} · {h(permisos.etiqueta_rol())}</div>
+        <div class='sidebar-value'>Licencia vigente hasta {h(lic.get('fecha_expiracion', ''))}</div>
     </div>
     """, unsafe_allow_html=True)
-    
-    st.markdown("---")
-    st.markdown("<div class='sidebar-section-label'>Parámetros Activos</div>", unsafe_allow_html=True)
-    
-    cfg = st.session_state.get("aml_config", None)
-    if cfg:
-        reglas_activas = sum([
-            int(cfg.get("regla_absoluto", False)),
-            int(cfg.get("regla_acumulado", False)),
-            int(cfg.get("regla_perfil", False)),
-            int(cfg.get("regla_frecuencia", False)),
-            int(cfg.get("regla_smurfing", False)),
-            int(cfg.get("regla_pico", False)),
-            int(cfg.get("regla_ubicacion", False)),
-        ])
-        st.markdown(f"""
-        <div class='sidebar-card'>
-            <div class='sidebar-params'>
-                Reglas activas: {reglas_activas}/7<br>
-                Crítico ≥ score {cfg['score_critico']}<br>
-                Alto ≥ score {cfg['score_alto']}<br>
-                Medio ≥ score {cfg['score_medio']}<br>
-                Umbral base: Q{cfg['umbral_absoluto']:,}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown("""
-        <div class='sidebar-card'>
-            <div class='sidebar-params' style='color:#f59e0b;'>
-                Usando valores por defecto.<br>Ir a Configuración para personalizar.
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+    if st.button("Cerrar sesión", use_container_width=True):
+        _auditar("Sesión", auditoria.LOGOUT)
+        _logout_session()
+        st.session_state.clear_browser_session = True
+        st.rerun()
 
     st.markdown("---")
-    st.markdown("<div class='sidebar-section-label'>Navegación</div>", unsafe_allow_html=True)
-    
-    if "nav_view" not in st.session_state:
-        st.session_state.nav_view = "Resumen Ejecutivo"
-
-    def set_nav():
-        if st.session_state.radio_main is not None:
-            st.session_state.nav_view = st.session_state.radio_main
-
-    main_ops = [
-        "Resumen Ejecutivo",
-        "Casos de Alerta",
-        "Transacciones",
-        "Análisis por Cliente",
-        "Matrices de Riesgo",
-        "Red Transaccional",
-        "Acciones de Mitigación",
-        "Imperator Diagnostics",
-        "Gestión de Ubicaciones",
-        "Riesgo Institucional LD/FT",
-        "Informes y Reportes",
-        "Configuración",
-        "Manual de Usuario"
-    ]
-
-    if st.session_state.nav_view == "IMPERATOR Diagnostics":
-        st.session_state.nav_view = "Imperator Diagnostics"
-
-    m_idx = main_ops.index(st.session_state.nav_view) if st.session_state.nav_view in main_ops else 0
-    st.radio("Vistas Analíticas", main_ops, key="radio_main", index=m_idx, on_change=set_nav, label_visibility="collapsed")
-    
+    vista = navegacion.render_sidebar_nav()
     st.markdown("---")
 
-    # ── Exportar sesión ────────────────────────────────────────────
+    # ── Exportar sesión: el .saml se genera solo al pulsar "Preparar exportación" (U-07)
     if "data_raw" in st.session_state and "data" in st.session_state:
-        nombre_saml = mod_sesion.nombre_archivo_saml(
-            st.session_state.get("archivo_nombre", "analisis")
-        )
-        bytes_saml = mod_sesion.exportar_sesion(
-            st.session_state["data_raw"],
-            st.session_state["aml_config"],
-            st.session_state.get("archivo_nombre", "analisis")
-        )
-        st.download_button(
-            label="Exportar sesión (.saml)",
-            data=bytes_saml,
-            file_name=nombre_saml,
-            mime="application/octet-stream",
-            use_container_width=True,
-            help="Descarga el análisis completo con datos y configuración para retomarlo después."
-        )
-        st.markdown("""
-        <div style='font-size:12.5px; color:#8b949e; font-family:IBM Plex Mono,monospace;
-                    margin-top:8px; line-height:1.5; text-align:center;'>
-            Incluye transacciones + configuración usada.
-        </div>""", unsafe_allow_html=True)
+        st.markdown("<div class='sidebar-section-label'>Sesión de análisis</div>", unsafe_allow_html=True)
+        if permisos.puede("exportar_datos"):
+            if st.button("Preparar exportación (.saml)", use_container_width=True,
+                         help="Empaqueta transacciones y configuración para retomar el análisis después."):
+                st.session_state["saml_exportacion"] = (
+                    mod_sesion.nombre_archivo_saml(st.session_state.get("archivo_nombre", "analisis")),
+                    mod_sesion.exportar_sesion(
+                        st.session_state["data_raw"], st.session_state["aml_config"],
+                        st.session_state.get("archivo_nombre", "analisis"),
+                    ),
+                )
+            if st.session_state.get("saml_exportacion"):
+                nombre_saml, bytes_saml = st.session_state["saml_exportacion"]
+                exportacion.boton_descarga(
+                    label="Descargar sesión (.saml)", data=bytes_saml, file_name=nombre_saml,
+                    mime="application/octet-stream", use_container_width=True, modulo="Sesión",
+                )
+        else:
+            st.caption("Su rol no permite exportar datos.")
         st.markdown("---")
 
     st.markdown("""
-    <div class='sidebar-footer'>
-        v3.0 · Sovereign AML Intelligence
-    </div>
-    <div style="margin-top:8px; line-height:1.5;">
-        <span style="font-size:12.5px; font-weight:700; color:#d8c3ad; letter-spacing:0.2px;">
-            Ing. Hobéd Díaz
-        </span><br>
-        <span style="font-size:12.5px; font-weight:600; color:#a08e7a; text-transform:uppercase; letter-spacing:1.1px;">
-            Magíster Artium
-        </span><br>
-        <span style="font-size:12.5px; font-weight:700; color:#f59e0b;">M.A.F.I.</span>
-        <span style="font-size:12.5px; font-weight:400; color:#8b949e;"> · Análisis Forense Informático</span>
-    </div>
+    <div class='sidebar-footer'>Sovereign AML v3.0 · Ing. Hobéd Díaz, M.A., M.A.F.I.</div>
     """, unsafe_allow_html=True)
 
-vista = st.session_state.nav_view
 
 # ============================================================
 # CONFIGURACIÓN (Defaults)
 # ============================================================
-_DEFAULTS = {
-    "tolerancia_perfil": 15, "umbral_absoluto": 20000, "mult_acumulado": 2.0, "umbral_frecuencia": 5,
-    "umbral_smurfing": 5, "mult_std_pico": 2.0, "score_critico": 8, "monto_critico": 30000,
-    "score_alto": 5, "score_medio": 3, "peso_absoluto": 3, "peso_acumulado": 2, "peso_perfil": 1,
-    "peso_frecuencia": 1, "peso_smurfing": 3, "peso_pico": 2, "regla_absoluto": True, "regla_acumulado": True,
-    "regla_perfil": True, "regla_frecuencia": True, "regla_smurfing": True, "regla_pico": True,
-    "regla_ubicacion": True, "peso_pep_cpe": 2, "peso_ubicacion": 2,
-    "w_st": 0.40, "w_sc": 0.25, "w_sb": 0.20, "w_sn": 0.15,
-    "ubicaciones_manuales": ["Huehuetenango", "San Marcos", "Izabal", "Petén", "Escuintla"],
-    "regla_feic": True, "umbral_feic": 45000,
-}
+_DEFAULTS = config_aml.config_por_defecto()
 if "aml_config" not in st.session_state:
     st.session_state["aml_config"] = _DEFAULTS.copy()
 else:
@@ -1240,7 +564,7 @@ if st.session_state.authenticated:
 # ============================================================
 # CARGA DE ARCHIVO
 # ============================================================
-if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones", "Red Transaccional", "Acciones de Mitigación", "Imperator Diagnostics", "Riesgo Institucional LD/FT"]:
+if vista not in navegacion.VISTAS_SIN_DATOS:
     data_ready = "data" in st.session_state
 
     if not data_ready or "archivo_nombre" not in st.session_state:
@@ -1253,7 +577,7 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
         <div class="welcome-panel">
             <div class="welcome-kicker">Centro de análisis</div>
             <div class="welcome-rule"></div>
-            <div class="welcome-title">Bienvenido, <span style='color:#ffffff;'>{user_name}</span>.</div>
+            <div class="welcome-title">Bienvenido, <span style='color:#ffffff;'>{h(user_name)}</span>.</div>
             <div class="welcome-copy">
                 Es un gusto tenerle de vuelta. Inicie un nuevo análisis o restaure una sesión guardada
                 para continuar monitoreando transacciones, alertas y perfiles de riesgo desde un solo espacio.
@@ -1273,11 +597,27 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
             </div>
             """, unsafe_allow_html=True)
 
-            archivo = st.file_uploader("Subir archivo Excel", type=["xlsx"], label_visibility="collapsed")
+            col_up, col_tpl = st.columns([3, 1])
+            with col_tpl:
+                exportacion.boton_descarga(
+                    "Descargar plantilla Excel", data=_plantilla_excel(), file_name="plantilla_sovereign_aml.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True, modulo="Carga de datos",
+                    help="Plantilla con las columnas requeridas y una fila de ejemplo.",
+                )
+            with col_up:
+                archivo = st.file_uploader("Archivo Excel de transacciones (.xlsx)", type=["xlsx"])
 
             if archivo:
                 with st.spinner("Procesando inteligencia AML..."):
-                    df_raw = pd.read_excel(archivo)
+                    try:
+                        df_raw = _leer_excel(archivo.getvalue(), archivo.name)
+                    except ValueError as exc:
+                        st.error(f"No se pudo leer el archivo Excel: {exc}")
+                        st.stop()
+                    if len(df_raw) > mod_sesion.MAX_FILAS:
+                        st.error(f"El archivo supera el máximo de {mod_sesion.MAX_FILAS:,} filas permitidas por análisis.")
+                        st.stop()
                     es_valido, faltantes = validar_columnas(df_raw)
                     if not es_valido:
                         st.error(f"Faltan columnas: {', '.join(faltantes)}")
@@ -1287,6 +627,7 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
                     st.session_state["data_raw"]     = df_raw
                     st.session_state["pep_cpe_info"] = pep_cpe_info
                     st.session_state["archivo_nombre"] = archivo.name
+                    _auditar("Carga de datos", f"{auditoria.IMPORTACION}:XLSX")
                     save_analysis_cache()
                     st.rerun()
             else:
@@ -1300,7 +641,7 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
         with tab_sesion:
             st.markdown("""
             <div style="background:#171c23; border-left:3px solid #f59e0b; padding:16px;
-                        font-size:14px; color:#a08e7a; margin-bottom:18px; font-family:'IBM Plex Mono',monospace;">
+                        font-size:14px; color:#b8a58e; margin-bottom:18px; font-family:'IBM Plex Mono',monospace;">
                 <strong style='color:#f0f6fc;'>Formato .saml</strong>: Sovereign AML Session File.<br>
                 Contiene las transacciones originales y la configuración usada en el análisis previo.
                 Al cargarlo, el motor reprocesa todo automáticamente restaurando el estado completo.
@@ -1314,10 +655,8 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
                     with st.spinner("Restaurando sesión de análisis..."):
                         df_raw, cfg_restaurado, session_meta = mod_sesion.importar_sesion(archivo_saml)
 
-                        # Restaurar configuración guardada en la sesión
+                        # Configuración ya validada contra AmlConfig (lista blanca y rangos)
                         st.session_state["aml_config"] = cfg_restaurado
-                        for k, v in cfg_restaurado.items():
-                            st.session_state["aml_config"].setdefault(k, v)
 
                         es_valido, faltantes = validar_columnas(df_raw)
                         if not es_valido:
@@ -1331,6 +670,7 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
                         st.session_state["archivo_nombre"]  = session_meta.get("nombre_archivo", archivo_saml.name)
                         st.session_state["session_meta"]    = session_meta
                         st.session_state["from_saml"]       = True
+                        _auditar("Carga de datos", f"{auditoria.IMPORTACION}:SAML")
                         save_analysis_cache()
 
                     st.rerun()
@@ -1339,7 +679,7 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
                     st.error(f"Error al cargar la sesión: {e}")
             else:
                 st.markdown("""
-                <p style='color:#8b949e; font-size:14px; text-align:center;
+                <p style='color:#a7b0bb; font-size:14px; text-align:center;
                           font-family:"IBM Plex Mono",monospace; margin-top:24px;'>
                     Suba un archivo <strong style='color:#f59e0b;'>.saml</strong> generado
                     previamente desde Sovereign AML para retomar el análisis.
@@ -1359,11 +699,11 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
                 filas     = meta.get("filas", "")
                 st.markdown(f"""
                 <div style="background:#171c23; border-left:3px solid #f59e0b; padding:12px 16px;
-                            font-family:'IBM Plex Mono',monospace; font-size:12px; color:#a08e7a;">
+                            font-family:'IBM Plex Mono',monospace; font-size:12px; color:#b8a58e;">
                     <span style="color:#f59e0b; font-weight:700;">SESIÓN RESTAURADA</span>
-                    &nbsp;·&nbsp; {nombre}
-                    &nbsp;·&nbsp; {filas} registros
-                    &nbsp;·&nbsp; Exportada: {exportado}
+                    &nbsp;·&nbsp; {h(nombre)}
+                    &nbsp;·&nbsp; {h(filas)} registros
+                    &nbsp;·&nbsp; Exportada: {h(exportado)}
                 </div>""", unsafe_allow_html=True)
             else:
                 st.success(f"Archivo '{st.session_state['archivo_nombre']}' cargado y analizado de forma correcta.")
@@ -1374,6 +714,15 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
                     st.session_state.pop(k, None)
                 st.session_state.analysis_cache_id = str(uuid.uuid4())
                 st.rerun()
+def _sin_datos(nombre_vista: str) -> None:
+    """Estado vacío estándar para vistas que requieren un análisis cargado (U-09)."""
+    ui_components.empty_state(
+        f"{nombre_vista}: sin datos para mostrar",
+        "Cargue un archivo Excel de transacciones o restaure una sesión .saml para activar este módulo.",
+        "Vaya a Monitoreo > Resumen Ejecutivo para iniciar un análisis.",
+    )
+
+
 # ============================================================
 # ENRUTAMIENTO VISTAS
 # ============================================================
@@ -1383,34 +732,34 @@ if vista == "Resumen Ejecutivo":
     if data_ready:
         pep_cpe_info_s = st.session_state.get("pep_cpe_info", {})
         mod_resumen.mostrar(*st.session_state["data"], pep_cpe_info_s)
-    else: st.info("Sube un archivo.")
+    else: _sin_datos(vista)
 
 elif vista == "Casos de Alerta":
     _auditar("Casos de Alerta")
     if data_ready: mod_alertas.mostrar(st.session_state["data"][1])
-    else: st.info("Sube un archivo.")
+    else: _sin_datos(vista)
 
 elif vista == "Transacciones":
     if data_ready: mod_transacciones.mostrar(st.session_state["data"][0])
-    else: st.info("Sube un archivo.")
+    else: _sin_datos(vista)
 
 elif vista == "Análisis por Cliente":
     _auditar("Análisis por Cliente")
     if data_ready: mod_cliente.mostrar(st.session_state["data"][0], st.session_state["data"][1], st.session_state["aml_config"])
-    else: st.info("Sube un archivo.")
+    else: _sin_datos(vista)
 
 elif vista == "Matrices de Riesgo":
     if data_ready: mod_matrices.mostrar(st.session_state["data"][1], st.session_state["data"][2])
-    else: st.info("Sube un archivo.")
+    else: _sin_datos(vista)
 
 elif vista == "Red Transaccional":
     if data_ready: mod_red_transaccional.mostrar(st.session_state["data"][0], st.session_state["data"][1])
-    else: st.info("Sube un archivo.")
+    else: _sin_datos(vista)
 
 elif vista == "Acciones de Mitigación":
     _auditar("Acciones de Mitigación")
     if data_ready: mod_mitigacion.mostrar(st.session_state["data"][0], st.session_state["data"][1])
-    else: st.info("Sube un archivo.")
+    else: _sin_datos(vista)
 
 elif vista == "Imperator Diagnostics":
     if data_ready:
@@ -1419,7 +768,7 @@ elif vista == "Imperator Diagnostics":
             st.session_state["data"][1],
             st.session_state["aml_config"]
         )
-    else: st.info("Sube un archivo para activar el módulo Imperator Diagnostics.")
+    else: _sin_datos(vista)
 
 elif vista == "Gestión de Ubicaciones":
     mod_ubicaciones.mostrar()
@@ -1431,7 +780,7 @@ elif vista == "Riesgo Institucional LD/FT":
 elif vista == "Informes y Reportes":
     _auditar("Informes y Reportes")
     if data_ready: mod_reportes.mostrar(*st.session_state["data"], st.session_state["aml_config"])
-    else: st.info("Sube un archivo.")
+    else: _sin_datos(vista)
 
 elif vista == "Configuración":
     _auditar("Configuración")
@@ -1445,17 +794,7 @@ elif vista == "Manual de Usuario":
 # ============================================================
 st.markdown("""
 <div class="footer">
-    SOVEREIGN AML Intelligence Platform v3.0 &nbsp;·&nbsp; Sovereign Intelligence Framework
-    <div style="margin-top:10px; line-height:1.6;">
-        <span style="font-size:12px; font-weight:700; color:#f0f6fc; letter-spacing:0.2px;">
-            Diseñado por el Ing. Hobéd Díaz
-        </span><br>
-        <span style="font-size:12px; font-weight:600; color:#8b949e; text-transform:uppercase; letter-spacing:1.2px;">
-            Magíster Artium
-        </span>
-        &nbsp;·&nbsp;
-        <span style="font-size:12px; font-weight:700; color:#f59e0b;">M.A.F.I.</span>
-        <span style="font-size:12px; font-weight:400; color:#8b949e;"> Análisis Forense Informático</span>
-    </div>
+    Sovereign AML v3.0 &nbsp;·&nbsp; Plataforma de análisis para la prevención de LD/FT
+    &nbsp;·&nbsp; Diseñado por el Ing. Hobéd Díaz, M.A., M.A.F.I. (Análisis Forense Informático)
 </div>
 """, unsafe_allow_html=True)

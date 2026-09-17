@@ -65,4 +65,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=45s --retries=3 \
         "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')" \
     || exit 1
 
-CMD ["supervisord", "-c", "/app/supervisord.conf"]
+CMD ["sh", "-c", "python scripts/db_migrate.py && exec supervisord -c /app/supervisord.conf"]

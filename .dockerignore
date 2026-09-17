@@ -72,3 +72,6 @@ runtime.txt
 # ── Docker meta (no necesario dentro de la imagen) ────────────────────────────
 Dockerfile
 .dockerignore
+
+# Salida de herramienta local de grafos
+graphify-out/

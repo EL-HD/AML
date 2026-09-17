@@ -1,8 +1,12 @@
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from . import models, schemas
-from datetime import date, datetime
+from datetime import date
 import bcrypt
 import uuid
+
+MENSAJE_CREDENCIALES = "Credenciales inválidas"
+
 
 def get_password_hash(password: str) -> str:
     salt = bcrypt.gensalt()
@@ -11,11 +15,42 @@ def get_password_hash(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
         return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
-    except Exception:
+    except (ValueError, TypeError):
+        # Hash malformado o entrada inválida: se trata como credencial incorrecta.
         return False
+
+
+_HASH_FICTICIO = get_password_hash("hash-ficticio-para-tiempo-constante")
+
+def sesion_vigente(db: Session, session_id):
+    """
+    Devuelve la Licencia asociada a session_id solo si esa sesión es la más
+    reciente registrada para la licencia (control de sesión única). Si el
+    session_id no existe, no es UUID válido o fue desplazado por otro login,
+    devuelve None.
+    """
+    try:
+        sid = session_id if isinstance(session_id, uuid.UUID) else uuid.UUID(str(session_id))
+    except (ValueError, TypeError, AttributeError):
+        return None
+    sesion = db.query(models.BitacoraSesions).filter(models.BitacoraSesions.sessionid == sid).first()
+    if sesion is None:
+        return None
+    ultima = (
+        db.query(models.BitacoraSesions)
+        .filter(models.BitacoraSesions.licenciaid == sesion.licenciaid)
+        .order_by(desc(models.BitacoraSesions.last_activity), desc(models.BitacoraSesions.sessionid))
+        .first()
+    )
+    if ultima is None or ultima.sessionid != sesion.sessionid:
+        return None
+    return db.query(models.Licencia).filter(models.Licencia.licence_id == sesion.licenciaid).first()
 
 def get_licencia(db: Session, licencia_id: int):
     return db.query(models.Licencia).filter(models.Licencia.id == licencia_id).first()
+
+def get_licencia_by_user(db: Session, username: str):
+    return db.query(models.Licencia).filter(models.Licencia.user == username).first()
 
 def get_licencia_by_mail(db: Session, mail: str):
     return db.query(models.Licencia).filter(models.Licencia.mail == mail).first()
@@ -40,17 +75,19 @@ def create_licencia(db: Session, licencia: schemas.LicenciaCreate):
         dias_vigencia=licencia.dias_vigencia,
         fecha_expiracion=licencia.fecha_expiracion,
         empresa=licencia.empresa,
-        password_hash=get_password_hash(licencia.password)
+        password_hash=get_password_hash(licencia.password),
+        rol=licencia.rol,
     )
     db.add(db_licencia)
     db.commit()
     db.refresh(db_licencia)
     return db_licencia
 
-def update_licencia(db: Session, licencia_id: int, licencia: schemas.LicenciaUpdate):
+def update_licencia(db: Session, licencia_id: int, licencia):
+    """Aplica solo los campos definidos en el esquema recibido (LicenciaUpdate o PerfilUpdate)."""
     db_licencia = db.query(models.Licencia).filter(models.Licencia.id == licencia_id).first()
     if db_licencia:
-        update_data = licencia.model_dump(exclude_unset=True)
+        update_data = licencia.model_dump(exclude_unset=True, exclude_none=True)
         for key, value in update_data.items():
             setattr(db_licencia, key, value)
         db.commit()
@@ -71,11 +108,14 @@ def validate_auth(db: Session, username: str, password: str, mail: str = None):
         query = query.filter(models.Licencia.mail == mail)
     
     db_licencia = query.first()
+    # Mensaje único para usuario inexistente y contraseña incorrecta (evita enumeración).
     if not db_licencia:
-        return False, False, "No cuentas con ninguna licencia activa", None
-    
+        # Se verifica un hash ficticio para igualar el tiempo de respuesta.
+        verify_password(password, _HASH_FICTICIO)
+        return False, False, MENSAJE_CREDENCIALES, None
+
     if not verify_password(password, db_licencia.password_hash):
-        return True, False, "Contraseña incorrecta", None
+        return True, False, MENSAJE_CREDENCIALES, None
     
     # Verificar fecha de expiración
     if db_licencia.fecha_expiracion < date.today():
@@ -92,7 +132,7 @@ def validate_auth(db: Session, username: str, password: str, mail: str = None):
     nueva_sesion = models.BitacoraSesions(
         sessionid=new_session_id,
         licenciaid=db_licencia.licence_id,
-        last_activity=datetime.now()
+        last_activity=models.ahora_utc()
     )
     db.add(nueva_sesion)
     db.commit()

@@ -1,7 +1,12 @@
-from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from .politica_password import validar_password
 from datetime import date
 from uuid import UUID
 from typing import Optional, Literal
+
+# Roles RBAC (OWASP A01). Lista cerrada: cualquier otro valor se rechaza.
+Rol = Literal["admin", "oficial", "analista", "auditor"]
+ROLES = ("admin", "oficial", "analista", "auditor")
 
 class LicenciaBase(BaseModel):
     user: str = Field(..., max_length=100)
@@ -11,27 +16,45 @@ class LicenciaBase(BaseModel):
     empresa: str = Field(..., max_length=150)
 
 class LicenciaCreate(LicenciaBase):
-    password: str = Field(..., min_length=8)
+    password: str = Field(..., min_length=12, max_length=128)
     fecha_compra: date
     fecha_expiracion: date
     licence_id: Optional[UUID] = None
+    rol: Rol = "analista"
+
+    @model_validator(mode="after")
+    def _validar_politica_password(self):
+        validar_password(self.password, self.user)
+        return self
 
 class LicenciaUpdate(BaseModel):
-    user: Optional[str] = None
-    name: Optional[str] = None
+    """Campos que solo un administrador puede modificar sobre cualquier licencia."""
+    model_config = ConfigDict(extra="forbid")
+
+    user: Optional[str] = Field(None, max_length=100)
+    name: Optional[str] = Field(None, max_length=100)
     mail: Optional[EmailStr] = None
-    dias_vigencia: Optional[int] = None
+    dias_vigencia: Optional[int] = Field(None, gt=0)
     fecha_expiracion: Optional[date] = None
-    empresa: Optional[str] = None
+    empresa: Optional[str] = Field(None, max_length=150)
+    rol: Optional[Rol] = None
+
+class PerfilUpdate(BaseModel):
+    """Campos que cualquier usuario puede modificar sobre su propia licencia.
+    Excluye fecha_expiracion, dias_vigencia, user y rol (solo admin)."""
+    model_config = ConfigDict(extra="forbid")
+
+    name: Optional[str] = Field(None, max_length=100)
+    empresa: Optional[str] = Field(None, max_length=150)
 
 class Licencia(LicenciaBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     licence_id: UUID
     fecha_compra: date
     fecha_expiracion: date
-
-    class Config:
-        from_attributes = True
+    rol: Rol = "analista"
 
 class AuthRequest(BaseModel):
     username: str
@@ -44,6 +67,7 @@ class AuthResponse(BaseModel):
     message: str
     licencia: Optional[Licencia] = None
     access_token: Optional[str] = None
+    session_id: Optional[str] = None
 
 class Token(BaseModel):
     access_token: str
@@ -75,12 +99,11 @@ class RiesgoSegmentoCreate(BaseModel):
 
 
 class RiesgoSegmento(RiesgoSegmentoCreate):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     creado_por: str
     creado_en: date
-
-    class Config:
-        from_attributes = True
 
 
 class RiesgoEventoCreate(BaseModel):

@@ -22,7 +22,7 @@ Seguridad (validaciones explícitas, sin atajos que oculten comportamiento):
     `backend.schemas` (listas cerradas, rangos 1-4, longitudes máximas)
     antes de tocar la base de datos.
 """
-from html import escape as _esc
+from frontend.ui_safe import h
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -34,6 +34,13 @@ from backend import riesgo_ldft_logic as logic
 from backend import schemas
 from backend.database import SessionLocal
 from frontend.mod_utils import plotly_dark_layout, render_html_table
+from frontend import exportacion, permisos
+from frontend import ui_components
+
+
+def _solo_lectura() -> bool:
+    """True cuando el rol de la sesión no puede modificar el modelo de riesgo."""
+    return not permisos.puede("editar_riesgo_ldft")
 
 
 def _sesion_usuario():
@@ -44,26 +51,13 @@ def _sesion_usuario():
     return licenciaid, username
 
 
-def _sanear_celda_csv(valor):
-    """
-    Neutraliza inyección de fórmulas (CSV/Excel Formula Injection) anteponiendo
-    un apóstrofo cuando el valor, potencialmente ingresado por el usuario,
-    como el nombre de un evento, comienza con un carácter que Excel/Sheets
-    interpretaría como inicio de fórmula (=, +, -, @).
-    """
-    texto = str(valor)
-    if texto[:1] in ("=", "+", "-", "@"):
-        return "'" + texto
-    return texto
-
-
 def _badge_nivel(nivel: int) -> str:
     color = logic.color_nivel(nivel)
     texto = logic.descripcion_nivel(nivel)
     return (
-        f'<span style="background:{color}22; color:{color}; border:1px solid {color}; '
+        f'<span style="background:{h(color)}22; color:{h(color)}; border:1px solid {h(color)}; '
         f'padding:2px 10px; font-size:12px; font-weight:700; border-radius:2px; '
-        f'font-family:IBM Plex Mono,monospace;">{texto}</span>'
+        f'font-family:IBM Plex Mono,monospace;">{h(texto)}</span>'
     )
 
 
@@ -80,6 +74,7 @@ def mostrar():
     if not licenciaid:
         st.error("No se pudo determinar la licencia activa. Vuelva a iniciar sesión.")
         return
+    permisos.exigir_o_avisar("editar_riesgo_ldft")
 
     db = SessionLocal()
     try:
@@ -105,14 +100,14 @@ def mostrar():
 # ── Segmentación ─────────────────────────────────────────────────────────
 
 def _tab_segmentacion(db, licenciaid, username):
-    st.markdown('<div class="section-title">Nuevo segmento</div>', unsafe_allow_html=True)
+    ui_components.section_title("Nuevo segmento")
     st.caption("Clasifique sus eventos de riesgo por Factor -> Segmento -> Variable (Art. 9 Decreto 15-2026).")
     with st.form("form_nuevo_segmento", clear_on_submit=True):
         col1, col2, col3 = st.columns(3)
         factor = col1.selectbox("Factor", logic.FACTORES_LDFT)
         segmento = col2.text_input("Segmento", placeholder="Ej. Individual")
         variable = col3.text_input("Variable", placeholder="Ej. PEP")
-        enviado = st.form_submit_button("Agregar segmento", type="primary")
+        enviado = st.form_submit_button("Agregar segmento", type="primary", disabled=_solo_lectura())
         if enviado:
             try:
                 data = schemas.RiesgoSegmentoCreate(factor=factor, segmento=segmento, variable=variable)
@@ -124,10 +119,10 @@ def _tab_segmentacion(db, licenciaid, username):
                 st.rerun()
 
     st.markdown("---")
-    st.markdown('<div class="section-title">Segmentos configurados</div>', unsafe_allow_html=True)
+    ui_components.section_title("Segmentos configurados")
     segmentos = crud.listar_segmentos(db, licenciaid)
     if not segmentos:
-        st.info("Aún no hay segmentos configurados.")
+        ui_components.empty_state("Sin segmentos configurados", "La segmentación agrupa clientes, productos, canales y zonas geográficas para medir el riesgo por factor.", "Use el formulario superior para agregar el primer segmento.")
         return
 
     df = pd.DataFrame([{
@@ -139,7 +134,7 @@ def _tab_segmentacion(db, licenciaid, username):
     with st.expander("Eliminar segmento"):
         opciones = {f"{s.factor} · {s.segmento} · {s.variable}": s.id for s in segmentos}
         sel = st.selectbox("Seleccione el segmento a eliminar", list(opciones.keys()), key="del_seg_sel")
-        if st.button("Eliminar segmento seleccionado", key="btn_del_seg"):
+        if st.button("Eliminar segmento seleccionado", key="btn_del_seg", disabled=_solo_lectura()):
             if crud.eliminar_segmento(db, licenciaid, opciones[sel]):
                 st.success("Segmento eliminado.")
                 st.rerun()
@@ -148,7 +143,7 @@ def _tab_segmentacion(db, licenciaid, username):
 # ── Eventos ───────────────────────────────────────────────────────────────
 
 def _tab_eventos(db, licenciaid, username):
-    st.markdown('<div class="section-title">Nuevo evento de riesgo</div>', unsafe_allow_html=True)
+    ui_components.section_title("Nuevo evento de riesgo")
     segmentos = crud.listar_segmentos(db, licenciaid)
     opciones_segmento = {"Sin segmentar": None}
     opciones_segmento.update({f"{s.factor} · {s.segmento} · {s.variable}": s.id for s in segmentos})
@@ -171,7 +166,7 @@ def _tab_eventos(db, licenciaid, username):
         r_rep = col_r.selectbox("Reputacional", [1, 2, 3, 4], key="ev_rrep")
         r_con = col_c.selectbox("Contagio", [1, 2, 3, 4], key="ev_rcon")
 
-        enviado = st.form_submit_button("Crear evento", type="primary")
+        enviado = st.form_submit_button("Crear evento", type="primary", disabled=_solo_lectura())
         if enviado:
             try:
                 data = schemas.RiesgoEventoCreate(
@@ -188,10 +183,10 @@ def _tab_eventos(db, licenciaid, username):
                 st.rerun()
 
     st.markdown("---")
-    st.markdown('<div class="section-title">Eventos registrados</div>', unsafe_allow_html=True)
+    ui_components.section_title("Eventos registrados")
     eventos = crud.listar_eventos(db, licenciaid)
     if not eventos:
-        st.info("Aún no hay eventos de riesgo registrados.")
+        ui_components.empty_state("Sin eventos de riesgo", "Cada evento describe una amenaza LD/FT con su probabilidad e impacto.", "Registre el primer evento con el formulario superior.")
         return
 
     controles_todos = crud.listar_controles(db, licenciaid)
@@ -202,12 +197,12 @@ def _tab_eventos(db, licenciaid, username):
         c1, c2, c3, c4 = st.columns([3, 1, 1, 1])
         # e.nombre / e.factor se escapan antes de interpolarse en HTML (previene XSS almacenado).
         c1.markdown(
-            f"**{_esc(e.codigo)} · {_esc(e.nombre)}**  \n<span style='color:#8b949e;font-size:12px;'>{_esc(e.factor)}</span>",
+            f"**{h(e.codigo)} · {h(e.nombre)}**  \n<span style='color:#a7b0bb;font-size:12px;'>{h(e.factor)}</span>",
             unsafe_allow_html=True,
         )
         c2.markdown(f"Inherente<br>{_badge_nivel(e.nivel_inherente)}", unsafe_allow_html=True)
         c3.markdown(f"Residual<br>{_badge_nivel(e.nivel_residual)}", unsafe_allow_html=True)
-        c4.markdown("Plan requerido<br>" + ("🔴 Sí" if e.requiere_plan_accion else "🟢 No"), unsafe_allow_html=True)
+        c4.markdown("Plan requerido<br>" + ("Sí" if e.requiere_plan_accion else "No"), unsafe_allow_html=True)
 
         with st.expander(f"Detalle y controles: {e.codigo}"):
             if e.descripcion:
@@ -226,7 +221,7 @@ def _tab_eventos(db, licenciaid, username):
                     "Controles vinculados", list(opciones_control.keys()),
                     default=default_labels, key=f"ctrl_ev_{e.id}",
                 )
-                if st.button("Guardar vínculos de controles", key=f"btn_vinc_{e.id}"):
+                if st.button("Guardar vínculos de controles", key=f"btn_vinc_{e.id}", disabled=_solo_lectura()):
                     seleccionados_ids = {opciones_control[n] for n in sel_control}
                     for cid in seleccionados_ids - ids_vinculados:
                         crud.vincular_control(db, licenciaid, e.id, cid)
@@ -237,7 +232,7 @@ def _tab_eventos(db, licenciaid, username):
             else:
                 st.info("Registre controles en la pestaña 'Controles' para poder vincularlos a este evento.")
 
-            if st.button("Eliminar evento", key=f"del_ev_{e.id}"):
+            if st.button("Eliminar evento", key=f"del_ev_{e.id}", disabled=_solo_lectura()):
                 crud.eliminar_evento(db, licenciaid, e.id)
                 st.success("Evento eliminado.")
                 st.rerun()
@@ -246,7 +241,7 @@ def _tab_eventos(db, licenciaid, username):
 # ── Controles ─────────────────────────────────────────────────────────────
 
 def _tab_controles(db, licenciaid, username):
-    st.markdown('<div class="section-title">Nuevo control / mitigador</div>', unsafe_allow_html=True)
+    ui_components.section_title("Nuevo control / mitigador")
     with st.form("form_nuevo_control", clear_on_submit=True):
         nombre = st.text_input("Nombre del control", placeholder="Ej. Conocimiento del cliente")
         descripcion = st.text_area("Descripción", placeholder="Ej. Procedimiento para identificación de PEP y aprobación del inicio de la relación comercial.")
@@ -262,7 +257,7 @@ def _tab_controles(db, licenciaid, username):
         responsable_evaluacion = col7.text_input("Responsable de la evaluación", placeholder="Ej. Auditoría Interna")
         fecha_evaluacion = col8.date_input("Fecha de la evaluación", value=None)
 
-        enviado = st.form_submit_button("Crear control", type="primary")
+        enviado = st.form_submit_button("Crear control", type="primary", disabled=_solo_lectura())
         if enviado:
             try:
                 data = schemas.RiesgoControlCreate(
@@ -281,10 +276,10 @@ def _tab_controles(db, licenciaid, username):
                 st.rerun()
 
     st.markdown("---")
-    st.markdown('<div class="section-title">Controles registrados</div>', unsafe_allow_html=True)
+    ui_components.section_title("Controles registrados")
     controles = crud.listar_controles(db, licenciaid)
     if not controles:
-        st.info("Aún no hay controles registrados.")
+        ui_components.empty_state("Sin controles registrados", "Los controles mitigan los eventos de riesgo y reducen el riesgo residual.", "Registre el primer control con el formulario superior.")
         return
 
     df = pd.DataFrame([{
@@ -297,7 +292,7 @@ def _tab_controles(db, licenciaid, username):
     with st.expander("Eliminar control"):
         opciones = {f"{c.nombre} ({str(c.id)[:8]})": c.id for c in controles}
         sel = st.selectbox("Seleccione el control a eliminar", list(opciones.keys()), key="del_ctrl_sel")
-        if st.button("Eliminar control seleccionado", key="btn_del_ctrl"):
+        if st.button("Eliminar control seleccionado", key="btn_del_ctrl", disabled=_solo_lectura()):
             crud.eliminar_control(db, licenciaid, opciones[sel])
             st.success("Control eliminado. Los eventos vinculados fueron recalculados.")
             st.rerun()
@@ -311,7 +306,7 @@ def _tab_planes(db, licenciaid, username):
     eventos = crud.listar_eventos(db, licenciaid)
     eventos_requieren = [e for e in eventos if e.requiere_plan_accion]
 
-    st.markdown('<div class="section-title">Nuevo plan de acción</div>', unsafe_allow_html=True)
+    ui_components.section_title("Nuevo plan de acción")
     st.caption("Obligatorio para eventos con riesgo residual Medio Alto o Alto (Art. 11 Decreto 15-2026).")
     if not eventos_requieren:
         st.info("No hay eventos con riesgo residual Medio Alto o Alto que requieran plan de acción.")
@@ -329,7 +324,7 @@ def _tab_planes(db, licenciaid, username):
             col3, col4 = st.columns(2)
             fecha_inicio = col3.date_input("Fecha de inicio", value=_date.today())
             fecha_fin = col4.date_input("Fecha de finalización", value=_date.today())
-            enviado = st.form_submit_button("Crear plan de acción", type="primary")
+            enviado = st.form_submit_button("Crear plan de acción", type="primary", disabled=_solo_lectura())
             if enviado:
                 try:
                     data = schemas.RiesgoPlanAccionCreate(
@@ -347,10 +342,10 @@ def _tab_planes(db, licenciaid, username):
                         st.error("El evento seleccionado no está disponible para esta licencia.")
 
     st.markdown("---")
-    st.markdown('<div class="section-title">Planes de acción registrados</div>', unsafe_allow_html=True)
+    ui_components.section_title("Planes de acción registrados")
     planes = crud.listar_planes(db, licenciaid)
     if not planes:
-        st.info("Aún no hay planes de acción registrados.")
+        ui_components.empty_state("Sin planes de acción", "Los planes de acción atienden los eventos con riesgo residual Medio Alto o Alto.", "Cree un plan desde el formulario superior.")
         return
 
     mapa_eventos = {e.id: e for e in eventos}
@@ -365,7 +360,7 @@ def _tab_planes(db, licenciaid, username):
                 f"Fin: {p.fecha_fin.strftime('%d/%m/%Y')}"
             )
             nuevo_avance = st.slider("Porcentaje de avance", 0, 100, value=p.porcentaje_avance, key=f"avance_{p.id}")
-            if st.button("Actualizar avance", key=f"btn_avance_{p.id}"):
+            if st.button("Actualizar avance", key=f"btn_avance_{p.id}", disabled=_solo_lectura()):
                 crud.actualizar_avance_plan(db, licenciaid, p.id, nuevo_avance)
                 st.success("Avance actualizado.")
                 st.rerun()
@@ -421,7 +416,7 @@ def _render_mapa_calor(eventos, key: str):
 
 
 def _tab_resultados(db, licenciaid):
-    st.markdown('<div class="section-title">Panel de seguimiento</div>', unsafe_allow_html=True)
+    ui_components.section_title("Panel de seguimiento")
     sin_control = crud.eventos_sin_control(db, licenciaid)
     sin_plan = crud.eventos_sin_plan(db, licenciaid)
     sin_segmentar = crud.eventos_sin_segmentar(db, licenciaid)
@@ -434,10 +429,10 @@ def _tab_resultados(db, licenciaid):
     c4.metric("Controles sin evento vinculado", len(controles_libres))
 
     st.markdown("---")
-    st.markdown('<div class="section-title">Mapa de calor: Riesgo inherente de la Persona Obligada</div>', unsafe_allow_html=True)
+    ui_components.section_title("Mapa de calor: Riesgo inherente de la Persona Obligada")
     eventos = crud.listar_eventos(db, licenciaid)
     if not eventos:
-        st.info("Registre eventos de riesgo para visualizar el mapa de calor.")
+        ui_components.empty_state("Mapa de calor no disponible", "Se necesita al menos un evento de riesgo medido.", "Vaya a la pestaña Eventos para registrarlo.")
         return
     _render_mapa_calor(eventos, key="mapa_calor_resultados")
     st.markdown("<br>", unsafe_allow_html=True)
@@ -447,10 +442,10 @@ def _tab_resultados(db, licenciaid):
 # ── Reportes ──────────────────────────────────────────────────────────────
 
 def _tab_reportes(db, licenciaid):
-    st.markdown('<div class="section-title">Matriz de riesgo consolidada</div>', unsafe_allow_html=True)
+    ui_components.section_title("Matriz de riesgo consolidada")
     eventos = crud.listar_eventos(db, licenciaid)
     if not eventos:
-        st.info("Registre eventos de riesgo para generar reportes.")
+        ui_components.empty_state("Reportes no disponibles", "Se necesita al menos un evento de riesgo medido.", "Vaya a la pestaña Eventos para registrarlo.")
         return
 
     _render_tabla_conteo(eventos)
@@ -458,7 +453,7 @@ def _tab_reportes(db, licenciaid):
     _render_mapa_calor(eventos, key="mapa_calor_reportes")
 
     st.markdown("---")
-    st.markdown('<div class="section-title">Riesgo por factor</div>', unsafe_allow_html=True)
+    ui_components.section_title("Riesgo por factor")
     df_factor = pd.DataFrame([{
         "Factor": e.factor, "Evento": f"{e.codigo} · {e.nombre}",
         "Riesgo inherente": logic.descripcion_nivel(e.nivel_inherente),
@@ -476,12 +471,9 @@ def _tab_reportes(db, licenciaid):
     </div>
     """, unsafe_allow_html=True)
 
-    # Saneado anti-inyección de fórmulas (CSV/Excel Formula Injection) antes de exportar.
-    # DataFrame.applymap() fue eliminado en pandas 3.0 (deprecado desde 2.1);
-    # el reemplazo oficial es DataFrame.map(), fijado en requirements.txt.
-    df_csv = df_factor.map(_sanear_celda_csv)
-    csv = df_csv.to_csv(index=False).encode("utf-8-sig")
-    st.download_button(
-        "Descargar matriz (CSV)", data=csv,
-        file_name="matriz_riesgo_ldft.csv", mime="text/csv",
-    )
+    # Saneado anti-inyección de fórmulas centralizado en frontend.exportacion (S-09).
+    if permisos.exigir_o_avisar("exportar_datos"):
+        exportacion.boton_descarga(
+            "Descargar matriz (CSV)", data=exportacion.csv_bytes(df_factor),
+            file_name="matriz_riesgo_ldft.csv", mime="text/csv", modulo="Riesgo Institucional LD/FT",
+        )
