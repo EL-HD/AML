@@ -128,7 +128,7 @@ def mostrar(df, casos, cfg):
 
     st.markdown(f"""
     <div style="background-color: #1b2027; border: 1px solid {h(nivel_color)}; border-radius: 0px; padding: 24px; border-left: 8px solid {h(nivel_color)};">
-        <div style="font-size: 11px; color: #f59e0b; text-transform: uppercase; letter-spacing: 2px; font-family: 'IBM Plex Mono', monospace; margin-bottom: 15px;">
+        <div style="font-size:12px; color: #f59e0b; text-transform: uppercase; letter-spacing: 2px; font-family: 'IBM Plex Mono', monospace; margin-bottom: 15px;">
             <span class="pulse-dot"></span> RESUMEN TÉCNICO IMPERATOR INTELLIGENCE
         </div>
         <div style="color: #dee2ed; font-size: 14px; line-height: 1.8;">
@@ -209,8 +209,8 @@ def mostrar(df, casos, cfg):
                 marker=dict(size=12, color='#ef4444', line=dict(color='#fca5a5', width=1.5)),
                 hovertemplate="<b>⚠ Pico anómalo</b><br>%{x}<br>Monto: Q%{y:,.2f}<extra></extra>",
             ))
-        fig_picos.add_hline(y=media, line=dict(color='#8b949e', dash='dot', width=1),
-                            annotation_text="Media", annotation_font_color='#8b949e')
+        fig_picos.add_hline(y=media, line=dict(color='#a7b0bb', dash='dot', width=1),
+                            annotation_text="Media", annotation_font_color='#a7b0bb')
         fig_picos.add_hline(y=media + 2*std, line=dict(color='#ef4444', dash='dash', width=1),
                             annotation_text="+2 Std", annotation_font_color='#ef4444')
         fig_picos.update_layout(plotly_dark_layout(

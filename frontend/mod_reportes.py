@@ -68,7 +68,7 @@ def dark_fig(w=9, h=3):
     fig, ax = plt.subplots(figsize=(w, h))
     fig.patch.set_facecolor("#0f141b")
     ax.set_facecolor("#171c23")
-    ax.tick_params(colors="#a08e7a", labelsize=8)
+    ax.tick_params(colors="#b8a58e", labelsize=8)
     for sp in ax.spines.values(): sp.set_color("#534434")
     ax.grid(color="#534434", linewidth=0.4, linestyle="--", alpha=0.3)
     ax.xaxis.label.set_color("#dee2ed")
@@ -436,7 +436,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         if len(picos_g):
             ax2.scatter(picos_g["Fecha_str"], picos_g["Monto"],
                         color="#ef4444", s=80, zorder=5, label=f"{len(picos_g)} pico(s)")
-        ax2.axhline(y=media_c, linestyle=':', color='#8b949e', linewidth=1, alpha=0.6, label='Media')
+        ax2.axhline(y=media_c, linestyle=':', color='#a7b0bb', linewidth=1, alpha=0.6, label='Media')
         if std_c > 0:
             ax2.axhline(y=media_c + cfg["mult_std_pico"]*std_c,
                         linestyle='--', color='#ef4444', linewidth=1, alpha=0.5,
@@ -666,7 +666,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
                       bar_g.get_y() + bar_g.get_height() / 2,
                       str(val_g), va='center', ha='left', color='#c9d1d9',
                       fontsize=9, fontweight='bold')
-        ax_b.set_xlabel("Cantidad de alertas generadas", color='#8b949e')
+        ax_b.set_xlabel("Cantidad de alertas generadas", color='#a7b0bb')
         ax_b.tick_params(axis='y', labelsize=8.5)
         ax_b.invert_yaxis()
         plt.tight_layout()
@@ -696,7 +696,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         step = max(1, n_ticks // 15)
         ax_l.set_xticks(range(0, n_ticks, step))
         ax_l.set_xticklabels([fechas_g[i] for i in range(0, n_ticks, step)], rotation=45, ha='right', fontsize=7)
-        ax_l.set_ylabel("Monto total (Q)", color='#8b949e')
+        ax_l.set_ylabel("Monto total (Q)", color='#a7b0bb')
         ax_l.set_title("Volumen transaccional diario", color="#c9d1d9", fontsize=9, pad=8)
         plt.tight_layout()
         desc_line = "<b>Interpretacion:</b> Serie temporal del dinero movilizado diariamente. Alteraciones abruptas o picos anomalos pueden indicar posibles ingresos atipicos o alta volatilidad transaccional."
@@ -711,10 +711,10 @@ def mostrar(df, casos, matriz_alertas, cfg):
             flujo_t = df.groupby("TipoOperacion")["Monto"].sum().reset_index()
             fig_t, ax_t = dark_fig(10, 3)
             ax_t.bar(flujo_t["TipoOperacion"], flujo_t["Monto"], color="#f97316", edgecolor="#0d1117", alpha=0.9)
-            ax_t.set_ylabel("Monto total (Q)", color='#8b949e')
+            ax_t.set_ylabel("Monto total (Q)", color='#a7b0bb')
             ax_t.set_title("Volumen por tipo", color="#c9d1d9", fontsize=9, pad=8)
-            ax_t.tick_params(axis='x', colors='#8b949e', rotation=0)
-            ax_t.tick_params(axis='y', colors='#8b949e')
+            ax_t.tick_params(axis='x', colors='#a7b0bb', rotation=0)
+            ax_t.tick_params(axis='y', colors='#a7b0bb')
             plt.tight_layout()
             
             desc_tipo = "<b>Interpretacion:</b> Agrupacion del monto total segun la via transaccional. Permite evaluar la predominancia de operaciones liquidas, transferencias o uso de efectivo pesado."
@@ -1354,7 +1354,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
             st.markdown(f"""
             <div class="metric-card red" style="margin-bottom:10px;">
                 <div style="font-size:13px; color:#c9d1d9; font-weight:600;">Vista previa del informe</div>
-                <div style="font-size:11px; color:#8b949e; margin-top:6px; font-family:IBM Plex Mono,monospace; line-height:1.8;">
+                <div style="font-size:12px; color:#a7b0bb; margin-top:6px; font-family:IBM Plex Mono,monospace; line-height:1.8;">
                     Clientes analizados: <strong style="color:#f0f6fc;">{h(total_cl)}</strong><br>
                     Nivel cr\u00edtico: <strong style="color:#ef4444;">{h(crit_g)}</strong> &nbsp;\u00b7&nbsp;
                     Nivel alto: <strong style="color:#f97316;">{h(alto_g)}</strong><br>

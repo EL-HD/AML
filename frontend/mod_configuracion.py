@@ -307,7 +307,7 @@ registrados con FEIS actualicen a FEIC cuando sus transacciones superan el umbra
 Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acción de mitigación.""",
                 "FEIS: Simplificado",
                 "FEIC: Completo",
-                acento="#a855f7",
+                acento="#b47cf7",
                 etiqueta_variable="Formulario origen",
                 etiqueta_logica="Formulario objetivo",
                 impacto_titulo="LÓGICA DE ACTIVACIÓN",
@@ -341,10 +341,10 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
 
         st.markdown("""
         <div style="background:#171c23; border:1px solid #534434; border-radius:0px; padding:20px; margin-bottom:16px;">
-            <div style="color:#f59e0b; font-size:11px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:12px;">
+            <div style="color:#f59e0b; font-size:12px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:12px;">
                 <span class="pulse-dot"></span> MATRIZ DE PONDERACIÓN
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; font-size:12px; color:#a08e7a; line-height:1.8;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; font-size:12px; color:#b8a58e; line-height:1.8;">
                 <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>CORRECCIÓN MONTO</span>: Penalización escalar por volumen transaccional directo.</div>
                 <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>VOLUMEN CICLO</span>: Priorización de acumulación económica persistente.</div>
                 <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>DESVIACIÓN PERFIL</span>: Sensibilidad ante cambios de nivel declarado.</div>
@@ -359,7 +359,7 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
         with col_p1:
             st.markdown("### Pilares Estratégicos (S_T, S_C, S_B, S_N)")
             st.markdown("""
-            <div style="font-size:11px; color:#a08e7a; margin-bottom:12px;">
+            <div style="font-size:12px; color:#b8a58e; margin-bottom:12px;">
                 Defina la importancia relativa de cada pilar en el Score Total. La suma de estos pesos determinará el núcleo del motor.
             </div>""", unsafe_allow_html=True)
             
@@ -377,7 +377,7 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
             st.markdown("---")
             st.markdown("### Componentes Técnicos (S_T)")
             st.markdown("""
-            <div style="font-size:11px; color:#a08e7a; margin-bottom:12px;">
+            <div style="font-size:12px; color:#b8a58e; margin-bottom:12px;">
                 Ajusta el peso individual de cada regla que alimenta al pilar Transaccional. (0 = off, 10 = max).
             </div>""", unsafe_allow_html=True)
             
@@ -413,7 +413,7 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
             for bar, val in zip(bars_p, pesos_vals):
                 ax_p.text(bar.get_width() + 0.05, bar.get_y() + bar.get_height()/2,
                           str(val), va='center', color='#c9d1d9', fontsize=10, fontweight='bold')
-            ax_p.set_xlabel("Puntos al Score", color='#8b949e')
+            ax_p.set_xlabel("Puntos al Score", color='#a7b0bb')
             ax_p.invert_yaxis()
             plt.tight_layout()
             st.pyplot(fig_p)
@@ -437,10 +437,10 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
 
         st.markdown("""
         <div style="background:#171c23; border:1px solid #534434; border-radius:0px; padding:20px; margin-bottom:16px;">
-            <div style="color:#f59e0b; font-size:11px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:12px;">
+            <div style="color:#f59e0b; font-size:12px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:12px;">
                 <span class="pulse-dot"></span> LÓGICA DE SEGMENTACIÓN
             </div>
-            <div style="font-size:12px; color:#a08e7a; line-height:2;">
+            <div style="font-size:12px; color:#b8a58e; line-height:2;">
                 <span style='color:#ef4444; font-weight:700;'>NIVEL CRÍTICO</span>: Clientes en zona de reporte regulatorio inmediato.<br>
                 <span style='color:#f97316; font-weight:700;'>NIVEL ALTO</span>: Objetivos de debida diligencia ampliada (EDD).<br>
                 <span style='color:#eab308; font-weight:700;'>NIVEL MEDIO</span>: Monitoreo preventivo y actualización de perfil.<br>
@@ -503,7 +503,7 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
                     <div style="color:#dee2ed; font-size:12px; margin-top:6px; font-family:IBM Plex Mono,monospace;">
                         CRITERIO: {h(cond_e)}
                     </div>
-                    <div style="color:#a08e7a; font-size:11px; margin-top:4px;">
+                    <div style="color:#b8a58e; font-size:12px; margin-top:4px;">
                         PROTOCOLO DE ACCIÓN: {h(accion_e)}
                     </div>
                 </div>""", unsafe_allow_html=True)
@@ -537,9 +537,9 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
                             padding:10px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
                     <div>
                         <div style="color:#c9d1d9; font-size:13px;">{h(nombre_r)}</div>
-                        <div style="color:#6e7681; font-size:11px; font-family:IBM Plex Mono,monospace;">{h(detalle_r)}</div>
+                        <div style="color:#a7b0bb; font-size:12px; font-family:IBM Plex Mono,monospace;">{h(detalle_r)}</div>
                     </div>
-                    <div style="color:{h(estado_color)}; font-size:10px; font-weight:700;
+                    <div style="color:{h(estado_color)}; font-size:12px; font-weight:700;
                                 font-family:IBM Plex Mono,monospace; border:1px solid {h(estado_color)};
                                 padding:2px 8px; border-radius:0px;">{h(estado_txt)}</div>
                 </div>""", unsafe_allow_html=True)
@@ -548,7 +548,7 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
             st.markdown("**Pesos y Clasificación**")
             st.markdown(f"""
             <div style="background:#171c23; border:1px solid #21262d; border-radius:0px; padding:16px;">
-                <div style="font-family:IBM Plex Mono,monospace; font-size:12px; color:#8b949e; line-height:2;">
+                <div style="font-family:IBM Plex Mono,monospace; font-size:12px; color:#a7b0bb; line-height:2;">
                     <hr style='border-color:#21262d; margin:8px 0;'>
                     <div style='color:#f0f6fc; font-weight:700; margin-bottom:5px;'>Ponderación de Pilares:</div>
                     S_T (Transaccional) → <span style='color:#3b82f6;'>{h(format(c['w_st'], '.2f'))}</span><br>

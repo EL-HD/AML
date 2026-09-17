@@ -63,7 +63,7 @@ def mostrar():
 
     st.markdown("---")
     st.markdown("""
-    <div style="font-size: 13px; color: #8b949e;">
+    <div style="font-size: 13px; color: #a7b0bb;">
         <strong>Nota:</strong> Estas ubicaciones se aplican globalmente al procesamiento de datos. 
         Si el archivo Excel ya contiene una columna <code>UbicacionRiesgo</code> con valores 'SI', 
         estas también serán tomadas en cuenta.

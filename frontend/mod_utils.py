@@ -6,7 +6,7 @@ def apply_dark_style(fig, ax):
     """Aplica el tema oscuro consistente a todas las gráficas (Matplotlib)."""
     fig.patch.set_facecolor('#0f141b')
     ax.set_facecolor('#171c23')
-    ax.tick_params(colors='#8b949e', labelsize=9)
+    ax.tick_params(colors='#a7b0bb', labelsize=9)
     ax.xaxis.label.set_color('#dee2ed')
     ax.yaxis.label.set_color('#dee2ed')
     for spine in ax.spines.values():

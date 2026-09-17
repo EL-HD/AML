@@ -31,7 +31,7 @@ COLORES = {
     "advertencia_suave": "#fb923c",
     "peligro": "#ef4444",
     "peligro_suave": "#ff5a5f",
-    "violeta": "#a855f7",
+    "violeta": "#b47cf7",
     "amarillo": "#eab308",
 }
 

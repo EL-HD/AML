@@ -28,7 +28,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
             domain = {'x': [0, 1], 'y': [0, 1]},
             title = {'text': "Salud de Cartera (% Bajo Riesgo)", 'font': {'size': 14}},
             gauge = {
-                'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#8b949e"},
+                'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#a7b0bb"},
                 'bar': {'color': "#22c55e"},
                 'bgcolor': "#161b22",
                 'borderwidth': 2,
@@ -91,7 +91,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
             if "Alto"    in nivel:  return "#f97316"
             if "Medio"   in nivel:  return "#eab308"
             if "Bajo"    in nivel:  return "#22c55e"
-            return "#8b949e"
+            return "#a7b0bb"
         colors_list = [color_por_nivel(k) for k in riesgo_counts.index]
 
         import re as _re
@@ -242,7 +242,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
                 color=stats_bubble["Riesgo_Promedio"],
                 colorscale='Viridis',
                 showscale=True,
-                colorbar=dict(title="Score Riesgo", tickfont=dict(color='#8b949e')),
+                colorbar=dict(title="Score Riesgo", tickfont=dict(color='#a7b0bb')),
                 line=dict(width=2, color='#0d1117')
             ),
             text=stats_bubble["Canal"],
@@ -319,7 +319,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
         with col_pep:
             st.markdown("""
             <div style="background:#171c23; border:1px solid #ef4444; border-top:3px solid #ef4444; padding:16px; margin-bottom:8px;">
-                <div style="color:#ef4444; font-size:11px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:8px;">
+                <div style="color:#ef4444; font-size:12px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:8px;">
                     ⚠ Personas Expuestas Políticamente (PEP)
                 </div>
             </div>
@@ -336,12 +336,12 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
                 df_pep_show.columns = [c.replace("_", " ") for c in df_pep_show.columns]
                 st.markdown(render_html_table(df_pep_show, max_height=220), unsafe_allow_html=True)
             else:
-                st.markdown('<div style="color:#6e7681; font-size:13px; padding:8px 0;">No se detectaron clientes PEP en el período analizado.</div>', unsafe_allow_html=True)
+                st.markdown('<div style="color:#a7b0bb; font-size:13px; padding:8px 0;">No se detectaron clientes PEP en el período analizado.</div>', unsafe_allow_html=True)
 
         with col_cpe:
             st.markdown("""
             <div style="background:#171c23; border:1px solid #f97316; border-top:3px solid #f97316; padding:16px; margin-bottom:8px;">
-                <div style="color:#f97316; font-size:11px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:8px;">
+                <div style="color:#f97316; font-size:12px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:8px;">
                     ⚠ Contratista o Proveedor del Estado (CPE)
                 </div>
             </div>
@@ -358,4 +358,4 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
                 df_cpe_show.columns = [c.replace("_", " ") for c in df_cpe_show.columns]
                 st.markdown(render_html_table(df_cpe_show, max_height=220), unsafe_allow_html=True)
             else:
-                st.markdown('<div style="color:#6e7681; font-size:13px; padding:8px 0;">No se detectaron clientes CPE en el período analizado.</div>', unsafe_allow_html=True)
+                st.markdown('<div style="color:#a7b0bb; font-size:13px; padding:8px 0;">No se detectaron clientes CPE en el período analizado.</div>', unsafe_allow_html=True)

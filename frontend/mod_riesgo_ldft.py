@@ -198,7 +198,7 @@ def _tab_eventos(db, licenciaid, username):
         c1, c2, c3, c4 = st.columns([3, 1, 1, 1])
         # e.nombre / e.factor se escapan antes de interpolarse en HTML (previene XSS almacenado).
         c1.markdown(
-            f"**{h(e.codigo)} · {h(e.nombre)}**  \n<span style='color:#8b949e;font-size:12px;'>{h(e.factor)}</span>",
+            f"**{h(e.codigo)} · {h(e.nombre)}**  \n<span style='color:#a7b0bb;font-size:12px;'>{h(e.factor)}</span>",
             unsafe_allow_html=True,
         )
         c2.markdown(f"Inherente<br>{_badge_nivel(e.nivel_inherente)}", unsafe_allow_html=True)

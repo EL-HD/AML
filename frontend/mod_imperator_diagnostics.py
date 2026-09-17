@@ -23,7 +23,7 @@ _COLS_ALERTA = [
 
 _COLS_SCORE = ["_ST", "_SC", "_SB", "_SN"]
 _LABEL_SCORE = ["S_T Transaccional", "S_C Contextual", "S_B Conductual", "S_N Red"]
-_COLOR_SCORE = ["#f59e0b", "#3b82f6", "#10b981", "#a855f7"]
+_COLOR_SCORE = ["#f59e0b", "#3b82f6", "#10b981", "#b47cf7"]
 
 
 def _card(titulo, valor, subtitulo, color="amber"):
@@ -121,7 +121,7 @@ def mostrar(df, casos, cfg):
     with tab1:
         _section("Análisis de Dominancia de Reglas")
         st.markdown("""
-        <div style="background:#171c23; border-left:3px solid #f59e0b; padding:14px; margin-bottom:16px; font-size:12px; color:#a08e7a;">
+        <div style="background:#171c23; border-left:3px solid #f59e0b; padding:14px; margin-bottom:16px; font-size:12px; color:#b8a58e;">
             Identifica qué reglas generan mayor volumen de alertas. Una regla dominante con bajo impacto
             en puntaje puede ser fuente de ruido analítico. Evalúe si su peso refleja su contribución real.
         </div>""", unsafe_allow_html=True)
@@ -169,7 +169,7 @@ def mostrar(df, casos, cfg):
     with tab2:
         _section("Motor de Explicabilidad: Composición del Puntaje")
         st.markdown("""
-        <div style="background:#171c23; border-left:3px solid #3b82f6; padding:14px; margin-bottom:16px; font-size:12px; color:#a08e7a;">
+        <div style="background:#171c23; border-left:3px solid #3b82f6; padding:14px; margin-bottom:16px; font-size:12px; color:#b8a58e;">
             Muestra cómo se construyó el puntaje por nivel de riesgo. Analiza qué pilares
             (S_T, S_C, S_B, S_N) contribuyen más a cada segmento y detecta desbalances de ponderación.
         </div>""", unsafe_allow_html=True)
@@ -222,8 +222,8 @@ def mostrar(df, casos, cfg):
                     paper_bgcolor="#0f141b", plot_bgcolor="#0f141b",
                     polar=dict(
                         bgcolor="#171c23",
-                        radialaxis=dict(visible=True, range=[0, 10], color="#6e7681"),
-                        angularaxis=dict(color="#8b949e"),
+                        radialaxis=dict(visible=True, range=[0, 10], color="#a7b0bb"),
+                        angularaxis=dict(color="#a7b0bb"),
                     ),
                     showlegend=False, height=320, margin=dict(l=40, r=40, t=30, b=30),
                 )
@@ -233,7 +233,7 @@ def mostrar(df, casos, cfg):
     with tab3:
         _section("Estimación de Falsos Positivos")
         st.markdown("""
-        <div style="background:#171c23; border-left:3px solid #10b981; padding:14px; margin-bottom:16px; font-size:12px; color:#a08e7a;">
+        <div style="background:#171c23; border-left:3px solid #10b981; padding:14px; margin-bottom:16px; font-size:12px; color:#b8a58e;">
             Estima el ruido analítico: alertas generadas sobre clientes clasificados como Bajo riesgo.
             Una tasa &gt;30% sugiere que los umbrales necesitan recalibración.
         </div>""", unsafe_allow_html=True)
@@ -279,7 +279,7 @@ def mostrar(df, casos, cfg):
     with tab4:
         _section("Motor de Pruebas de Estrés: Simulación de Configuración")
         st.markdown("""
-        <div style="background:#171c23; border-left:3px solid #a855f7; padding:14px; margin-bottom:16px; font-size:12px; color:#a08e7a;">
+        <div style="background:#171c23; border-left:3px solid #b47cf7; padding:14px; margin-bottom:16px; font-size:12px; color:#b8a58e;">
             Simula el impacto de modificar un parámetro clave sin reprocesar todo el motor.
             Útil para calibrar umbrales antes de aplicar cambios definitivos.
         </div>""", unsafe_allow_html=True)
@@ -310,8 +310,8 @@ def mostrar(df, casos, cfg):
         fig_stress = go.Figure()
         fig_stress.add_trace(go.Scatter(
             x=valores_sim, y=alertas_sim, mode="lines+markers",
-            line=dict(color="#a855f7", width=2),
-            marker=dict(color="#a855f7", size=6),
+            line=dict(color="#b47cf7", width=2),
+            marker=dict(color="#b47cf7", size=6),
             hovertemplate="Valor: <b>%{x}</b><br>Alertas: <b>%{y}</b><extra></extra>",
         ))
         fig_stress.add_vline(x=val_actual, line=dict(color="#f59e0b", dash="dash", width=1.5),
@@ -334,7 +334,7 @@ def mostrar(df, casos, cfg):
     with tab5:
         _section("Análisis de Densidad de Riesgo")
         st.markdown("""
-        <div style="background:#171c23; border-left:3px solid #ef4444; padding:14px; margin-bottom:16px; font-size:12px; color:#a08e7a;">
+        <div style="background:#171c23; border-left:3px solid #ef4444; padding:14px; margin-bottom:16px; font-size:12px; color:#b8a58e;">
             Analiza la concentración del riesgo en la cartera. Identifica si el riesgo está
             concentrado en pocos clientes o distribuido. Una concentración extrema puede indicar
             un sesgo de reglas o un grupo de actividad inusual.
@@ -379,7 +379,7 @@ def mostrar(df, casos, cfg):
         color_map = {"Crítico": "#ef4444", "Alto": "#f97316", "Medio": "#eab308", "Bajo": "#22c55e"}
         fig_dist = go.Figure(go.Pie(
             labels=nivel_counts["Nivel"], values=nivel_counts["Clientes"],
-            marker=dict(colors=[color_map.get(n, "#8b949e") for n in nivel_counts["Nivel"]]),
+            marker=dict(colors=[color_map.get(n, "#a7b0bb") for n in nivel_counts["Nivel"]]),
             hole=0.55,
             textinfo="label+percent",
             textfont=dict(color="#dee2ed", size=12),

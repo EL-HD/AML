@@ -272,7 +272,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
                         angle=math.degrees(math.atan2(y1 - y0, x1 - x0))),
             text=[f"Q{h(format(monto_arista, ',.0f'))}<br>{h(n_tx_arista)} tx"] if mostrar_etiquetas else [""],
             textposition="top center",
-            textfont=dict(color="#8b949e", size=9),
+            textfont=dict(color="#a7b0bb", size=9),
             hovertemplate=f"<b>{h(u)} → {h(v)}</b><br>Monto: Q{h(format(monto_arista, ',.0f'))}<br>Transacciones: {h(n_tx_arista)}<extra></extra>",
             showlegend=False,
         ))
@@ -415,7 +415,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
             df_rutas = pd.DataFrame(rutas).drop_duplicates(subset=["Ruta"]).sort_values(["Saltos", "Score máx. en ruta"], ascending=[False, False])
             st.markdown(render_html_table(df_rutas, max_height=420), unsafe_allow_html=True)
         else:
-            st.markdown('<div style="color:#6e7681; font-size:13px; padding:8px 0;">No se detectaron rutas multi-hop con los filtros actuales.</div>', unsafe_allow_html=True)
+            st.markdown('<div style="color:#a7b0bb; font-size:13px; padding:8px 0;">No se detectaron rutas multi-hop con los filtros actuales.</div>', unsafe_allow_html=True)
 
     # ── CENTRALIDAD DE NODOS ───────────────────────────────────────────────
     st.markdown("---")
