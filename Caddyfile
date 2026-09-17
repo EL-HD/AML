@@ -1,0 +1,115 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Caddyfile: proxy inverso de Sovereign AML delante de Streamlit (T5 Fase 2).
+#
+# Topología dentro del contenedor de Railway:
+#   Internet -> borde de Railway (termina TLS, añade X-Real-IP) -> Caddy en $PORT
+#            -> Streamlit en 127.0.0.1:8501 -> FastAPI en 127.0.0.1:8000
+#
+# Caddy aporta lo que Streamlit no puede: cabeceras de seguridad (CSP, HSTS,
+# X-Frame-Options, Referrer-Policy, Permissions-Policy, X-Content-Type-Options),
+# supresión de la cabecera Server, compresión y tope de tamaño de cuerpo.
+# El WebSocket de Streamlit (/_stcore/stream) se reenvía sin configuración extra:
+# reverse_proxy detecta la cabecera Upgrade y mantiene la conexión abierta.
+#
+# Pruebas: tests/test_caddyfile.py (estático) y scripts/verificar_cabeceras.py
+# (contra un servidor en vivo). Cada directiva de CSP se justifica más abajo.
+# ─────────────────────────────────────────────────────────────────────────────
+{
+	# Railway termina TLS: Caddy escucha en HTTP interno y nunca pide certificados.
+	auto_https off
+	# Sin API de administración (evita un puerto extra dentro del contenedor).
+	admin off
+	servers {
+		# Solo se confía en X-Real-IP cuando la conexión llega desde una red
+		# privada (el borde de Railway o loopback). Un cliente de Internet que
+		# envíe X-Real-IP o X-Forwarded-For falsificados no llega aquí de forma
+		# directa, y si llegase, su cabecera se ignora y se usa su IP de socket.
+		trusted_proxies static private_ranges
+		client_ip_headers X-Real-IP
+	}
+}
+
+:{$PORT:8080} {
+	# Compresión de respuestas textuales (HTML, JS, CSS, JSON). No afecta al
+	# WebSocket ni a respuestas ya comprimidas.
+	encode zstd gzip
+
+	# Tope duro del cuerpo de la petición. Streamlit limita las subidas a 25 MiB
+	# (.streamlit/config.toml, server.maxUploadSize, en mebibytes); se deja 1 MiB
+	# de margen para el sobre multipart de modo que el mensaje de error amigable
+	# lo dé Streamlit. Nota: en Caddy "MB" es decimal (10^6) y "MiB" binario (2^20).
+	request_body {
+		max_size 26MiB
+	}
+
+	header {
+		# Se ocultan las cabeceras Server (Caddy y Tornado/Streamlit) y Via (Caddy):
+		# no se revela la pila tecnológica.
+		-Server
+		-Via
+
+		# CSP compatible con Streamlit 1.55 (ver justificación por directiva):
+		# default-src 'self'      todo lo no listado solo desde el propio origen.
+		# script-src              'self' para los bundles de Streamlit; 'unsafe-inline'
+		#                         porque index.html trae un script inline
+		#                         (window.prerenderReady) y components.html de la app
+		#                         inyecta scripts inline en iframes srcdoc, que heredan
+		#                         esta política. No se concede 'unsafe-eval': las
+		#                         trazas Plotly usadas (Scatter, Bar, Pie, Scatterpolar,
+		#                         Indicator) son SVG y no requieren WebGL/regl.
+		#                         {$CSP_SCRIPT_EXTRA} permite añadir fuentes sin
+		#                         reconstruir la imagen (vacío por defecto).
+		# style-src               'unsafe-inline' porque Streamlit (Emotion) y la app
+		#                         inyectan estilos inline; fonts.googleapis.com por el
+		#                         @import de frontend/theme/styles.css.
+		# font-src                fuentes locales, data: (fuentes embebidas de iconos) y
+		#                         fonts.gstatic.com (Manrope, IBM Plex Mono).
+		# img-src                 'self' (media de Streamlit), data: (logotipo en
+		#                         base64 y gráficos matplotlib), blob: (imágenes que
+		#                         Streamlit crea en memoria) y fonts.gstatic.com
+		#                         (SVG de Material Symbols que usa Streamlit).
+		# connect-src             XHR y WebSocket solo hacia el propio host: 'self'
+		#                         más el esquema ws/wss explícito (host y puerto de la
+		#                         petición) para navegadores que no asumen 'self'
+		#                         para WebSocket.
+		# worker-src              Streamlit y Plotly crean workers desde blob:.
+		# frame-src 'self'        iframes de componentes (srcdoc) del propio origen.
+		# frame-ancestors 'none'  la aplicación no puede embeberse (anti clickjacking).
+		# object-src 'none'       sin plugins ni <object>/<embed>.
+		# base-uri 'self'         impide reescribir la base de URLs relativas.
+		# form-action 'self'      los formularios solo envían al propio origen.
+		# manifest-src 'self'     manifest.json de Streamlit.
+		# media-src               audio/vídeo locales o en memoria (no usados hoy).
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' {$CSP_SCRIPT_EXTRA}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://fonts.gstatic.com; connect-src 'self' ws://{http.request.hostport} wss://{http.request.hostport}; worker-src 'self' blob:; frame-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'; media-src 'self' blob:"
+
+		# HSTS: un año, sin preload (reversible) y sin includeSubDomains (no se
+		# controlan otros subdominios del dominio público).
+		Strict-Transport-Security "max-age=31536000"
+
+		# Refuerzo de frame-ancestors para navegadores antiguos.
+		X-Frame-Options "DENY"
+
+		# Sin adivinación de tipos MIME.
+		X-Content-Type-Options "nosniff"
+
+		# No se filtra la URL (con tokens en query, si los hubiera) a terceros.
+		Referrer-Policy "strict-origin-when-cross-origin"
+
+		# La aplicación no usa cámara, micrófono, geolocalización, pagos ni USB.
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+
+		# Se aplican sobre la respuesta de Streamlit (sobrescriben las suyas).
+		defer
+	}
+
+	reverse_proxy 127.0.0.1:8501 {
+		# La IP real del navegador la aporta el borde de Railway en X-Real-IP;
+		# {client_ip} solo la toma de esa cabecera cuando la conexión procede de un
+		# proxy de confianza. Se reenvía como valor único en X-Forwarded-For, que
+		# es lo que app.py lee (st.context.headers) y propaga a FastAPI para el
+		# límite de intentos de login (backend/rate_limit.py). Cualquier
+		# X-Forwarded-For enviado por el cliente queda sobrescrito: sin falsificación.
+		header_up X-Forwarded-For {client_ip}
+		header_up X-Real-IP {client_ip}
+	}
+}

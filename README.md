@@ -8,7 +8,7 @@ Motor analítico propio: **IMPERATOR** (scoring de riesgo por transacción/clien
 
 ## 1. Arquitectura
 
-Un único servicio en Railway ejecuta dos procesos bajo `supervisord`:
+Un único servicio en Railway ejecuta tres procesos bajo `supervisord`:
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -16,7 +16,8 @@ Un único servicio en Railway ejecuta dos procesos bajo `supervisord`:
 │                                               │
 │   supervisord                                │
 │   ├── fastapi   (auth_api.py)  → 127.0.0.1:8000  (interno)
-│   └── streamlit (app.py)       → 0.0.0.0:$PORT   (público)
+│   ├── streamlit (app.py)       → 127.0.0.1:8501  (interno)
+│   └── caddy     (Caddyfile)    → 0.0.0.0:$PORT   (público: proxy inverso)
 │                                               │
 └─────────────────┬─────────────────────────────┘
                    │ SQLAlchemy
@@ -26,6 +27,7 @@ Un único servicio en Railway ejecuta dos procesos bajo `supervisord`:
 
 * **`auth_api.py`** (FastAPI): autenticación (JWT, rate limiting), CRUD de licencias/usuarios. Solo accesible en `127.0.0.1`: nunca expuesto directamente a internet.
 * **`app.py`** (Streamlit): interfaz principal, enruta a los módulos de `frontend/`.
+* **`Caddyfile`** (Caddy): proxy inverso delante de Streamlit. Añade las cabeceras de seguridad (CSP, HSTS, X-Frame-Options, Referrer-Policy, Permissions-Policy, X-Content-Type-Options), oculta `Server`, comprime y reenvía el WebSocket. La IP real del navegador llega en `X-Real-IP` (borde de Railway) y Caddy la reenvía como valor único en `X-Forwarded-For`. Verificación en vivo: `python scripts/verificar_cabeceras.py https://<dominio> --websocket`.
 * **PostgreSQL**: una tabla `Licencias` por Persona Obligada (multi-tenant vía `licenciaid`/`licence_id` UUID). El resto de las tablas de negocio se segmentan por ese mismo `licenciaid`.
 * Algunos módulos de frontend (p. ej. `mod_sesion.py`, `mod_riesgo_ldft.py`) abren su propia `SessionLocal()` (ver `backend/database.py`) para leer/escribir datos que no pasan por la API de autenticación: mismo patrón, sin duplicar lógica de conexión.
 
@@ -84,7 +86,7 @@ Implementación del enfoque basado en riesgo institucional (Art. 8-11 Decreto 15
 | A01: Broken Access Control | RBAC por rol (`admin`, `oficial`, `analista`, `auditor`): `/licencias/*` y `/usuarios/` solo `admin` (`auth_api.require_role`), `/perfil` con campos restringidos; `frontend/permisos.py` deshabilita controles según rol. Caché de análisis ligado al `licence_id` y cifrado (`frontend/cache_analisis.py`). Todas las consultas filtran por `licenciaid`. |
 | A02: Cryptographic Failures | Contraseñas con bcrypt; `SECRET_KEY` obligatoria; restauración de sesión con token HMAC-SHA256 firmado, con expiración (30 min), nonce y validación contra la sesión vigente (`backend/session_token.py`, fail-closed sin `SESSION_SIGN_KEY`); JWT con `exp`, `iat`, `jti`, `iss`, `aud`. |
 | A03: Injection | ORM con binding de parámetros; `Literal` de Pydantic para listas cerradas; todo valor dinámico en HTML pasa por `frontend/ui_safe.h` (prueba estática en `tests/test_ui_safe.py`); saneado anti-inyección de fórmulas centralizado en `frontend/exportacion.py`. |
-| A05: Security Misconfiguration | Protección XSRF de Streamlit activa y configuración versionada en `.streamlit/config.toml` (subida máxima 25 MB); CORS de la API restringido por `CORS_ALLOWED_ORIGINS`; versiones exactas en `requirements.txt`; importación `.saml` con límites de tamaño, filas y lista blanca de configuración (`backend/config_aml.AmlConfig`). |
+| A05: Security Misconfiguration | Cabeceras de seguridad servidas por Caddy (`Caddyfile`: CSP con `frame-ancestors 'none'`, HSTS de un año, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `X-Content-Type-Options`, sin cabecera `Server`; prueba estática en `tests/test_caddyfile.py`); protección XSRF de Streamlit activa y configuración versionada en `.streamlit/config.toml` (subida máxima 25 MB); CORS de la API restringido por `CORS_ALLOWED_ORIGINS`; versiones exactas en `requirements.txt`; importación `.saml` con límites de tamaño, filas y lista blanca de configuración (`backend/config_aml.AmlConfig`). |
 | A07: Identification & Auth Failures | Límite de intentos por usuario e IP real (5 fallos / 5 min, bloqueo 15 min) en `/auth/validate` y `/token`; mensaje único "Credenciales inválidas"; política de contraseñas (12+, complejidad, lista de comunes); control de sesión única vía `BitacoraSesions`. MFA (TOTP) planificado como fase posterior. |
 | A09: Security Logging | `backend/auditoria.py` registra en `BitacoraAuditoria` (UTC) accesos a módulos, LOGIN_OK, LOGIN_FALLIDO, LOGOUT, EXPORTACION, IMPORTACION y CAMBIO_CONFIG (Art. 19 Ley 6593); ningún fallo se silencia. |
 
@@ -101,6 +103,7 @@ Implementación del enfoque basado en riesgo institucional (Art. 8-11 Decreto 15
 | `CORS_ALLOWED_ORIGINS` | Recomendada | Orígenes permitidos por la API. |
 | `AUDIT_HMAC_KEY` | No (recomendada en producción) | Clave secreta para firmar con HMAC-SHA256 cada eslabón de la bitácora de auditoría encadenada (`BitacoraAuditoria.hash`). Sin ella se usa SHA-256 puro: la cadena detecta alteraciones, pero quien tenga acceso de escritura a la base y logre desactivar los triggers podría recalcularla. Al definirla, los eslabones anteriores siguen verificándose con SHA-256; no debe cambiarse ni retirarse después, porque los eslabones HMAC dejarían de ser verificables. |
 | `SCREENING_AUTO_DOWNLOAD` | No (por defecto `false`) | Habilita la descarga de listas de sanciones desde las URLs oficiales fijas (OFAC, ONU) definidas en `backend/screening.py`. La carga manual por el Administrador funciona siempre. |
+| `CSP_SCRIPT_EXTRA` | No (vacío) | Fuentes adicionales para `script-src` de la CSP servida por Caddy (p. ej. `'unsafe-eval'` si un componente lo exigiera). Permite ajustar la política sin reconstruir la imagen; documentar cualquier valor en el informe de despliegue. |
 
 ## 7. Pruebas y calidad
 
