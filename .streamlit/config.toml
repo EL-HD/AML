@@ -1,11 +1,12 @@
 # Configuración de Streamlit para Sovereign AML (se versiona; sin secretos).
-# Seguridad (OWASP A05): protección XSRF activa, CORS deshabilitado porque la app
-# se sirve desde un único origen detrás de Railway, subida máxima de 25 MB.
+# Seguridad (OWASP A05): protección XSRF activa (Streamlit exige enableCORS=true
+# cuando XSRF está activo; la cookie _streamlit_xsrf limita los orígenes),
+# subida máxima de 25 MB.
 
 [server]
 headless = true
 enableXsrfProtection = true
-enableCORS = false
+enableCORS = true
 maxUploadSize = 25
 enableStaticServing = false
 

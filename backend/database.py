@@ -20,13 +20,16 @@ def _crear_engine(url: str):
     (schema="public") funcionen sin cambios.
     """
     if url.startswith("sqlite"):
+        ruta = url.split("sqlite:///", 1)[1] if "sqlite:///" in url else ""
+        # Con archivo, el esquema "public" también se persiste en <archivo>.public
+        destino_public = f"{ruta}.public" if ruta and ruta != ":memory:" else ":memory:"
         engine_local = create_engine(
             url, connect_args={"check_same_thread": False}, poolclass=StaticPool
         )
 
         @event.listens_for(engine_local, "connect")
         def _adjuntar_public(dbapi_conn, _record):
-            dbapi_conn.execute("ATTACH DATABASE ':memory:' AS public")
+            dbapi_conn.execute("ATTACH DATABASE ? AS public", (destino_public,))
 
         return engine_local
     return create_engine(url, pool_pre_ping=True)
