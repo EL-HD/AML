@@ -77,12 +77,12 @@ def render_sidebar_nav() -> str:
         if not vistas:
             continue
         clave = _clave_radio(grupo)
-        indice = vistas.index(vista) if vista in vistas else None
-        # Sincroniza el estado del widget con la vista activa (por ejemplo tras un cambio programático)
-        st.session_state[clave] = vista if indice is not None else None
+        # El valor del widget se fija vía session_state (fuente única) antes de crearlo;
+        # index=None evita el doble origen de valor por defecto.
+        st.session_state[clave] = vista if vista in vistas else None
         st.markdown(f"<div class='sidebar-section-label'>{h(grupo)}</div>", unsafe_allow_html=True)
         st.radio(
-            f"Sección {grupo}", vistas, index=indice, key=clave,
+            f"Sección {grupo}", vistas, index=None, key=clave,
             on_change=_al_cambiar, args=(grupo,), label_visibility="collapsed",
         )
     return vista_actual()

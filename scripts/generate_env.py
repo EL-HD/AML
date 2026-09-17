@@ -27,6 +27,12 @@ DB_NAME=AML
 
 # --- Autenticación JWT (API) ---
 SECRET_KEY={secrets.token_hex(32)}
+JWT_ISSUER=sovereign-aml-auth
+JWT_AUDIENCE=sovereign-aml-app
+
+# --- Restauración de sesión y caché cifrado (Streamlit) ---
+SESSION_SIGN_KEY={secrets.token_hex(32)}
+CACHE_ENCRYPTION_SALT={secrets.token_hex(8)}
 
 # --- URL del API (Frontend Streamlit) ---
 AUTH_API_URL=http://localhost:8000

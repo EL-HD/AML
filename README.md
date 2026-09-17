@@ -81,14 +81,35 @@ Implementación del enfoque basado en riesgo institucional (Art. 8-11 Decreto 15
 
 | Riesgo OWASP | Mitigación aplicada |
 |---|---|
-| A01: Broken Access Control | Todas las consultas de datos sensibles filtran por `licenciaid`; verificación de propiedad antes de vincular/eliminar registros (ver `crud_riesgo.py`). |
-| A02: Cryptographic Failures | Contraseñas con bcrypt (`bcrypt.gensalt()`); `SECRET_KEY` obligatoria por env var (falla al arrancar si no está configurada). |
-| A03: Injection | ORM con binding de parámetros (sin SQL crudo concatenado); `Literal` de Pydantic para listas cerradas; escape HTML explícito antes de interpolar datos de usuario en `unsafe_allow_html`; saneado anti-inyección de fórmulas (CSV/Excel) con prefijo `'`. |
-| A05: Security Misconfiguration | CORS restringido por `CORS_ALLOWED_ORIGINS` (no wildcard); dependencias con piso de versión fijado en `requirements.txt`. |
-| A07: Identification & Auth Failures | Rate limiting en `/auth/validate` (5 intentos / 5 min por IP); control de sesión única vía `BitacoraSesions`. |
-| A09: Security Logging | `BitacoraAuditoria` registra accesos a módulos sensibles (Art. 19 Ley 6593). |
+| A01: Broken Access Control | RBAC por rol (`admin`, `oficial`, `analista`, `auditor`): `/licencias/*` y `/usuarios/` solo `admin` (`auth_api.require_role`), `/perfil` con campos restringidos; `frontend/permisos.py` deshabilita controles según rol. Caché de análisis ligado al `licence_id` y cifrado (`frontend/cache_analisis.py`). Todas las consultas filtran por `licenciaid`. |
+| A02: Cryptographic Failures | Contraseñas con bcrypt; `SECRET_KEY` obligatoria; restauración de sesión con token HMAC-SHA256 firmado, con expiración (30 min), nonce y validación contra la sesión vigente (`backend/session_token.py`, fail-closed sin `SESSION_SIGN_KEY`); JWT con `exp`, `iat`, `jti`, `iss`, `aud`. |
+| A03: Injection | ORM con binding de parámetros; `Literal` de Pydantic para listas cerradas; todo valor dinámico en HTML pasa por `frontend/ui_safe.h` (prueba estática en `tests/test_ui_safe.py`); saneado anti-inyección de fórmulas centralizado en `frontend/exportacion.py`. |
+| A05: Security Misconfiguration | Protección XSRF de Streamlit activa y configuración versionada en `.streamlit/config.toml` (subida máxima 25 MB); CORS de la API restringido por `CORS_ALLOWED_ORIGINS`; versiones exactas en `requirements.txt`; importación `.saml` con límites de tamaño, filas y lista blanca de configuración (`backend/config_aml.AmlConfig`). |
+| A07: Identification & Auth Failures | Límite de intentos por usuario e IP real (5 fallos / 5 min, bloqueo 15 min) en `/auth/validate` y `/token`; mensaje único "Credenciales inválidas"; política de contraseñas (12+, complejidad, lista de comunes); control de sesión única vía `BitacoraSesions`. MFA (TOTP) planificado como fase posterior. |
+| A09: Security Logging | `backend/auditoria.py` registra en `BitacoraAuditoria` (UTC) accesos a módulos, LOGIN_OK, LOGIN_FALLIDO, LOGOUT, EXPORTACION, IMPORTACION y CAMBIO_CONFIG (Art. 19 Ley 6593); ningún fallo se silencia. |
 
-## 7. Levantar el sistema en local (comando `aml`)
+## 6. Variables de entorno
+
+| Variable | Obligatoria | Uso |
+|----------|-------------|-----|
+| `DATABASE_URL` o `DB_*` | Sí | PostgreSQL (SQLite solo para pruebas automatizadas). |
+| `SECRET_KEY` | Sí | Firma de JWT (32+ bytes aleatorios). |
+| `SESSION_SIGN_KEY` | Sí | Firma de la restauración de sesión y derivación de la clave del caché cifrado (32+ caracteres). Sin ella ambas funciones quedan deshabilitadas. |
+| `CACHE_ENCRYPTION_SALT` | Recomendada | Sal para derivar la clave del caché de análisis. |
+| `JWT_ISSUER`, `JWT_AUDIENCE` | Recomendadas | Claims `iss`/`aud` del JWT (por defecto `sovereign-aml-auth` / `sovereign-aml-app`). |
+| `AUTH_API_URL` | Sí (Streamlit) | URL interna de la API (`http://localhost:8000` en Railway). |
+| `CORS_ALLOWED_ORIGINS` | Recomendada | Orígenes permitidos por la API. |
+
+## 7. Pruebas y calidad
+
+```bash
+python -m unittest discover -s tests -v        # también funciona con: pytest tests
+python scripts/medir_duplicacion.py            # duplicación de código (< 10 %)
+bandit -r backend frontend auth_api.py app.py  # análisis estático de seguridad
+pip-audit -r requirements.txt                  # vulnerabilidades en dependencias
+```
+
+## 8. Levantar el sistema en local (comando `aml`)
 
 Requiere: Postgres local ya corriendo (Homebrew/DBeaver/pgAdmin, base `AML` en `localhost:5432`), Python 3.10+.
 
@@ -104,7 +125,9 @@ Requiere: Postgres local ya corriendo (Homebrew/DBeaver/pgAdmin, base `AML` en `
 
 `.env`, `backups/` y `.aml/` (logs/pids) quedan fuera de git. Detalle en `scripts/`.
 
-## 6. Historial de cambios recientes
+## 9. Historial de cambios recientes
+
+* **2026-09**: Plan UI/UX y seguridad (ver `docs/planes/`): restauración de sesión firmada y expirable, caché cifrado por tenant, RBAC con migración `003_rol_licencias.sql`, XSRF activo, escape HTML universal, límites de importación, política de contraseñas, auditoría completa, sistema de diseño con tokens y navegación agrupada.
 
 * **2026-07**: Módulo de Riesgo Institucional LD/FT/FPADM (GAFILAT/IVE) agregado end-to-end.
 * **2026-07**: Fix: `pandas.DataFrame.applymap` eliminado en pandas 3.0 → migrado a `.map()`; `requirements.txt` fija piso `pandas>=2.1.0`.
