@@ -109,6 +109,21 @@ bandit -r backend frontend auth_api.py app.py  # análisis estático de segurida
 pip-audit -r requirements.txt                  # vulnerabilidades en dependencias
 ```
 
+### Integración continua (GitHub Actions)
+
+`.github/workflows/ci.yml` se ejecuta en cada push y pull request hacia `main` y `mejora/**`, con permisos mínimos (`contents: read`), sin secretos y con variables ficticias de prueba. Dos trabajos:
+
+* **calidad**: Python 3.11 con caché de pip, `unittest`, `bandit -c bandit.yaml ... -ll` (severidad media o superior; `bandit.yaml` excluye `tests/`), `pip-audit -r requirements.txt` y `scripts/medir_duplicacion.py --umbral 10`.
+* **migraciones**: servicio `postgres:16` efímero; ejecuta `scripts/db_migrate.py` dos veces sobre una base vacía (la segunda debe terminar sin SQL pendiente) y verifica `schema_migrations`, la columna `Licencias.rol` y su CHECK.
+
+Las acciones están fijadas a versión mayor; Dependabot (`.github/dependabot.yml`) propone actualizaciones para pasar a SHA fijados.
+
+**Desplegar en Railway solo si CI pasa ("Wait for CI").** Railway puede esperar a que los *check suites* de GitHub terminen en verde antes de construir. Activación manual (no se cambia desde el repositorio):
+
+1. Railway > proyecto > servicio de la aplicación > **Settings** > sección **Source** (repositorio `EL-HD/AML`, rama `main`).
+2. Activar **Wait for CI** (en algunas versiones del panel aparece como *Check Suites*).
+3. A partir de entonces, cada push a `main` solo despliega cuando el workflow `CI` finaliza con éxito; si falla, Railway omite el despliegue y conserva el anterior.
+
 ## 8. Levantar el sistema en local (comando `aml`)
 
 Requiere: Postgres local ya corriendo (Homebrew/DBeaver/pgAdmin, base `AML` en `localhost:5432`), Python 3.10+.

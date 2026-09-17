@@ -30,7 +30,8 @@ def medir(rutas, ventana: int):
         lineas = list(_lineas_codigo(ruta))
         lineas_por_archivo[ruta] = lineas
         for i in range(len(lineas) - ventana + 1):
-            clave = hashlib.sha1("\n".join(t for _, t in lineas[i:i + ventana]).encode()).hexdigest()
+            # sha256: la huella no es criptográfica pero evita la alerta B324 de bandit en CI
+            clave = hashlib.sha256("\n".join(t for _, t in lineas[i:i + ventana]).encode()).hexdigest()
             ventanas[clave].append((ruta, i))
     duplicadas = defaultdict(set)
     for clave, apariciones in ventanas.items():

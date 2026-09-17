@@ -47,3 +47,40 @@ Ninguna.
 - `Sospechosa_Confirmada` es terminal por diseño: revertir una confirmación exigiría un flujo de anulación con doble aprobación que no está en el alcance de T1. Opción: tarea futura "anulación de RTS" con fundamento y aprobación cruzada.
 - Purga por retención (más de 5 años) queda fuera del alcance: la aplicación no borra; una eventual purga debe hacerse por procedimiento del administrador de base de datos deshabilitando temporalmente el trigger.
 - La rehidratación filtra por `hash_lote`: si el lote cambia (una fila más), los casos previos no se recuperan por diseño (la evidencia del examen corresponde a un lote concreto). Los casos anteriores siguen consultables en la base de datos.
+
+---
+
+## T2 CI en GitHub Actions
+
+**Estado:** HECHO (validación local completa; la primera ejecución real en GitHub queda pendiente del push) · **Fecha:** 17/09/2026 · **Commit:** ver `git log` (commit `ci(t2): ...`).
+
+### Qué se hizo
+- **`.github/workflows/ci.yml`**: disparadores `push` y `pull_request` a `main` y `mejora/**`; `permissions: contents: read`; `concurrency` por rama con `cancel-in-progress`; `timeout-minutes` en cada trabajo; sin secretos (solo las variables ficticias de `tests/conftest.py`: `SECRET_KEY`, `SESSION_SIGN_KEY`, `JWT_ISSUER`, `JWT_AUDIENCE`, `CACHE_ENCRYPTION_SALT`, `DATABASE_URL=sqlite://`).
+  - Trabajo **calidad**: `actions/setup-python` con Python 3.11 y caché de pip (`cache-dependency-path: requirements.txt`); `pip install -r requirements.txt bandit pip-audit`; `python -m unittest discover -s tests -v`; `bandit -c bandit.yaml -r backend frontend auth_api.py app.py scripts -ll`; `pip-audit -r requirements.txt --progress-spinner off`; `python scripts/medir_duplicacion.py --umbral 10 app.py auth_api.py backend frontend scripts` (sale con código 1 si supera 10 %).
+  - Trabajo **migraciones**: servicio `postgres:16` con `pg_isready` como healthcheck y credenciales efímeras de CI; `scripts/db_migrate.py` dos veces sobre base vacía; la segunda ejecución debe imprimir "Sin migraciones SQL pendientes" (`set -o pipefail` para que un fallo en la tubería no quede oculto); luego `psql` verifica que `schema_migrations` tiene tantas filas como archivos en `migrations/`, que existe `Licencias.rol` y la restricción `licencias_rol_check`.
+- **`bandit.yaml`**: excluye `tests/`, entornos locales y respaldos (evita falsos positivos por credenciales ficticias y `assert` en pruebas).
+- **`.github/dependabot.yml`**: actualizaciones mensuales de las acciones del workflow.
+- **`scripts/medir_duplicacion.py`**: la huella de ventanas pasa de `sha1` a `sha256`. No es un uso criptográfico, pero `bandit -ll` reporta B324 (severidad media) para `sha1`/`md5` y haría fallar el pipeline. Resultado idéntico (1.72 %).
+- **README**, sección 7: descripción del pipeline y pasos para activar **Wait for CI** en Railway (Settings > Source > Wait for CI / Check Suites). No se tocó la configuración de Railway.
+
+### Decisiones
+- **Fijación de acciones a versión mayor** (`actions/checkout@v4`, `actions/setup-python@v5`) en lugar de SHA de commit: desde el entorno de desarrollo no hay acceso a `api.github.com` ni a `github.com` (proxy 403), por lo que no fue posible verificar los SHA; un SHA erróneo rompería todo el pipeline. La decisión y el procedimiento para migrar a SHA (aceptar el primer PR de Dependabot y usar `uses: owner/accion@<sha> # vX.Y.Z`) quedan documentados en la cabecera del workflow.
+- **Orden del runner de migraciones**: se revisó `scripts/db_migrate.py`: `models.Base.metadata.create_all` corre antes que `migrations/*.sql`, de modo que `Licencias` (con `rol`) ya existe cuando se aplica `003_rol_licencias.sql`. El problema conocido ("003 falla en base vacía") solo ocurre al aplicar los `.sql` con `psql` sin pasar por el runner; con `db_migrate.py` no se reproduce, por lo que no hubo que corregir nada en el runner ni en las migraciones 001-003. El trabajo `migraciones` de CI cubre exactamente esa ruta.
+
+### Evidencia (contenedor cloud, Python 3.11, PostgreSQL 16)
+- YAML de los tres archivos cargado con `yaml.safe_load` sin errores; estructura verificada (2 trabajos, 7 y 6 pasos, disparadores y permisos correctos).
+- `python3 -m unittest discover -s tests`: 89 pruebas en verde.
+- `scripts/medir_duplicacion.py --umbral 10 app.py auth_api.py backend frontend scripts`: 9073 líneas, 156 duplicadas, 1.72 % (código de salida 0).
+- Emulación del trabajo `migraciones` con `psql` (sin `psycopg2` en el contenedor): DDL del ORM generado con el dialecto PostgreSQL y aplicado a una base vacía, después `001` a `004` dos veces seguidas sin error; comprobaciones finales del paso "Verificar esquema resultante" (4 = 4 migraciones registradas, columna `rol` presente, CHECK presente) satisfechas.
+- Revisión estática previa a bandit sobre los mismos patrones que reporta con severidad media (`requests` sin `timeout`, `/tmp` literal, `0.0.0.0`, `yaml.load`, `pickle`, `eval/exec`, `shell=True`, SQL por f-string, `md5/sha1`): único hallazgo el `sha1` de `medir_duplicacion.py`, corregido.
+
+### Variables nuevas
+Ninguna en producción. En CI solo valores ficticios definidos en el propio workflow.
+
+### Pasos de despliegue
+1. Al hacer push de la rama, GitHub ejecutará el workflow automáticamente (el push queda fuera del alcance de esta fase, según las reglas comunes).
+2. Activar **Wait for CI** en Railway (Settings > Source) para que `main` solo despliegue con CI en verde.
+
+### Pendientes y motivo
+- `bandit` y `pip-audit` no pudieron ejecutarse localmente (PyPI bloqueado en ambos entornos); la primera corrida en GitHub puede revelar hallazgos. Opciones si ocurre: corregir el código (preferible), o añadir `# nosec Bxxx` con justificación puntual; para `pip-audit`, actualizar la versión afectada en `requirements.txt` o, si no existe parche, `--ignore-vuln <id>` documentado.
+- Fijación a SHA de commit: pendiente hasta el primer PR de Dependabot (ver Decisiones).
