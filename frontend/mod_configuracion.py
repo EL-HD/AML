@@ -328,6 +328,66 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
                 c.get("regla_feic", True), tone="violet",
             )
 
+        st.markdown("---")
+
+        # ── Señal de anomalía (T8): complementaria, no altera el Score ─────
+        col_on8, col_title8 = st.columns([1, 9])
+        with col_on8:
+            c["anomalia_activa"] = st.toggle("", value=bool(c.get("anomalia_activa", True)), key="tog_anomalia")
+        with col_title8:
+            ui_components.regla_titulo("Señal de anomalía (Isolation Forest, complementaria)", c.get("anomalia_activa", True))
+
+        col_desc8, col_ctrl8 = st.columns([3, 2])
+        with col_desc8:
+            ui_components.spec_card(
+                """Detección <strong>no supervisada</strong> de clientes atípicos frente a la cartera
+(montos, desviación del perfil, frecuencia, montos redondos, proximidad a umbrales, calendario, contrapartes y ubicación).
+Se muestra como percentil 0-100 y nivel. <strong>No modifica</strong> el Score IMPERATOR ni el estado de los casos.""",
+                "Percentil de anomalía",
+                f"Alto >= {int(c.get('anomalia_percentil_alto', 90))} · Medio >= {int(c.get('anomalia_percentil_medio', 75))}",
+                acento="#3b82f6",
+                etiqueta_variable="Señal",
+                etiqueta_logica="Niveles",
+                impacto_titulo="PUNTOS CIEGOS",
+                impacto_html=(
+                    f"<strong>Anomalía Alta y Score &lt; {h(format(float(c.get('anomalia_score_punto_ciego', 3.0)), 'g'))} →</strong> "
+                    "se destaca como posible punto ciego de las reglas en Imperator Diagnostics."
+                ),
+            )
+        with col_ctrl8:
+            activa_anom = bool(c.get("anomalia_activa", True))
+            c["anomalia_percentil_alto"] = st.number_input(
+                "Percentil mínimo para anomalía Alta", min_value=50, max_value=100,
+                value=int(c.get("anomalia_percentil_alto", 90)), step=1,
+                help="Clientes con percentil de anomalía igual o superior se marcan como Alto.",
+                disabled=not activa_anom,
+            )
+            c["anomalia_percentil_medio"] = st.number_input(
+                "Percentil mínimo para anomalía Media", min_value=0, max_value=99,
+                value=int(c.get("anomalia_percentil_medio", 75)), step=1,
+                help="Debe ser menor que el percentil de Alto.", disabled=not activa_anom,
+            )
+            c["anomalia_score_punto_ciego"] = st.number_input(
+                "Score IMPERATOR máximo para 'punto ciego'", min_value=0.0, max_value=10.0,
+                value=float(c.get("anomalia_score_punto_ciego", 3.0)), step=0.5,
+                help="Un cliente con anomalía Alta y score menor que este valor se destaca como posible punto ciego de las reglas.",
+                disabled=not activa_anom,
+            )
+            c["anomalia_n_arboles"] = st.number_input(
+                "Número de árboles (Isolation Forest)", min_value=10, max_value=500,
+                value=int(c.get("anomalia_n_arboles", 100)), step=10,
+                help="Más árboles = puntaje más estable y cálculo más lento. 100 es el valor de referencia.",
+                disabled=not activa_anom,
+            )
+            c["anomalia_semilla"] = st.number_input(
+                "Semilla (reproducibilidad)", min_value=0, max_value=2_147_483_647,
+                value=int(c.get("anomalia_semilla", 42)), step=1,
+                help="Misma semilla y mismos datos producen exactamente el mismo resultado (trazabilidad).",
+                disabled=not activa_anom,
+            )
+            if c["anomalia_percentil_medio"] >= c["anomalia_percentil_alto"]:
+                st.error("El percentil de anomalía Media debe ser menor que el de Alta.")
+
     # ── TAB 2: Pesos del Score ──────────────────────────────────────────
     with tab2:
         st.markdown("""
@@ -526,6 +586,8 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
                 ("Frecuencia Alta",     c["regla_frecuencia"], f"Umbral: >{c['umbral_frecuencia']} transacciones"),
                 ("Smurfing",            c["regla_smurfing"],   f"Umbral: ≥{c['umbral_smurfing']} en mismo día"),
                 ("Pico Anómalo",        c["regla_pico"],       f"Umbral: μ + {c['mult_std_pico']}σ"),
+                ("Señal de anomalía",   c.get("anomalia_activa", True),
+                 f"Alto >= p{c.get('anomalia_percentil_alto', 90)} · Medio >= p{c.get('anomalia_percentil_medio', 75)} (no altera el score)"),
             ]
             for nombre_r, activa_r, detalle_r in reglas_resumen:
                 estado_color = "#22c55e" if activa_r else "#ef4444"
@@ -585,6 +647,8 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
             if not any([c["regla_absoluto"], c["regla_acumulado"], c["regla_perfil"],
                         c["regla_frecuencia"], c["regla_smurfing"], c["regla_pico"]]):
                 errores.append("Debes tener al menos una regla activa.")
+            if c.get("anomalia_percentil_medio", 75) >= c.get("anomalia_percentil_alto", 90):
+                errores.append("El percentil de anomalía Media debe ser menor que el de Alta.")
             if errores:
                 for err in errores:
                     st.error(f"Error: {err}")

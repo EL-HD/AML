@@ -13,7 +13,7 @@ from reportlab.platypus import (
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
 import matplotlib
 from frontend.ui_safe import h
-from frontend import exportacion, permisos
+from frontend import exportacion, mod_anomalias, permisos
 from frontend import ui_components
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -837,6 +837,10 @@ def mostrar(df, casos, matriz_alertas, cfg):
             f"configurado para esta regla si el numero de falsos positivos es elevado."
         )
         story.append(KeepTogether([hb_sec_sintesis, Spacer(1, 6), Paragraph(sintesis, S["body"])]))
+        parrafo_anomalia = mod_anomalias.parrafo_reporte(casos, cfg)
+        if parrafo_anomalia:
+            story.append(Spacer(1, 6))
+            story.append(Paragraph(h(parrafo_anomalia), S["body"]))
         story.append(Spacer(1, 12))
 
         # --- C\u00c1LCULOS DE BI PARA RECOMENDACIONES ---

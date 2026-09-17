@@ -4,7 +4,7 @@ import numpy as np
 import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout, render_html_table
 from frontend.ui_safe import h
-from frontend import ui_components
+from frontend import mod_anomalias, ui_components
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # IMPERATOR DIAGNOSTICS: Centro de Validación del Motor y Aseguramiento de Riesgo
@@ -109,12 +109,13 @@ def mostrar(df, casos, cfg):
     </div>
     """, unsafe_allow_html=True)
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "Dominancia de Reglas",
         "Explicabilidad",
         "Falsos Positivos",
         "Pruebas de Estrés",
-        "Densidad de Riesgo"
+        "Densidad de Riesgo",
+        "Señal de Anomalía",
     ])
 
     # ── TAB 1: Análisis de Dominancia de Reglas ─────────────────────────────
@@ -392,3 +393,8 @@ def mostrar(df, casos, cfg):
             height=300, margin=dict(l=20, r=20, t=20, b=20),
         )
         st.plotly_chart(fig_dist, use_container_width=True)
+
+    # ── TAB 6: Señal de Anomalía (T8, complementaria al Score IMPERATOR) ───
+    with tab6:
+        _section("Señal de Anomalía: Detección No Supervisada")
+        mod_anomalias.mostrar_tab(df, casos, cfg)

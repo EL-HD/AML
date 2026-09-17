@@ -89,6 +89,9 @@ def mostrar(casos):
     for col in ["ST_Max", "SC_Max", "SB_Max", "SN_Max"]:
         if col in tabla_casos.columns:
             tabla_casos[col] = tabla_casos[col].map(lambda v: f"{v:.4f}")
+    if "Anomalia_Percentil" in tabla_casos.columns:
+        tabla_casos["Anomalia_Percentil"] = tabla_casos["Anomalia_Percentil"].map(
+            lambda v: "--" if v is None or v != v else f"{float(v):.1f}")
     tabla_casos = tabla_casos.rename(columns={
         "Total_Mensual": "Total Mensual (Q)",
         "Score_Max": "Score de Riesgo",
@@ -98,6 +101,8 @@ def mostrar(casos):
         "SN_Max": "S_N (Red)",
         "Transacciones": "N. Transacciones",
         "Nivel_Riesgo": "Nivel de Riesgo",
+        "Anomalia_Percentil": "Señal de anomalía (percentil)",
+        "Anomalia_Nivel": "Nivel de anomalía",
     })
     st.markdown(render_html_table(tabla_casos, max_height=560), unsafe_allow_html=True)
 

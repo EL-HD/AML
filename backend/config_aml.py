@@ -8,7 +8,7 @@ No modifica la lógica de scoring (backend/procesador.py), solo valida entradas.
 """
 from typing import List
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 MAX_UBICACIONES = 500
 MAX_LARGO_UBICACION = 120
@@ -52,6 +52,19 @@ class AmlConfig(BaseModel):
     regla_feic: bool = True
     umbral_feic: int = Field(45000, ge=1000, le=500_000)
     moneda: str = Field("GTQ", pattern=r"^(GTQ|USD)$")
+    # Señal de anomalía (T8): complementaria, no altera el Score IMPERATOR.
+    anomalia_activa: bool = True
+    anomalia_percentil_alto: int = Field(90, ge=50, le=100)
+    anomalia_percentil_medio: int = Field(75, ge=0, le=99)
+    anomalia_n_arboles: int = Field(100, ge=10, le=500)
+    anomalia_semilla: int = Field(42, ge=0, le=2_147_483_647)
+    anomalia_score_punto_ciego: float = Field(3.0, ge=0.0, le=10.0)
+
+    @model_validator(mode="after")
+    def _validar_percentiles_anomalia(self):
+        if self.anomalia_percentil_medio >= self.anomalia_percentil_alto:
+            raise ValueError("anomalia_percentil_medio debe ser menor que anomalia_percentil_alto.")
+        return self
 
     @field_validator("ubicaciones_manuales")
     @classmethod

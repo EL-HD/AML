@@ -84,6 +84,7 @@ def mostrar():
     * **Falsos positivos:** Ruido analítico en clientes de bajo riesgo.
     * **Pruebas de estrés:** Simula cambios de parámetros antes de aplicarlos.
     * **Densidad de riesgo:** Concentración del riesgo en la cartera.
+    * **Señal de anomalía:** Detección no supervisada (Isolation Forest) por cliente y por transacción con percentil 0-100, nivel (Alto/Medio/Bajo) y las tres variables que más alejan al cliente de la cartera. Es complementaria: no altera el Score IMPERATOR ni el estado de los casos. Los clientes con anomalía alta y score bajo se destacan como posibles puntos ciegos de las reglas. Umbrales en Configuración > Reglas de Detección.
 
     ## 5.2. Riesgo Institucional de LD/FT/FPADM (Art. 8-11 Decreto 15-2026 / Modelo GAFILAT-IVE)
     Módulo independiente de **administración del riesgo institucional** de la Persona Obligada (distinto del riesgo por transacción/cliente de IMPERATOR). Sigue el modelo de la Intendencia de Verificación Especial de Guatemala (GERILAFT App) en 6 etapas:
