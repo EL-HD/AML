@@ -1,9 +1,24 @@
 import streamlit as st
+from pathlib import Path as _Path
 from frontend.ui_safe import h
+
+_RUTA_LOGO = _Path(__file__).resolve().parent / "Logo AML.png"
+
+
+@st.cache_data(show_spinner=False)
+def _logo_base64() -> str:
+    """Logotipo en base64, leído una sola vez por proceso (U-07)."""
+    import base64 as _b64
+    try:
+        return _b64.b64encode(_RUTA_LOGO.read_bytes()).decode("ascii")
+    except OSError:
+        return ""
+
+
 st.set_page_config(
-    page_title="SOVEREIGN AML | Intelligence Platform",
+    page_title="Sovereign AML | Plataforma de cumplimiento",
     layout="wide",
-    page_icon="🔍",
+    page_icon=str(_RUTA_LOGO) if _RUTA_LOGO.exists() else None,
     initial_sidebar_state="collapsed"
 )
 import pandas as pd
@@ -35,7 +50,7 @@ from frontend import (
     mod_imperator_diagnostics, mod_sesion, mod_riesgo_ldft
 )
 from frontend.mod_sesion import _registrar_acceso_auditoria
-from frontend import cache_analisis, exportacion, theme, ui_components
+from frontend import cache_analisis, exportacion, navegacion, permisos, theme, ui_components
 
 def _auditar(modulo: str, accion: str = "VISUALIZACION") -> None:
     """Registra acceso de sesión activa: Art. 19 Ley 6593."""
@@ -380,54 +395,41 @@ def login_flow():
 
         st.markdown("""
             <div class="brand-title">SOVEREIGN <span>AML</span></div>
-            <div class="brand-subtitle">
-                ANALYTICAL INTELLIGENCE PLATFORM
-            </div>
+            <div class="brand-subtitle">Plataforma de análisis para la prevención de LD/FT</div>
         """, unsafe_allow_html=True)
-        
-        import base64
-        import os
-        logo_b64 = ""
-        logo_path = os.path.join(os.path.dirname(__file__), "Logo AML.png")
-        if os.path.exists(logo_path):
-            with open(logo_path, "rb") as f:
-                logo_b64 = base64.b64encode(f.read()).decode()
-                
+
+        logo_b64 = _logo_base64()
+
         with st.form("login_form", clear_on_submit=False):
             st.markdown(f"""
-                <div style="text-align: center; margin-bottom: 2rem;">
-                    <img src="data:image/png;base64,{h(logo_b64)}" 
-                         style="height: 6rem; margin-bottom: 1.5rem; filter: drop-shadow(0 0 15px rgba(245, 158, 11, 0.3));">
-                    <div style="color: white; font-size: 1.5rem; font-weight: 600;">Acceso al Sistema</div>
-                    <div style="color: #8b949e; font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase;">SISTEMA IMPERATOR ENGINE</div>
+                <div class="login-brand">
+                    <img src="data:image/png;base64,{h(logo_b64)}" alt="Logotipo Sovereign AML" class="login-logo">
+                    <div class="login-title">Acceso al sistema</div>
+                    <div class="login-kicker">Motor de análisis IMPERATOR</div>
                 </div>
             """, unsafe_allow_html=True)
 
+            user = st.text_input("Nombre de usuario", placeholder="Usuario", key="login_user",
+                                 autocomplete="username")
+            pwd = st.text_input("Contraseña", type="password", placeholder="Contraseña", key="login_pwd",
+                                autocomplete="current-password")
 
-            st.markdown('<div class="login-label">Nombre de Usuario</div>', unsafe_allow_html=True)
-            user = st.text_input("USUARIO", placeholder="UserName", key="login_user")
-            
-            st.markdown('<div class="login-label">Contraseña</div>', unsafe_allow_html=True)
-            pwd = st.text_input("CONTRASEÑA", type="password", placeholder="••••••••", key="login_pwd")
-            
             st.markdown("<br>", unsafe_allow_html=True)
-            submit = st.form_submit_button("INICIAR SESIÓN →", use_container_width=True)
-            
+            submit = st.form_submit_button("Iniciar sesión", use_container_width=True)
+
             if submit:
                 _procesar_login(user, pwd)
-            
+
             st.markdown("""
                 <div class="login-help">
                     Si olvidó su contraseña o su licencia expiró, contacte al administrador del sistema.
                 </div>
             """, unsafe_allow_html=True)
-        
+
         st.markdown("""
-            <div class="footer-notice">
-                <div class="security-badge">
-                    ACCESO RESTRINGIDO - NIVEL 4 CID
-                </div>
-                <div>EL ACCESO NO AUTORIZADO A ESTE SISTEMA DE INTELIGENCIA ESTÁ ESTRICTAMENTE PROHIBIDO POR LA NORMATIVA SOVEREIGN-V3.</div>
+            <div class="legal-notice">
+                Uso exclusivo de personal autorizado. Los accesos y acciones quedan registrados
+                conforme a la normativa de prevención de lavado de dinero y financiamiento del terrorismo.
             </div>
         """, unsafe_allow_html=True)
 
@@ -448,184 +450,90 @@ session_timeout_guard()
 # TEMA Y CONFIGURACIÓN VISUAL
 # ============================================================
 
-# --- Sidebar: Info de Licencia y Logout ---
-with st.sidebar:
-    st.markdown("---")
-    if st.session_state.authenticated and st.session_state.user_data:
-        lic = st.session_state.user_data
-        st.markdown(f"""
-        <div class='sidebar-card sidebar-license'>
-            <div class='sidebar-label'>Licencia Activa</div>
-            <div class='sidebar-primary'>{h(lic['name'])}</div>
-            <div class='sidebar-accent'>{h(lic['mail'])}</div>
-            <div class='sidebar-label sidebar-spaced'>Empresa</div>
-            <div class='sidebar-value'>{h(lic['empresa'])}</div>
-            <div class='sidebar-label sidebar-spaced'>Expira</div>
-            <div class='sidebar-value'>{h(lic['fecha_expiracion'])}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        if st.button("CERRAR SESIÓN", use_container_width=True):
-            _auditar("Sesión", auditoria.LOGOUT)
-            _logout_session()
-            st.session_state.clear_browser_session = True
-            st.rerun()
-    st.markdown("---")
-
 # Sistema de diseño (frontend/theme): tokens + styles.css, cargado una sola vez
 theme.cargar_estilos()
+
+
+@st.cache_data(show_spinner=False, max_entries=8, ttl=SESSION_TIMEOUT_SECONDS)
+def _leer_excel(contenido: bytes, nombre: str) -> pd.DataFrame:
+    """Lectura del Excel cacheada por contenido (evita releer en cada rerun, U-07)."""
+    return pd.read_excel(io.BytesIO(contenido), nrows=mod_sesion.MAX_FILAS + 1)
+
+
+def _estado_motor() -> tuple:
+    """Estado real del motor para el encabezado: datos cargados y API de autenticación disponible."""
+    datos_cargados = "data" in st.session_state
+    return datos_cargados, ("DATOS CARGADOS" if datos_cargados else "SIN DATOS CARGADOS")
+
 
 # ============================================================
 # HEADER SOVEREIGN
 # ============================================================
-st.markdown("""
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #30353d; padding-bottom: 15px;">
+_motor_on, _motor_texto = _estado_motor()
+st.markdown(f"""
+<div class="app-header">
     <div>
-        <h1 style="margin: 0; font-size: 32px; letter-spacing: -1px; font-weight: 300;">SOVEREIGN <span style="font-weight: 800; color: #f59e0b;">AML</span></h1>
-        <p style="margin: 0; color: #d8c3ad; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;">
-            <span class="pulse-dot"></span> ANALYTICAL INTELLIGENCE PLATFORM
-        </p>
+        <h1 class="app-title">SOVEREIGN <span>AML</span></h1>
+        <p class="app-subtitle">Plataforma de análisis para la prevención de LD/FT</p>
     </div>
-    <div style="text-align: right;">
-        <div style="color: #f59e0b; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1px; display:flex; align-items:center; justify-content:flex-end; gap:8px;">
-            <span style="width:10px; height:10px; border-radius:50%; background:radial-gradient(circle at 35% 35%, #86efac 0%, #22c55e 45%, #15803d 100%); box-shadow:0 0 0 3px rgba(34,197,94,0.15), 0 0 14px rgba(34,197,94,0.55); display:inline-block;"></span>
-            <span>IMPERATOR ENGINE ACTIVE</span>
-        </div>
-        <div style="color: #d8c3ad; font-family: 'IBM Plex Mono', monospace; font-size: 10px;">CORE VERSION v3.0.0</div>
+    <div class="app-header-right">
+        <div class="engine-status {h('on' if _motor_on else 'off')}"><span class="dot"></span><span>MOTOR IMPERATOR · {h(_motor_texto)}</span></div>
+        <div class="app-version">Versión 3.0.0 · Rol: {h(permisos.etiqueta_rol())}</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # ============================================================
-# SIDEBAR
+# SIDEBAR: licencia compacta, navegación agrupada, exportación
 # ============================================================
 with st.sidebar:
     st.markdown("<div class='sidebar-brand'>SOVEREIGN AML</div>", unsafe_allow_html=True)
-    st.markdown("<div class='sidebar-brand-subtitle'>Powered by IMPERATOR Intelligence</div>", unsafe_allow_html=True)
-    st.markdown("---")
-
-    st.markdown("<div class='sidebar-section-label'>AML Intelligence</div>", unsafe_allow_html=True)
-    st.markdown("<div class='sidebar-section-title'>Motor de Cumplimiento</div>", unsafe_allow_html=True)
-    st.markdown("""
-    <div class='sidebar-card'>
-        <div class='sidebar-card-title'>Monitoreo AML centralizado</div>
-        <div class='sidebar-body'>
-            Plataforma para analizar transacciones, priorizar alertas, perfilar clientes y documentar hallazgos de riesgo en un solo flujo operativo.
-        </div>
+    lic = st.session_state.user_data or {}
+    st.markdown(f"""
+    <div class='sidebar-card sidebar-license'>
+        <div class='sidebar-primary'>{h(lic.get('name', ''))}</div>
+        <div class='sidebar-accent'>{h(lic.get('mail', ''))}</div>
+        <div class='sidebar-value'>{h(lic.get('empresa', ''))} · {h(permisos.etiqueta_rol())}</div>
+        <div class='sidebar-value'>Licencia vigente hasta {h(lic.get('fecha_expiracion', ''))}</div>
     </div>
     """, unsafe_allow_html=True)
-    
-    st.markdown("---")
-    st.markdown("<div class='sidebar-section-label'>Parámetros Activos</div>", unsafe_allow_html=True)
-    
-    cfg = st.session_state.get("aml_config", None)
-    if cfg:
-        reglas_activas = sum([
-            int(cfg.get("regla_absoluto", False)),
-            int(cfg.get("regla_acumulado", False)),
-            int(cfg.get("regla_perfil", False)),
-            int(cfg.get("regla_frecuencia", False)),
-            int(cfg.get("regla_smurfing", False)),
-            int(cfg.get("regla_pico", False)),
-            int(cfg.get("regla_ubicacion", False)),
-        ])
-        st.markdown(f"""
-        <div class='sidebar-card'>
-            <div class='sidebar-params'>
-                Reglas activas: {h(reglas_activas)}/7<br>
-                Crítico ≥ score {h(cfg['score_critico'])}<br>
-                Alto ≥ score {h(cfg['score_alto'])}<br>
-                Medio ≥ score {h(cfg['score_medio'])}<br>
-                Umbral base: Q{h(format(cfg['umbral_absoluto'], ','))}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown("""
-        <div class='sidebar-card'>
-            <div class='sidebar-params' style='color:#f59e0b;'>
-                Usando valores por defecto.<br>Ir a Configuración para personalizar.
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+    if st.button("Cerrar sesión", use_container_width=True):
+        _auditar("Sesión", auditoria.LOGOUT)
+        _logout_session()
+        st.session_state.clear_browser_session = True
+        st.rerun()
 
     st.markdown("---")
-    st.markdown("<div class='sidebar-section-label'>Navegación</div>", unsafe_allow_html=True)
-    
-    if "nav_view" not in st.session_state:
-        st.session_state.nav_view = "Resumen Ejecutivo"
-
-    def set_nav():
-        if st.session_state.radio_main is not None:
-            st.session_state.nav_view = st.session_state.radio_main
-
-    main_ops = [
-        "Resumen Ejecutivo",
-        "Casos de Alerta",
-        "Transacciones",
-        "Análisis por Cliente",
-        "Matrices de Riesgo",
-        "Red Transaccional",
-        "Acciones de Mitigación",
-        "Imperator Diagnostics",
-        "Gestión de Ubicaciones",
-        "Riesgo Institucional LD/FT",
-        "Informes y Reportes",
-        "Configuración",
-        "Manual de Usuario"
-    ]
-
-    if st.session_state.nav_view == "IMPERATOR Diagnostics":
-        st.session_state.nav_view = "Imperator Diagnostics"
-
-    m_idx = main_ops.index(st.session_state.nav_view) if st.session_state.nav_view in main_ops else 0
-    st.radio("Vistas Analíticas", main_ops, key="radio_main", index=m_idx, on_change=set_nav, label_visibility="collapsed")
-    
+    vista = navegacion.render_sidebar_nav()
     st.markdown("---")
 
-    # ── Exportar sesión ────────────────────────────────────────────
+    # ── Exportar sesión: el .saml se genera solo al pulsar "Preparar exportación" (U-07)
     if "data_raw" in st.session_state and "data" in st.session_state:
-        nombre_saml = mod_sesion.nombre_archivo_saml(
-            st.session_state.get("archivo_nombre", "analisis")
-        )
-        bytes_saml = mod_sesion.exportar_sesion(
-            st.session_state["data_raw"],
-            st.session_state["aml_config"],
-            st.session_state.get("archivo_nombre", "analisis")
-        )
-        exportacion.boton_descarga(
-            label="Exportar sesión (.saml)",
-            data=bytes_saml,
-            file_name=nombre_saml,
-            mime="application/octet-stream",
-            use_container_width=True,
-            help="Descarga el análisis completo con datos y configuración para retomarlo después.",
-            modulo="Sesión",
-        )
-        st.markdown("""
-        <div style='font-size:12.5px; color:#8b949e; font-family:IBM Plex Mono,monospace;
-                    margin-top:8px; line-height:1.5; text-align:center;'>
-            Incluye transacciones + configuración usada.
-        </div>""", unsafe_allow_html=True)
+        st.markdown("<div class='sidebar-section-label'>Sesión de análisis</div>", unsafe_allow_html=True)
+        if permisos.puede("exportar_datos"):
+            if st.button("Preparar exportación (.saml)", use_container_width=True,
+                         help="Empaqueta transacciones y configuración para retomar el análisis después."):
+                st.session_state["saml_exportacion"] = (
+                    mod_sesion.nombre_archivo_saml(st.session_state.get("archivo_nombre", "analisis")),
+                    mod_sesion.exportar_sesion(
+                        st.session_state["data_raw"], st.session_state["aml_config"],
+                        st.session_state.get("archivo_nombre", "analisis"),
+                    ),
+                )
+            if st.session_state.get("saml_exportacion"):
+                nombre_saml, bytes_saml = st.session_state["saml_exportacion"]
+                exportacion.boton_descarga(
+                    label="Descargar sesión (.saml)", data=bytes_saml, file_name=nombre_saml,
+                    mime="application/octet-stream", use_container_width=True, modulo="Sesión",
+                )
+        else:
+            st.caption("Su rol no permite exportar datos.")
         st.markdown("---")
 
     st.markdown("""
-    <div class='sidebar-footer'>
-        v3.0 · Sovereign AML Intelligence
-    </div>
-    <div style="margin-top:8px; line-height:1.5;">
-        <span style="font-size:12.5px; font-weight:700; color:#d8c3ad; letter-spacing:0.2px;">
-            Ing. Hobéd Díaz
-        </span><br>
-        <span style="font-size:12.5px; font-weight:600; color:#a08e7a; text-transform:uppercase; letter-spacing:1.1px;">
-            Magíster Artium
-        </span><br>
-        <span style="font-size:12.5px; font-weight:700; color:#f59e0b;">M.A.F.I.</span>
-        <span style="font-size:12.5px; font-weight:400; color:#8b949e;"> · Análisis Forense Informático</span>
-    </div>
+    <div class='sidebar-footer'>Sovereign AML v3.0 · Ing. Hobéd Díaz, M.A., M.A.F.I.</div>
     """, unsafe_allow_html=True)
 
-vista = st.session_state.nav_view
 
 # ============================================================
 # CONFIGURACIÓN (Defaults)
@@ -645,7 +553,7 @@ if st.session_state.authenticated:
 # ============================================================
 # CARGA DE ARCHIVO
 # ============================================================
-if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones", "Red Transaccional", "Acciones de Mitigación", "Imperator Diagnostics", "Riesgo Institucional LD/FT"]:
+if vista not in navegacion.VISTAS_SIN_DATOS:
     data_ready = "data" in st.session_state
 
     if not data_ready or "archivo_nombre" not in st.session_state:
@@ -683,7 +591,7 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
             if archivo:
                 with st.spinner("Procesando inteligencia AML..."):
                     try:
-                        df_raw = pd.read_excel(archivo, nrows=mod_sesion.MAX_FILAS + 1)
+                        df_raw = _leer_excel(archivo.getvalue(), archivo.name)
                     except ValueError as exc:
                         st.error(f"No se pudo leer el archivo Excel: {exc}")
                         st.stop()
@@ -713,7 +621,7 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
         with tab_sesion:
             st.markdown("""
             <div style="background:#171c23; border-left:3px solid #f59e0b; padding:16px;
-                        font-size:14px; color:#a08e7a; margin-bottom:18px; font-family:'IBM Plex Mono',monospace;">
+                        font-size:14px; color:#b8a58e; margin-bottom:18px; font-family:'IBM Plex Mono',monospace;">
                 <strong style='color:#f0f6fc;'>Formato .saml</strong>: Sovereign AML Session File.<br>
                 Contiene las transacciones originales y la configuración usada en el análisis previo.
                 Al cargarlo, el motor reprocesa todo automáticamente restaurando el estado completo.
@@ -751,7 +659,7 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
                     st.error(f"Error al cargar la sesión: {e}")
             else:
                 st.markdown("""
-                <p style='color:#8b949e; font-size:14px; text-align:center;
+                <p style='color:#a7b0bb; font-size:14px; text-align:center;
                           font-family:"IBM Plex Mono",monospace; margin-top:24px;'>
                     Suba un archivo <strong style='color:#f59e0b;'>.saml</strong> generado
                     previamente desde Sovereign AML para retomar el análisis.
@@ -771,7 +679,7 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
                 filas     = meta.get("filas", "")
                 st.markdown(f"""
                 <div style="background:#171c23; border-left:3px solid #f59e0b; padding:12px 16px;
-                            font-family:'IBM Plex Mono',monospace; font-size:12px; color:#a08e7a;">
+                            font-family:'IBM Plex Mono',monospace; font-size:12px; color:#b8a58e;">
                     <span style="color:#f59e0b; font-weight:700;">SESIÓN RESTAURADA</span>
                     &nbsp;·&nbsp; {h(nombre)}
                     &nbsp;·&nbsp; {h(filas)} registros
@@ -857,17 +765,7 @@ elif vista == "Manual de Usuario":
 # ============================================================
 st.markdown("""
 <div class="footer">
-    SOVEREIGN AML Intelligence Platform v3.0 &nbsp;·&nbsp; Sovereign Intelligence Framework
-    <div style="margin-top:10px; line-height:1.6;">
-        <span style="font-size:12px; font-weight:700; color:#f0f6fc; letter-spacing:0.2px;">
-            Diseñado por el Ing. Hobéd Díaz
-        </span><br>
-        <span style="font-size:12px; font-weight:600; color:#8b949e; text-transform:uppercase; letter-spacing:1.2px;">
-            Magíster Artium
-        </span>
-        &nbsp;·&nbsp;
-        <span style="font-size:12px; font-weight:700; color:#f59e0b;">M.A.F.I.</span>
-        <span style="font-size:12px; font-weight:400; color:#8b949e;"> Análisis Forense Informático</span>
-    </div>
+    Sovereign AML v3.0 &nbsp;·&nbsp; Plataforma de análisis para la prevención de LD/FT
+    &nbsp;·&nbsp; Diseñado por el Ing. Hobéd Díaz, M.A., M.A.F.I. (Análisis Forense Informático)
 </div>
 """, unsafe_allow_html=True)

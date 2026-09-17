@@ -200,7 +200,7 @@ div.stDownloadButton > button:hover {
 
 .metric-label {
     color: var(--sv-texto-terciario); /* on_surface_variant */
-    font-size: 11px;
+    font-size: var(--sv-font-minima);
     text-transform: uppercase;
     letter-spacing: 1.5px;
     margin-bottom: 4px;
@@ -436,7 +436,7 @@ div.stDownloadButton > button:hover {
     text-align: left;
     padding: 12px 16px;
     text-transform: uppercase;
-    font-size: 11px;
+    font-size: var(--sv-font-minima);
     letter-spacing: 1.5px;
     font-family: 'IBM Plex Mono', monospace;
 }
@@ -455,7 +455,7 @@ div.stDownloadButton > button:hover {
     text-align: center;
     color: var(--sv-texto-terciario);
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
+    font-size: var(--sv-font-minima);
 }
 
 /* ---- FIX NAVEGACIÓN RADIO BUTTON TEXT ---- */
@@ -658,3 +658,47 @@ div[data-testid="stFileUploader"] section button {
 
 .metric-card.compact { margin-top: 8px; }
 .metric-card.compact .metric-number { font-size: 22px; }
+
+/* ---- ENCABEZADO DE LA APLICACIÓN ---- */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid var(--sv-borde);
+    padding-bottom: 15px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.app-title {
+    margin: 0;
+    font-size: var(--sv-font-titulo);
+    letter-spacing: -1px;
+    font-weight: 300;
+    color: var(--sv-texto-fuerte);
+}
+
+.app-title span { font-weight: 800; color: var(--sv-acento); }
+
+.app-subtitle {
+    margin: 0;
+    color: var(--sv-texto-terciario);
+    font-family: var(--sv-font-mono);
+    font-size: var(--sv-font-minima);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.app-header-right { text-align: right; }
+
+.app-version {
+    color: var(--sv-texto-terciario);
+    font-family: var(--sv-font-mono);
+    font-size: var(--sv-font-minima);
+    margin-top: 4px;
+}
+
+/* Radios de navegación agrupada */
+[data-testid="stSidebar"] [data-testid="stRadio"] { margin-bottom: 6px; }
+[data-testid="stSidebar"] [data-testid="stRadio"] label { font-size: 13px; }
