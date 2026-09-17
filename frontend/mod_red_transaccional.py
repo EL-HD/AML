@@ -222,10 +222,15 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    if cliente_foco != "Todos":
+        foco_html = (f"La red está centrada en <b>{h(cliente_foco)}</b> con profundidad de "
+                     f"<b>{h(profundidad)} hop(s)</b>.")
+    else:
+        foco_html = "Para una trazabilidad más exacta, conviene enfocar un cliente y bajar la profundidad a 1 o 2 hops."
     st.markdown(f"""
     <div class="info-box" style="margin-top:0;">
         <b>Vista aplicada:</b> se muestran hasta <b>{h(G.number_of_edges())}</b> relaciones agregadas por par origen-destino.
-        {h("La red está centrada en <b>" + cliente_foco + "</b> con profundidad de <b>" + str(profundidad) + " hop(s)</b>." if cliente_foco != "Todos" else "Para una trazabilidad más exacta, conviene enfocar un cliente y bajar la profundidad a 1 o 2 hops.")}
+        {foco_html}
     </div>
     """, unsafe_allow_html=True)
 
@@ -234,7 +239,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
     try:
         # Intentar layout spring con networkx
         pos = nx.spring_layout(G, seed=42, k=2.5)
-    except Exception:
+    except (ValueError, nx.NetworkXException):
         pos = _layout_circular(nodos)
 
     # ── Trazar aristas ─────────────────────────────────────────────────────
@@ -406,8 +411,8 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
                             })
                             if len(rutas) >= max_rutas:
                                 break
-                except Exception:
-                    pass
+                except (nx.NetworkXNoPath, nx.NodeNotFound):
+                    continue
 
         if rutas:
             df_rutas = pd.DataFrame(rutas).drop_duplicates(subset=["Ruta"]).sort_values(["Saltos", "Score máx. en ruta"], ascending=[False, False])

@@ -92,6 +92,16 @@ class TestApiRbac(unittest.TestCase):
         r = self.client.get("/perfil", headers=self._auth(token_viejo))
         self.assertEqual(r.status_code, 401)
 
+    def test_jwt_incluye_claims_y_rechaza_otro_emisor(self):
+        import jwt as pyjwt
+        token, _ = self._token("admin1")
+        claims = pyjwt.decode(token, options={"verify_signature": False}, audience=auth_api.JWT_AUDIENCE)
+        for c in ("exp", "iat", "jti", "iss", "aud", "sub", "session_id"):
+            self.assertIn(c, claims)
+        claims["iss"] = "otro-emisor"
+        falso = pyjwt.encode(claims, auth_api.SECRET_KEY, algorithm="HS256")
+        self.assertEqual(self.client.get("/perfil", headers=self._auth(falso)).status_code, 401)
+
     def test_sin_token_401(self):
         self.assertEqual(self.client.get("/licencias/").status_code, 401)
 

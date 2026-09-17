@@ -9,6 +9,7 @@ from backend import models, schemas, crud, auditoria
 from backend.rate_limit import LimitadorIntentos, ip_cliente
 from backend.database import SessionLocal, engine, get_db
 import jwt
+import uuid
 from datetime import datetime, timedelta, timezone
 
 # Crear tablas si no existen
@@ -28,6 +29,8 @@ if not SECRET_KEY:
     )
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+JWT_ISSUER = os.getenv("JWT_ISSUER", "sovereign-aml-auth")
+JWT_AUDIENCE = os.getenv("JWT_AUDIENCE", "sovereign-aml-app")
 
 app = FastAPI(
     title="Sovereign AML Auth API",
@@ -97,10 +100,16 @@ def _autenticar(db: Session, request: Request, username: str, password: str, mai
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
+    """JWT con exp, iat, jti (identificador único), iss y aud (S-15)."""
     to_encode = data.copy()
-    # B1 fix: usar datetime.now(timezone.utc) en lugar del deprecated utcnow()
-    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=15))
-    to_encode.update({"exp": expire})
+    ahora = datetime.now(timezone.utc)
+    to_encode.update({
+        "exp": ahora + (expires_delta or timedelta(minutes=15)),
+        "iat": ahora,
+        "jti": uuid.uuid4().hex,
+        "iss": JWT_ISSUER,
+        "aud": JWT_AUDIENCE,
+    })
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
@@ -110,7 +119,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(
+            token, SECRET_KEY, algorithms=[ALGORITHM],
+            issuer=JWT_ISSUER, audience=JWT_AUDIENCE,
+            options={"require": ["exp", "iat", "jti", "iss", "aud", "sub"]},
+        )
         username: str = payload.get("sub")
         session_id: str = payload.get("session_id")
         if username is None or session_id is None:
