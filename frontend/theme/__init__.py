@@ -21,5 +21,8 @@ def _leer_css(nombre: str) -> str:
 def cargar_estilos(*archivos: str) -> None:
     """Inyecta :root con tokens y los archivos CSS indicados (por defecto styles.css)."""
     nombres = archivos or ("styles.css",)
-    css = css_variables() + "\n".join(_leer_css(n) for n in nombres)
-    st.markdown(f"<style>\n{css}\n</style>", unsafe_allow_html=True)
+    # Sufijo _html: contenido ya seguro por construcción (tokens estáticos de
+    # tokens.py + archivos .css del propio repo), no hay dato externo/usuario
+    # involucrado. Ver convención en frontend/ui_safe.py.
+    css_html = css_variables() + "\n".join(_leer_css(n) for n in nombres)
+    st.markdown(f"<style>\n{css_html}\n</style>", unsafe_allow_html=True)

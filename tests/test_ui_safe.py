@@ -11,7 +11,9 @@ import tests.conftest  # noqa: F401
 from frontend.ui_safe import attr_css_color, h, html_block
 
 RAIZ = Path(__file__).resolve().parent.parent
-ARCHIVOS = [RAIZ / "app.py"] + sorted((RAIZ / "frontend").glob("*.py"))
+# rglob (recursivo): glob("*.py") dejaba fuera frontend/theme/*.py sin que
+# ninguna prueba lo notara (bug de cobertura encontrado en la auditoría S-06).
+ARCHIVOS = [RAIZ / "app.py"] + sorted((RAIZ / "frontend").rglob("*.py"))
 
 # Heurística documentada: todo f-string que contenga etiquetas HTML (texto con
 # "<letra" o "</") debe interpolar sus valores mediante una llamada segura
@@ -64,6 +66,14 @@ class TestUiSafe(unittest.TestCase):
         tabla = render_html_table(pd.DataFrame({"Cliente": ["<script>alert(1)</script>"]}))
         self.assertNotIn("<script>alert(1)</script>", tabla)
         self.assertIn("&lt;script&gt;", tabla)
+
+    def test_kpi_card_escapa_valores_maliciosos(self):
+        from frontend.ui_components import kpi_card
+        salida = kpi_card("<b>label</b>", "<script>alert(1)</script>", sub="<img src=x onerror=alert(2)>")
+        self.assertNotIn("<script>alert(1)</script>", salida)
+        self.assertNotIn("<img src=x onerror=alert(2)>", salida)
+        self.assertIn("&lt;script&gt;", salida)
+        self.assertIn("&lt;img", salida)
 
     def test_no_hay_fstrings_html_sin_escapar(self):
         hallazgos = []

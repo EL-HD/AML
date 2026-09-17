@@ -18,6 +18,7 @@ _MATRIZ = {
     "gestionar_catalogos": {"admin", "oficial"},
     "gestionar_ubicaciones": {"admin", "oficial"},
     "editar_riesgo_ldft": {"admin", "oficial"},
+    "gestionar_alertas": {"admin", "oficial", "analista"},
     "exportar_datos": {"admin", "oficial", "analista"},
     "ver_configuracion": {"admin", "oficial", "analista", "auditor"},
 }
@@ -51,3 +52,15 @@ def aviso_solo_lectura(accion: str) -> None:
         f"Su rol ({etiqueta_rol()}) tiene acceso de solo lectura a esta sección. "
         "Solicite los cambios a un Oficial de Cumplimiento o Administrador."
     )
+
+
+def exigir_o_avisar(accion: str) -> bool:
+    """Devuelve si el rol puede `accion`; si no, muestra el aviso de solo lectura.
+
+    Punto único para el patrón "verificar permiso y avisar" repetido en varias
+    vistas (evita duplicar la pareja puede()/aviso_solo_lectura() en cada una).
+    """
+    permitido = puede(accion)
+    if not permitido:
+        aviso_solo_lectura(accion)
+    return permitido

@@ -74,8 +74,7 @@ def mostrar():
     if not licenciaid:
         st.error("No se pudo determinar la licencia activa. Vuelva a iniciar sesión.")
         return
-    if _solo_lectura():
-        permisos.aviso_solo_lectura("editar_riesgo_ldft")
+    permisos.exigir_o_avisar("editar_riesgo_ldft")
 
     db = SessionLocal()
     try:
@@ -473,7 +472,8 @@ def _tab_reportes(db, licenciaid):
     """, unsafe_allow_html=True)
 
     # Saneado anti-inyección de fórmulas centralizado en frontend.exportacion (S-09).
-    exportacion.boton_descarga(
-        "Descargar matriz (CSV)", data=exportacion.csv_bytes(df_factor),
-        file_name="matriz_riesgo_ldft.csv", mime="text/csv", modulo="Riesgo Institucional LD/FT",
-    )
+    if permisos.exigir_o_avisar("exportar_datos"):
+        exportacion.boton_descarga(
+            "Descargar matriz (CSV)", data=exportacion.csv_bytes(df_factor),
+            file_name="matriz_riesgo_ldft.csv", mime="text/csv", modulo="Riesgo Institucional LD/FT",
+        )

@@ -22,9 +22,7 @@ def mostrar():
         ["Huehuetenango", "San Marcos", "Izabal", "Petén", "Escuintla"]
     )
 
-    puede_editar = permisos.puede("gestionar_ubicaciones")
-    if not puede_editar:
-        permisos.aviso_solo_lectura("gestionar_ubicaciones")
+    puede_editar = permisos.exigir_o_avisar("gestionar_ubicaciones")
 
     col1, col2 = st.columns([2, 1])
     

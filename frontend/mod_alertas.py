@@ -2,7 +2,7 @@ import streamlit as st
 from datetime import datetime
 from frontend.mod_utils import render_html_table
 from frontend.ui_safe import h
-from frontend import ui_components
+from frontend import ui_components, permisos
 
 ESTADOS_ALERTA = [
     "Inusual_Pendiente",       # Detectado por IMPERATOR, sin examinar
@@ -113,14 +113,18 @@ def mostrar(casos):
         )
         if caso_idx is not None:
             with st.expander("Gestión del caso", expanded=False):
-                nuevo_estado = st.selectbox("Clasificar como", ESTADOS_ALERTA, key="nuevo_estado")
+                puede_clasificar = permisos.exigir_o_avisar("gestionar_alertas")
+                nuevo_estado = st.selectbox(
+                    "Clasificar como", ESTADOS_ALERTA, key="nuevo_estado", disabled=not puede_clasificar,
+                )
                 fundamento = st.text_area(
                     "Fundamento del examen (Art. 29 Ley 6593)",
                     value=str(casos_filtrados.at[caso_idx, "Fundamento_Examen"]),
                     key="fundamento_examen",
-                    help="Describe la base legal/económica que justifica o descarta la operación sospechosa."
+                    help="Describe la base legal/económica que justifica o descarta la operación sospechosa.",
+                    disabled=not puede_clasificar,
                 )
-                if st.button("Guardar clasificación", key="btn_clasificar"):
+                if st.button("Guardar clasificación", key="btn_clasificar", disabled=not puede_clasificar):
                     casos_filtrados.at[caso_idx, "Estado_Alerta"] = nuevo_estado
                     casos_filtrados.at[caso_idx, "Fundamento_Examen"] = fundamento
                     if nuevo_estado == "Sospechosa_Confirmada":

@@ -13,7 +13,7 @@ from reportlab.platypus import (
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
 import matplotlib
 from frontend.ui_safe import h
-from frontend import exportacion
+from frontend import exportacion, permisos
 from frontend import ui_components
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -1273,6 +1273,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         </div>
         """, unsafe_allow_html=True)
 
+        puede_exportar_ind = permisos.exigir_o_avisar("exportar_datos")
         col_sel1, col_sel2 = st.columns([3, 1])
         with col_sel1:
             cliente_pdf = st.selectbox(
@@ -1282,7 +1283,8 @@ def mostrar(df, casos, matriz_alertas, cfg):
             )
         with col_sel2:
             st.markdown("<br>", unsafe_allow_html=True)
-            generar_ind = st.button("Generar PDF", type="primary", use_container_width=True)
+            generar_ind = st.button("Generar PDF", type="primary", use_container_width=True,
+                                    disabled=not puede_exportar_ind)
 
         if cliente_pdf:
             info_prev = casos[casos["Cliente"] == cliente_pdf].iloc[0]
@@ -1365,8 +1367,10 @@ def mostrar(df, casos, matriz_alertas, cfg):
             """, unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
+        puede_exportar_gen = permisos.exigir_o_avisar("exportar_datos")
         generar_gen = st.button("Generar Informe Ejecutivo PDF",
-                                type="primary", use_container_width=False)
+                                type="primary", use_container_width=False,
+                                disabled=not puede_exportar_gen)
 
         if generar_gen:
             with st.spinner("Compilando informe ejecutivo general..."):
@@ -1398,6 +1402,7 @@ def mostrar(df, casos, matriz_alertas, cfg):
         </div>
         """, unsafe_allow_html=True)
 
+        puede_exportar_rts_rte = permisos.exigir_o_avisar("exportar_datos")
         sub_rts, sub_rte = st.tabs(["RTS: Sospechosa", "RTE: Efectivo"])
 
         with sub_rts:
@@ -1442,7 +1447,8 @@ def mostrar(df, casos, matriz_alertas, cfg):
                 with col_i2:
                     nit = st.text_input("NIT / Licencia de la institución", key="rts_nit")
 
-                if st.button("Generar PDF RTS: Identidad SOVEREIGN AML", type="primary", key="btn_rts"):
+                if st.button("Generar PDF RTS: Identidad SOVEREIGN AML", type="primary", key="btn_rts",
+                            disabled=not puede_exportar_rts_rte):
                     with st.spinner(f"Generando RTS para {caso_rts}..."):
                         try:
                             sujeto_info = {
@@ -1499,7 +1505,8 @@ def mostrar(df, casos, matriz_alertas, cfg):
                     with col_rte2:
                         oficial_rte = st.text_input("Oficial de Cumplimiento", key="rte_oficial")
 
-                    if st.button("Generar PDF RTE: Identidad SOVEREIGN AML", type="primary", key="btn_rte"):
+                    if st.button("Generar PDF RTE: Identidad SOVEREIGN AML", type="primary", key="btn_rte",
+                                disabled=not puede_exportar_rts_rte):
                         with st.spinner("Generando RTE..."):
                             try:
                                 sujeto_rte = {

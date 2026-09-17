@@ -88,9 +88,7 @@ def mostrar(_DEFAULTS):
     """, unsafe_allow_html=True)
 
     c = st.session_state["aml_config"].copy()
-    puede_editar = permisos.puede("configurar_parametros")
-    if not puede_editar:
-        permisos.aviso_solo_lectura("configurar_parametros")
+    puede_editar = permisos.exigir_o_avisar("configurar_parametros")
 
     # ── TABS de secciones ────────────────────────────────────────────────
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
