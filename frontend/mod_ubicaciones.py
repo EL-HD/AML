@@ -1,5 +1,6 @@
 import streamlit as st
-import pandas as pd
+
+from frontend import permisos
 
 def mostrar():
     st.markdown("""
@@ -19,6 +20,10 @@ def mostrar():
         ["Huehuetenango", "San Marcos", "Izabal", "Petén", "Escuintla"]
     )
 
+    puede_editar = permisos.puede("gestionar_ubicaciones")
+    if not puede_editar:
+        permisos.aviso_solo_lectura("gestionar_ubicaciones")
+
     col1, col2 = st.columns([2, 1])
     
     with col1:
@@ -26,7 +31,7 @@ def mostrar():
         nueva_ubic = st.text_input("Nombre de la ubicación (Departamento o Municipio):", placeholder="Ej. El Progreso")
         
         c_add, _ = st.columns([1, 2])
-        if c_add.button("Añadir a Vigilancia", type="primary", use_container_width=True):
+        if c_add.button("Añadir a Vigilancia", type="primary", use_container_width=True, disabled=not puede_editar):
             if nueva_ubic:
                 if nueva_ubic not in st.session_state["aml_config"]["ubicaciones_manuales"]:
                     st.session_state["aml_config"]["ubicaciones_manuales"].append(nueva_ubic)
@@ -50,7 +55,7 @@ def mostrar():
                         {loc}
                     </div>
                 """, unsafe_allow_html=True)
-                if c_del.button("🗑️", key=f"del_{i}"):
+                if c_del.button("Quitar", key=f"del_{i}", disabled=not puede_editar):
                     st.session_state["aml_config"]["ubicaciones_manuales"].pop(i)
                     st.rerun()
 

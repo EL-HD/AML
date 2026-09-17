@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import date as _date
 from backend import models
 from backend.database import SessionLocal
+from frontend import permisos
 from frontend.mod_utils import apply_dark_style, render_html_table
 
 # Catálogos globales del RTS disponibles para verificación (normativa IVE vigente).
@@ -75,6 +76,9 @@ def mostrar(_DEFAULTS):
     """, unsafe_allow_html=True)
 
     c = st.session_state["aml_config"].copy()
+    puede_editar = permisos.puede("configurar_parametros")
+    if not puede_editar:
+        permisos.aviso_solo_lectura("configurar_parametros")
 
     # ── TABS de secciones ────────────────────────────────────────────────
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
@@ -86,12 +90,13 @@ def mostrar(_DEFAULTS):
     ])
 
     # ── Botón Restablecer prominente arriba de los tabs ─────────────────
-    col_rst1, col_rst2, col_rst3 = st.columns([3, 2, 3])
-    with col_rst2:
-        if st.button("Restablecer configuración base", use_container_width=True):
-            st.session_state["aml_config"] = _DEFAULTS.copy()
-            st.success("✅ Todos los parámetros han sido restaurados a los valores por defecto.")
-            st.rerun()
+    if puede_editar:
+        col_rst1, col_rst2, col_rst3 = st.columns([3, 2, 3])
+        with col_rst2:
+            if st.button("Restablecer configuración base", use_container_width=True):
+                st.session_state["aml_config"] = _DEFAULTS.copy()
+                st.success("Todos los parámetros han sido restaurados a los valores por defecto.")
+                st.rerun()
     st.markdown("<br>", unsafe_allow_html=True)
 
 
@@ -692,7 +697,7 @@ def mostrar(_DEFAULTS):
     col_btn1, col_btn2, col_btn3 = st.columns([2, 2, 2])
 
     with col_btn1:
-        if st.button("Aplicar Configuración", type="primary", use_container_width=True):
+        if st.button("Aplicar Configuración", type="primary", use_container_width=True, disabled=not puede_editar):
             errores = []
             if c["score_medio"] >= c["score_alto"]:
                 errores.append("Score Medio debe ser menor que Score Alto.")
@@ -710,7 +715,7 @@ def mostrar(_DEFAULTS):
                 st.balloons()
 
     with col_btn2:
-        if st.button("Restablecer a valores base", use_container_width=True):
+        if st.button("Restablecer a valores base", use_container_width=True, disabled=not puede_editar):
             st.session_state["aml_config"] = _DEFAULTS.copy()
             st.success("Valores restaurados a los defaults.")
             st.rerun()
@@ -792,7 +797,8 @@ def mostrar(_DEFAULTS):
                     )
                 with col_btn:
                     etiqueta_boton = "Inactivar" if activo_actual else "Activar"
-                    if st.button(etiqueta_boton, key="btn_toggle_catalogo", use_container_width=True):
+                    if st.button(etiqueta_boton, key="btn_toggle_catalogo", use_container_width=True,
+                                 disabled=not permisos.puede("gestionar_catalogos")):
                         actualizado = _actualizar_estado_catalogo(
                             db, modelo_sel, codigo_sel, not activo_actual
                         )

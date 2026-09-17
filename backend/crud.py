@@ -65,17 +65,19 @@ def create_licencia(db: Session, licencia: schemas.LicenciaCreate):
         dias_vigencia=licencia.dias_vigencia,
         fecha_expiracion=licencia.fecha_expiracion,
         empresa=licencia.empresa,
-        password_hash=get_password_hash(licencia.password)
+        password_hash=get_password_hash(licencia.password),
+        rol=licencia.rol,
     )
     db.add(db_licencia)
     db.commit()
     db.refresh(db_licencia)
     return db_licencia
 
-def update_licencia(db: Session, licencia_id: int, licencia: schemas.LicenciaUpdate):
+def update_licencia(db: Session, licencia_id: int, licencia):
+    """Aplica solo los campos definidos en el esquema recibido (LicenciaUpdate o PerfilUpdate)."""
     db_licencia = db.query(models.Licencia).filter(models.Licencia.id == licencia_id).first()
     if db_licencia:
-        update_data = licencia.model_dump(exclude_unset=True)
+        update_data = licencia.model_dump(exclude_unset=True, exclude_none=True)
         for key, value in update_data.items():
             setattr(db_licencia, key, value)
         db.commit()

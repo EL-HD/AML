@@ -34,6 +34,12 @@ from backend import riesgo_ldft_logic as logic
 from backend import schemas
 from backend.database import SessionLocal
 from frontend.mod_utils import plotly_dark_layout, render_html_table
+from frontend import permisos
+
+
+def _solo_lectura() -> bool:
+    """True cuando el rol de la sesión no puede modificar el modelo de riesgo."""
+    return not permisos.puede("editar_riesgo_ldft")
 
 
 def _sesion_usuario():
@@ -80,6 +86,8 @@ def mostrar():
     if not licenciaid:
         st.error("No se pudo determinar la licencia activa. Vuelva a iniciar sesión.")
         return
+    if _solo_lectura():
+        permisos.aviso_solo_lectura("editar_riesgo_ldft")
 
     db = SessionLocal()
     try:
@@ -112,7 +120,7 @@ def _tab_segmentacion(db, licenciaid, username):
         factor = col1.selectbox("Factor", logic.FACTORES_LDFT)
         segmento = col2.text_input("Segmento", placeholder="Ej. Individual")
         variable = col3.text_input("Variable", placeholder="Ej. PEP")
-        enviado = st.form_submit_button("Agregar segmento", type="primary")
+        enviado = st.form_submit_button("Agregar segmento", type="primary", disabled=_solo_lectura())
         if enviado:
             try:
                 data = schemas.RiesgoSegmentoCreate(factor=factor, segmento=segmento, variable=variable)
@@ -139,7 +147,7 @@ def _tab_segmentacion(db, licenciaid, username):
     with st.expander("Eliminar segmento"):
         opciones = {f"{s.factor} · {s.segmento} · {s.variable}": s.id for s in segmentos}
         sel = st.selectbox("Seleccione el segmento a eliminar", list(opciones.keys()), key="del_seg_sel")
-        if st.button("Eliminar segmento seleccionado", key="btn_del_seg"):
+        if st.button("Eliminar segmento seleccionado", key="btn_del_seg", disabled=_solo_lectura()):
             if crud.eliminar_segmento(db, licenciaid, opciones[sel]):
                 st.success("Segmento eliminado.")
                 st.rerun()
@@ -171,7 +179,7 @@ def _tab_eventos(db, licenciaid, username):
         r_rep = col_r.selectbox("Reputacional", [1, 2, 3, 4], key="ev_rrep")
         r_con = col_c.selectbox("Contagio", [1, 2, 3, 4], key="ev_rcon")
 
-        enviado = st.form_submit_button("Crear evento", type="primary")
+        enviado = st.form_submit_button("Crear evento", type="primary", disabled=_solo_lectura())
         if enviado:
             try:
                 data = schemas.RiesgoEventoCreate(
@@ -226,7 +234,7 @@ def _tab_eventos(db, licenciaid, username):
                     "Controles vinculados", list(opciones_control.keys()),
                     default=default_labels, key=f"ctrl_ev_{e.id}",
                 )
-                if st.button("Guardar vínculos de controles", key=f"btn_vinc_{e.id}"):
+                if st.button("Guardar vínculos de controles", key=f"btn_vinc_{e.id}", disabled=_solo_lectura()):
                     seleccionados_ids = {opciones_control[n] for n in sel_control}
                     for cid in seleccionados_ids - ids_vinculados:
                         crud.vincular_control(db, licenciaid, e.id, cid)
@@ -237,7 +245,7 @@ def _tab_eventos(db, licenciaid, username):
             else:
                 st.info("Registre controles en la pestaña 'Controles' para poder vincularlos a este evento.")
 
-            if st.button("Eliminar evento", key=f"del_ev_{e.id}"):
+            if st.button("Eliminar evento", key=f"del_ev_{e.id}", disabled=_solo_lectura()):
                 crud.eliminar_evento(db, licenciaid, e.id)
                 st.success("Evento eliminado.")
                 st.rerun()
@@ -262,7 +270,7 @@ def _tab_controles(db, licenciaid, username):
         responsable_evaluacion = col7.text_input("Responsable de la evaluación", placeholder="Ej. Auditoría Interna")
         fecha_evaluacion = col8.date_input("Fecha de la evaluación", value=None)
 
-        enviado = st.form_submit_button("Crear control", type="primary")
+        enviado = st.form_submit_button("Crear control", type="primary", disabled=_solo_lectura())
         if enviado:
             try:
                 data = schemas.RiesgoControlCreate(
@@ -297,7 +305,7 @@ def _tab_controles(db, licenciaid, username):
     with st.expander("Eliminar control"):
         opciones = {f"{c.nombre} ({str(c.id)[:8]})": c.id for c in controles}
         sel = st.selectbox("Seleccione el control a eliminar", list(opciones.keys()), key="del_ctrl_sel")
-        if st.button("Eliminar control seleccionado", key="btn_del_ctrl"):
+        if st.button("Eliminar control seleccionado", key="btn_del_ctrl", disabled=_solo_lectura()):
             crud.eliminar_control(db, licenciaid, opciones[sel])
             st.success("Control eliminado. Los eventos vinculados fueron recalculados.")
             st.rerun()
@@ -329,7 +337,7 @@ def _tab_planes(db, licenciaid, username):
             col3, col4 = st.columns(2)
             fecha_inicio = col3.date_input("Fecha de inicio", value=_date.today())
             fecha_fin = col4.date_input("Fecha de finalización", value=_date.today())
-            enviado = st.form_submit_button("Crear plan de acción", type="primary")
+            enviado = st.form_submit_button("Crear plan de acción", type="primary", disabled=_solo_lectura())
             if enviado:
                 try:
                     data = schemas.RiesgoPlanAccionCreate(
@@ -365,7 +373,7 @@ def _tab_planes(db, licenciaid, username):
                 f"Fin: {p.fecha_fin.strftime('%d/%m/%Y')}"
             )
             nuevo_avance = st.slider("Porcentaje de avance", 0, 100, value=p.porcentaje_avance, key=f"avance_{p.id}")
-            if st.button("Actualizar avance", key=f"btn_avance_{p.id}"):
+            if st.button("Actualizar avance", key=f"btn_avance_{p.id}", disabled=_solo_lectura()):
                 crud.actualizar_avance_plan(db, licenciaid, p.id, nuevo_avance)
                 st.success("Avance actualizado.")
                 st.rerun()

@@ -18,6 +18,7 @@ class Licencia(Base):
     fecha_expiracion = Column("fechaexpiracion", Date, nullable=False)
     empresa = Column("empresa", String(150), nullable=False)
     password_hash = Column("passwordhash", String, nullable=False)
+    rol = Column("rol", String(20), nullable=False, default="analista", server_default="analista")
 
 class BitacoraSesions(Base):
     __tablename__ = "BitacoraSesions"

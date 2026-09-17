@@ -93,6 +93,24 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         raise credentials_exception
     return user
 
+def require_role(*roles: str):
+    """Dependencia FastAPI: exige que el usuario autenticado tenga uno de los roles indicados."""
+    roles_permitidos = frozenset(roles)
+
+    async def _verificar(current_user: models.Licencia = Depends(get_current_user)) -> models.Licencia:
+        if getattr(current_user, "rol", None) not in roles_permitidos:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tiene permisos para realizar esta operación.",
+            )
+        return current_user
+
+    return _verificar
+
+
+solo_admin = require_role("admin")
+
+
 @app.middleware("http")
 async def log_requests(request, call_next):
     try:
@@ -121,41 +139,51 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
 # --- Endpoints de Licencias ---
 
 @app.post("/licencias/", response_model=schemas.Licencia, status_code=status.HTTP_201_CREATED)
-def create_licencia(licencia: schemas.LicenciaCreate, db: Session = Depends(get_db), current_user: models.Licencia = Depends(get_current_user)):
+def create_licencia(licencia: schemas.LicenciaCreate, db: Session = Depends(get_db), current_user: models.Licencia = Depends(solo_admin)):
     db_licencia = crud.get_licencia_by_mail(db, mail=licencia.mail)
     if db_licencia:
         raise HTTPException(status_code=400, detail="El correo ya está registrado con una licencia.")
     return crud.create_licencia(db=db, licencia=licencia)
 
 @app.get("/licencias/", response_model=List[schemas.Licencia])
-def read_licencias(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user: models.Licencia = Depends(get_current_user)):
+def read_licencias(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user: models.Licencia = Depends(solo_admin)):
     return crud.get_licencias(db, skip=skip, limit=limit)
 
 @app.get("/licencias/{mail}", response_model=schemas.Licencia)
-def read_licencia(mail: str, db: Session = Depends(get_db), current_user: models.Licencia = Depends(get_current_user)):
+def read_licencia(mail: str, db: Session = Depends(get_db), current_user: models.Licencia = Depends(solo_admin)):
     db_licencia = crud.get_licencia_by_mail(db, mail=mail)
     if db_licencia is None:
         raise HTTPException(status_code=404, detail="Licencia no encontrada.")
     return db_licencia
 
 @app.put("/licencias/{licencia_id}", response_model=schemas.Licencia)
-def update_licencia(licencia_id: int, licencia: schemas.LicenciaUpdate, db: Session = Depends(get_db), current_user: models.Licencia = Depends(get_current_user)):
+def update_licencia(licencia_id: int, licencia: schemas.LicenciaUpdate, db: Session = Depends(get_db), current_user: models.Licencia = Depends(solo_admin)):
     db_licencia = crud.update_licencia(db, licencia_id=licencia_id, licencia=licencia)
     if db_licencia is None:
         raise HTTPException(status_code=404, detail="Licencia no encontrada.")
     return db_licencia
 
 @app.delete("/licencias/{licencia_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_licencia(licencia_id: int, db: Session = Depends(get_db), current_user: models.Licencia = Depends(get_current_user)):
+def delete_licencia(licencia_id: int, db: Session = Depends(get_db), current_user: models.Licencia = Depends(solo_admin)):
     success = crud.delete_licencia(db, licencia_id=licencia_id)
     if not success:
         raise HTTPException(status_code=404, detail="Licencia no encontrada.")
     return None
 
+# --- Perfil propio (cualquier rol autenticado; campos restringidos) ---
+
+@app.get("/perfil", response_model=schemas.Licencia)
+def read_perfil(current_user: models.Licencia = Depends(get_current_user)):
+    return current_user
+
+@app.put("/perfil", response_model=schemas.Licencia)
+def update_perfil(perfil: schemas.PerfilUpdate, db: Session = Depends(get_db), current_user: models.Licencia = Depends(get_current_user)):
+    return crud.update_licencia(db, licencia_id=current_user.id, licencia=perfil)
+
 # --- Endpoints de Usuarios ---
 
 @app.get("/usuarios/", response_model=List[schemas.Licencia])
-def search_users(q: str, db: Session = Depends(get_db), current_user: models.Licencia = Depends(get_current_user)):
+def search_users(q: str, db: Session = Depends(get_db), current_user: models.Licencia = Depends(solo_admin)):
     return crud.search_users(db, query=q)
 
 # --- Endpoint de Autenticación ---
