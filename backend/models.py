@@ -485,3 +485,31 @@ def _decision_sin_update(mapper, connection, target):  # noqa: ARG001
 @event.listens_for(ScreeningDecision, "before_delete")
 def _decision_sin_delete(mapper, connection, target):  # noqa: ARG001
     raise HistorialInmutableError("ScreeningDecisiones es append-only: no se permite borrar.")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MFA TOTP (T6 Fase 2, OWASP A07): un registro por licencia (usuario).
+# El secreto se guarda cifrado con Fernet (MFA_ENCRYPTION_KEY); los códigos de
+# recuperación solo como hashes PBKDF2 (backend/totp.py). La lógica vive en
+# backend/mfa.py; migración: migrations/007_mfa.sql.
+# ═══════════════════════════════════════════════════════════════════════════
+
+class MfaUsuario(Base):
+    __tablename__ = "MfaUsuarios"
+    __table_args__ = (
+        UniqueConstraint("licenciaid", name="uq_mfa_licencia"),
+        {"schema": "public"},
+    )
+
+    id                   = Column("id",                   UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    licenciaid           = Column("licenciaid",           UUID(as_uuid=True), nullable=False)
+    usuario              = Column("usuario",              String(100), nullable=False)
+    secreto_cifrado      = Column("secreto_cifrado",      Text,        nullable=False)
+    activo               = Column("activo",               Boolean,     nullable=False, default=False)
+    enrolado_en          = Column("enrolado_en",          DateTime,    nullable=True)
+    ultimo_contador      = Column("ultimo_contador",      BigInteger,  nullable=False, default=0)
+    codigos_recuperacion = Column("codigos_recuperacion", Text,        nullable=False, default="[]")
+    codigos_restantes    = Column("codigos_restantes",    Integer,     nullable=False, default=0)
+    sesion_mfa           = Column("sesion_mfa",           UUID(as_uuid=True), nullable=True)
+    creado_en            = Column("creado_en",            DateTime,    nullable=False, default=ahora_utc)
+    actualizado_en       = Column("actualizado_en",       DateTime,    nullable=False, default=ahora_utc, onupdate=ahora_utc)

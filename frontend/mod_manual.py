@@ -114,6 +114,13 @@ def mostrar():
     * **Registros pre-cadena:** los eventos anteriores a la activación de la cadena no tienen hash; se cuentan de forma informativa y quedan protegidos contra cambios desde ese momento.
     * **Exportar reporte:** CSV con el resumen y el estado de cada eslabón (saneado contra fórmulas). Se recomienda conservar el último hash de cada verificación para compararlo en la siguiente.
 
+    ## 5.5. Segundo factor de autenticación (MFA TOTP, RFC 6238)
+    Vista **Administración > Seguridad de la Cuenta**. El segundo factor usa códigos temporales de 6 dígitos generados por una aplicación autenticadora (Google Authenticator, Microsoft Authenticator, Authy, 1Password). Es **obligatorio para Administradores y Oficiales de Cumplimiento** cuando el servidor tiene activa la política `MFA_ENFORCE`: hasta completar el enrolamiento solo se muestra esa pantalla.
+    * **Enrolar:** pulse **Iniciar enrolamiento**, escanee el código QR (o ingrese la clave en bloques manualmente) y confirme con el código vigente del autenticador. El MFA solo se activa tras confirmar.
+    * **Códigos de recuperación:** al activar se muestran **una sola vez** diez códigos de un solo uso; guárdelos fuera del dispositivo. Sirven para entrar si pierde el teléfono.
+    * **Inicio de sesión:** tras la contraseña se pide el código del autenticador o uno de recuperación; cada código sirve una sola vez y hay límite de intentos.
+    * **Cambio de dispositivo:** restablezca su MFA con un código válido y vuelva a enrolar. Si perdió el dispositivo y los códigos, un **Administrador** puede restablecer el MFA de otro usuario (nunca el propio sin código); la acción queda en la bitácora de ambos.
+
     ## 6. Acciones de Mitigación (RBA / GAFI / ISO 31000)
     El sistema asigna automáticamente acciones proporcionales al nivel de alerta:
     * **Preventivas (P):** Bloqueo temporal (P-01), Rechazo de operación (P-02), Limitación de montos (P-03).

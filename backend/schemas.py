@@ -68,6 +68,43 @@ class AuthResponse(BaseModel):
     licencia: Optional[Licencia] = None
     access_token: Optional[str] = None
     session_id: Optional[str] = None
+    # MFA (T6): si mfa_requerido, solo se entrega mfa_token (5 min, un solo uso) para
+    # canjearlo en /auth/mfa/verificar; licencia, access_token y session_id vienen vacíos.
+    mfa_requerido: bool = False
+    mfa_token: Optional[str] = None
+    # Política MFA_ENFORCE: el usuario entró pero debe enrolar antes de usar el sistema.
+    mfa_enrolamiento_pendiente: bool = False
+
+
+class MfaVerificarRequest(BaseModel):
+    mfa_token: str = Field(..., min_length=20, max_length=2048)
+    codigo: str = Field(..., min_length=6, max_length=16)
+
+
+class MfaCodigoRequest(BaseModel):
+    codigo: str = Field(..., min_length=6, max_length=16)
+
+
+class MfaEstado(BaseModel):
+    disponible: bool
+    activo: bool
+    obligatorio: bool
+    enrolamiento_pendiente: bool
+    codigos_restantes: int = 0
+    enrolado_en: Optional[str] = None
+
+
+class MfaEnrolamiento(BaseModel):
+    secreto: str
+    secreto_bloques: str
+    uri: str
+    emisor: str
+    cuenta: str
+
+
+class MfaCodigosRecuperacion(BaseModel):
+    codigos_recuperacion: list[str]
+    mensaje: str
 
 class Token(BaseModel):
     access_token: str

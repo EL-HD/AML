@@ -21,7 +21,7 @@ GRUPOS: Dict[str, List[str]] = {
         "Gestión de Ubicaciones", "Acciones de Mitigación",
     ],
     "Reportería": ["Informes y Reportes"],
-    "Administración": ["Configuración", "Integridad de Bitácora", "Manual de Usuario"],
+    "Administración": ["Configuración", "Integridad de Bitácora", "Seguridad de la Cuenta", "Manual de Usuario"],
 }
 
 VISTA_POR_DEFECTO = "Resumen Ejecutivo"
@@ -30,6 +30,7 @@ VISTA_POR_DEFECTO = "Resumen Ejecutivo"
 VISTAS_SIN_DATOS = {
     "Configuración", "Manual de Usuario", "Gestión de Ubicaciones",
     "Riesgo Institucional LD/FT", "Listas de Sanciones", "Integridad de Bitácora",
+    "Seguridad de la Cuenta",
 }
 
 _ALIAS = {"IMPERATOR Diagnostics": "Imperator Diagnostics"}

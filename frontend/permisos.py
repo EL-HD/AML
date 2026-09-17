@@ -27,6 +27,7 @@ _MATRIZ = {
     "exportar_datos": {"admin", "oficial", "analista"},
     "ver_configuracion": {"admin", "oficial", "analista", "auditor"},
     "verificar_bitacora": {"admin", "auditor"},
+    "restablecer_mfa_usuarios": {"admin"},
 }
 
 ETIQUETAS = {
