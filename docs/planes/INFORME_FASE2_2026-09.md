@@ -84,3 +84,53 @@ Ninguna en producción. En CI solo valores ficticios definidos en el propio work
 ### Pendientes y motivo
 - `bandit` y `pip-audit` no pudieron ejecutarse localmente (PyPI bloqueado en ambos entornos); la primera corrida en GitHub puede revelar hallazgos. Opciones si ocurre: corregir el código (preferible), o añadir `# nosec Bxxx` con justificación puntual; para `pip-audit`, actualizar la versión afectada en `requirements.txt` o, si no existe parche, `--ignore-vuln <id>` documentado.
 - Fijación a SHA de commit: pendiente hasta el primer PR de Dependabot (ver Decisiones).
+
+---
+
+## T3 Screening de listas de sanciones (GAFI R.6 / R.7)
+
+**Estado:** HECHO · **Fecha:** 17/09/2026 · **Commit:** `dc66328` (código) y el commit de este informe.
+
+### Qué se hizo
+- **Motor puro** (`backend/screening.py`, sin Streamlit ni base de datos):
+  - Normalización: NFKD sin acentos, minúsculas, puntuación a espacio, tokens ordenados, eliminación de formas jurídicas y partículas (S.A., LTD, de, la...) y de siglas de una letra, salvo que no quede ningún token.
+  - Jaro-Winkler implementado con biblioteca estándar (p = 0.1, prefijo máximo 4) y verificado contra valores de referencia (MARTHA/MARHTA 0.9611, DWAYNE/DUANE 0.8400, DIXON/DICKSONX 0.8133).
+  - Puntaje = máximo entre Jaro-Winkler del nombre completo normalizado y una similitud por tokens (promedio del mejor Jaro-Winkler por token, atenuado por la diferencia de cantidad de tokens: 0.8 + 0.2 × corto/largo). Umbral configurable entre 0.70 y 1.00, por defecto **0.88**. Resultado explicable: fuente, referencia, nombre de la entrada, alias coincidente, puntaje y motivo ("Coincidencia exacta del nombre normalizado", "Jaro-Winkler 0.914 sobre el nombre completo", "Similitud por tokens 0.900 (tokens comunes: juan, perez)").
+  - `IndiceScreening`: índice invertido por token y por prefijo de 3 caracteres sobre nombres y alias; cada consulta solo se compara contra los candidatos que comparten token o prefijo.
+  - Parsers con validación de filas: OFAC SDN (`sdn.csv` de 12 columnas y `alt.csv` de 5, sin encabezado, `-0-` como nulo, alias `aka/fka/nka`, filas inválidas o duplicadas contadas como rechazadas) y ONU consolidada (XML: `INDIVIDUAL`/`ENTITY`, `DATAID`, nombres `FIRST_NAME..FOURTH_NAME`, `UN_LIST_TYPE`, `NATIONALITY`, alias separados por `;`).
+  - Endurecimiento XML: tamaño máximo 50 MB y rechazo de cualquier `<!DOCTYPE` o `<!ENTITY` (XXE y "billion laughs") **antes** de llamar a `xml.etree`. Los `# nosec` puntuales (B405/B314) quedan justificados en el código.
+  - Descarga oficial opcional: solo desde las constantes `URL_OFAC_SDN`, `URL_OFAC_ALT` y `URL_ONU_CONSOLIDADA` (hosts `www.treasury.gov` y `scsanctions.un.org`), HTTPS, `allow_redirects=False`, timeout 60 s, lectura por trozos con corte al superar 50 MB. Desactivada por defecto; se habilita con `SCREENING_AUTO_DOWNLOAD=true`. Nunca se acepta una URL del usuario (anti SSRF). El contenedor de pruebas no tiene red: la ruta real no se ejercita; se prueba con un doble de `requests.get`.
+- **Persistencia** (`migrations/005_screening.sql`, `backend/models.py`, `backend/screening_repo.py`):
+  - `ListasSancion` (global): fuente (CHECK `OFAC_SDN`/`ONU`), versión, archivo, `hash_sha256`, cantidad de entradas, filas rechazadas, origen (`carga_manual`/`descarga_oficial`), activa, quién y cuándo. Solo una versión activa por fuente; una versión con el mismo SHA-256 activo se rechaza.
+  - `ListasSancionEntradas` (global): referencia, nombre, nombre normalizado, tipo, programa, nacionalidad y alias en JSON. Inserción por lotes de 2000.
+  - `ScreeningCoincidencias` (por `licenciaid`): cliente, origen (`Cliente`/`Cliente_Destino`), `hash_lote`, lista, entrada, fuente, referencia, nombre de lista, alias, puntaje, motivo, estado (CHECK `Pendiente`/`Descartada`/`Confirmada`), fundamento, revisor, fecha, `caso_id`. `UNIQUE (licenciaid, cliente_normalizado, entrada_id)`: repetir el screening no duplica ni pisa decisiones.
+  - `ScreeningDecisiones` (por `licenciaid`): historial append-only de cada decisión (trigger PostgreSQL y listeners ORM que rechazan UPDATE/DELETE, misma función `fn_casos_alerta_inmutable` de la migración 004).
+  - Decisión (`decidir`): solo admin/oficial; fundamento obligatorio (10 a 4000 caracteres); `Descartada` o `Confirmada`; al confirmar un cliente del lote se obtiene o crea su Caso de Alerta (T1) y se guarda `caso_id`; para contrapartes (`Cliente_Destino`) queda la señal sin caso. Cada decisión registra `DECISION_SCREENING:<anterior>-><nuevo>` en `BitacoraAuditoria`; la carga registra `CARGA_LISTA_SANCION:<fuente>:<n>` y la ejecución `EJECUCION_SCREENING:<nuevas>`.
+  - Índice cacheado por proceso mientras no cambie el conjunto de listas activas (se invalida en cada carga).
+- **Permisos** (`frontend/permisos.py`): `cargar_listas_sancion` (admin), `gestionar_screening` (admin, oficial), `ver_screening` (todos). La autoridad real está en `screening_repo` (`ROLES_CARGA`, `ROLES_REVISION`).
+- **UI** (`frontend/mod_screening.py`, `frontend/navegacion.py`, `app.py`, `frontend/mod_cliente.py`):
+  - Vista **Investigación > Listas de Sanciones** (no requiere análisis cargado) con tres pestañas: listas cargadas y carga (extensión, tamaño y contenido validados; panel de descarga oficial visible solo si la variable está activa), ejecución sobre `Cliente` y `Cliente_Destino` del análisis con umbral ajustable, y bandeja con KPIs, tabla, detalle explicable, historial y formulario de decisión. Analista y auditor ven todo en solo lectura (`exigir_o_avisar`).
+  - `app.py` añade la columna `Screening_Sanciones` al DataFrame de casos en cada ejecución (`marcar_casos`, señales cacheadas en sesión y refrescadas tras ejecutar o decidir).
+  - Ficha del cliente: insignia "Screening de sanciones: Pendiente/Confirmada (n)" o "Sin coincidencias en listas de sanciones" y resumen de coincidencias.
+  - Todo valor dinámico pasa por `ui_safe.h`, `html_block` o `render_html_table`; se reutilizan `page_header`, `kpi`, `info_panel`, `status_badge`, `empty_state`.
+- Manual de usuario (sección 5.3) y README (variable nueva) actualizados.
+
+### Evidencia (contenedor cloud, Python 3.11, PostgreSQL 16)
+- `python3 -m unittest discover -s tests`: **121 pruebas en verde** (89 previas + 32 nuevas en `tests/test_screening.py`): normalización; Jaro-Winkler contra valores conocidos; índice por token/prefijo y mejor variante por entrada; parsers OFAC y ONU con fixtures ficticios (alias, tipos, nacionalidad, filas rechazadas); rechazo XXE/DOCTYPE, XML mal formado, vacío, tamaño y extensión; descarga desactivada por defecto, solo URLs fijas HTTPS, sin redirecciones y con límite; solo admin carga; versión/hash/cantidad y desactivación de la anterior; auditoría de carga; solo admin/oficial ejecuta; coincidencias explicables e idempotencia; aislamiento por tenant (otra licencia no lista, no obtiene, no decide ni ve historial); fundamento obligatorio y roles (analista y auditor no deciden); confirmación vincula caso y audita; historial append-only; señal en el DataFrame.
+- Rendimiento con datos sintéticos: 15.000 entradas con 2 alias cada una (45.000 variantes): construcción del índice 0.43 s; 250 consultas 0.45 s (unas 550 consultas/s). En la prueba de humo real: 130 nombres del Excel de ejemplo en 0.009 s.
+- Prueba de humo (`apptest_smoke.py` y un guion extendido con `AppTest`): vistas "Listas de Sanciones" (admin y auditor), "Análisis por Cliente", "Casos de Alerta", "Resumen Ejecutivo", "Manual de Usuario" y sin datos: 0 excepciones y sin XSS. Flujo completo en la UI: carga de lista ficticia, clic en "Ejecutar screening" (4 coincidencias), decisión "Confirmada" con fundamento y verificación de `caso_id` vinculado; el auditor ve el aviso de solo lectura.
+- Migración validada con `psql`: (a) DDL del ORM + `001` a `005` dos veces seguidas sin error y sin índices duplicados (14 índices esperados en las cuatro tablas); (b) `001`, `004` y `005` dos veces sin ORM. Con datos de prueba, el trigger rechazó `UPDATE` y `DELETE` en `ScreeningDecisiones` y el CHECK rechazó un estado inválido.
+- Duplicación: 10.270 líneas, 180 duplicadas, **1.75 %** (umbral 10 %).
+
+### Variables nuevas
+- `SCREENING_AUTO_DOWNLOAD` (opcional, por defecto `false`): habilita la descarga desde las URLs oficiales fijas. La carga manual funciona siempre.
+
+### Pasos de despliegue
+1. `scripts/db_migrate.py` aplica `005_screening.sql` al arrancar (ORM primero, SQL después).
+2. Un Administrador descarga `sdn.csv` y `alt.csv` (OFAC) y `consolidated.xml` (ONU) desde los sitios oficiales y los carga en Investigación > Listas de Sanciones. Opcional: `SCREENING_AUTO_DOWNLOAD=true` si la red de Railway alcanza `www.treasury.gov` y `scsanctions.un.org`.
+3. Ejecutar el screening tras cada carga de análisis y revisar la bandeja.
+
+### Pendientes y motivo
+- Los archivos reales de OFAC y ONU no pudieron descargarse (sin red en ambos entornos): los parsers siguen el formato documentado y se probaron con fixtures ficticios. Opciones: validar con los archivos reales en el primer despliegue; si la ONU cambia etiquetas, ajustar `parsear_onu_consolidada`.
+- No hay programación automática (cron) de la descarga: la constante y la variable dejan lista la función `descargar_oficial`; se puede invocar desde un servicio cron de Railway (T7 documentará el patrón) o desde la UI.
+- La comparación no usa fecha de nacimiento ni documento para reducir falsos positivos (el Excel de entrada no los trae); el fundamento de la decisión exige documentar esa verificación manual.
