@@ -33,3 +33,6 @@ backup_dark_fintech/
 .coverage
 htmlcov/
 *.saml
+
+# Salida de herramienta local de grafos
+graphify-out/

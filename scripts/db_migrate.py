@@ -6,6 +6,7 @@ Runner de migraciones — idempotente.
 
 Uso: python scripts/db_migrate.py
 """
+import os
 import sys
 from pathlib import Path
 
@@ -43,11 +44,37 @@ def apply_sql_migrations():
             return
         for f in pending:
             print(f"-> Aplicando migración: {f.name}")
-            conn.execute(text(f.read_text(encoding="utf-8")))
+            # exec_driver_sql: el SQL se envía sin parsear binds (evita que ":M" en comentarios se tome como parámetro)
+            conn.exec_driver_sql(f.read_text(encoding="utf-8"))
             conn.execute(
                 text("INSERT INTO public.schema_migrations (filename) VALUES (:f)"),
                 {"f": f.name},
             )
+
+
+def _usuarios_bootstrap_admin() -> list:
+    """Lee BOOTSTRAP_ADMIN_USERS (lista separada por comas) y valida cada nombre."""
+    crudo = os.getenv("BOOTSTRAP_ADMIN_USERS", "")
+    usuarios = [u.strip() for u in crudo.split(",") if u.strip()]
+    for usuario in usuarios:
+        if len(usuario) > 100:
+            raise ValueError("BOOTSTRAP_ADMIN_USERS contiene un usuario de más de 100 caracteres.")
+    return usuarios
+
+
+def bootstrap_admins():
+    """Asigna rol admin a los usuarios indicados. Idempotente y explícito."""
+    usuarios = _usuarios_bootstrap_admin()
+    if not usuarios:
+        print("-> BOOTSTRAP_ADMIN_USERS vacío: no se asigna rol admin automáticamente.")
+        return
+    with engine.begin() as conn:
+        for usuario in usuarios:
+            resultado = conn.execute(
+                text('UPDATE public."Licencias" SET rol = :rol WHERE "User" = :u AND rol <> :rol'),
+                {"rol": "admin", "u": usuario},
+            )
+            print(f"-> Rol admin para '{usuario}': {resultado.rowcount} fila(s) actualizada(s).")
 
 
 def main():
@@ -55,6 +82,8 @@ def main():
     models.Base.metadata.create_all(bind=engine)
     print("== Migraciones SQL (migrations/*.sql) ==")
     apply_sql_migrations()
+    print("== Bootstrap de administradores ==")
+    bootstrap_admins()
     print("Migraciones al día.")
 
 
