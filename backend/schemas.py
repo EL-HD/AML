@@ -1,4 +1,5 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from .politica_password import validar_password
 from datetime import date
 from uuid import UUID
 from typing import Optional, Literal
@@ -15,11 +16,16 @@ class LicenciaBase(BaseModel):
     empresa: str = Field(..., max_length=150)
 
 class LicenciaCreate(LicenciaBase):
-    password: str = Field(..., min_length=8)
+    password: str = Field(..., min_length=12, max_length=128)
     fecha_compra: date
     fecha_expiracion: date
     licence_id: Optional[UUID] = None
     rol: Rol = "analista"
+
+    @model_validator(mode="after")
+    def _validar_politica_password(self):
+        validar_password(self.password, self.user)
+        return self
 
 class LicenciaUpdate(BaseModel):
     """Campos que solo un administrador puede modificar sobre cualquier licencia."""

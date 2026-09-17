@@ -538,10 +538,8 @@ def login_flow():
                 _procesar_login(user, pwd)
             
             st.markdown("""
-                <div style="text-align: center; margin-top: 2rem;">
-                    <a href="#" style="color: #8b949e; font-size: 0.7rem; text-decoration: none; text-transform: uppercase; letter-spacing: 0.1em;">
-                       ¿Olvidó su contraseña?
-                    </a>
+                <div class="login-help">
+                    Si olvidó su contraseña o su licencia expiró, contacte al administrador del sistema.
                 </div>
             """, unsafe_allow_html=True)
         
