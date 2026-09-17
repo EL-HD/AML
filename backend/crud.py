@@ -5,6 +5,9 @@ from datetime import date, datetime
 import bcrypt
 import uuid
 
+MENSAJE_CREDENCIALES = "Credenciales inválidas"
+
+
 def get_password_hash(password: str) -> str:
     salt = bcrypt.gensalt()
     return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
@@ -12,8 +15,12 @@ def get_password_hash(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
         return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
-    except Exception:
+    except (ValueError, TypeError):
+        # Hash malformado o entrada inválida: se trata como credencial incorrecta.
         return False
+
+
+_HASH_FICTICIO = get_password_hash("hash-ficticio-para-tiempo-constante")
 
 def sesion_vigente(db: Session, session_id):
     """
@@ -41,6 +48,9 @@ def sesion_vigente(db: Session, session_id):
 
 def get_licencia(db: Session, licencia_id: int):
     return db.query(models.Licencia).filter(models.Licencia.id == licencia_id).first()
+
+def get_licencia_by_user(db: Session, username: str):
+    return db.query(models.Licencia).filter(models.Licencia.user == username).first()
 
 def get_licencia_by_mail(db: Session, mail: str):
     return db.query(models.Licencia).filter(models.Licencia.mail == mail).first()
@@ -98,11 +108,14 @@ def validate_auth(db: Session, username: str, password: str, mail: str = None):
         query = query.filter(models.Licencia.mail == mail)
     
     db_licencia = query.first()
+    # Mensaje único para usuario inexistente y contraseña incorrecta (evita enumeración).
     if not db_licencia:
-        return False, False, "No cuentas con ninguna licencia activa", None
-    
+        # Se verifica un hash ficticio para igualar el tiempo de respuesta.
+        verify_password(password, _HASH_FICTICIO)
+        return False, False, MENSAJE_CREDENCIALES, None
+
     if not verify_password(password, db_licencia.password_hash):
-        return True, False, "Contraseña incorrecta", None
+        return True, False, MENSAJE_CREDENCIALES, None
     
     # Verificar fecha de expiración
     if db_licencia.fecha_expiracion < date.today():

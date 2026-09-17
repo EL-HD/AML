@@ -25,7 +25,7 @@ class TestApiRbac(unittest.TestCase):
     def setUpClass(cls):
         cls.engine = crear_engine_pruebas()
         cls.Session = crear_session_factory(cls.engine)
-        cls.client = TestClient(auth_api.app)
+        cls.client = TestClient(auth_api.app, client=("127.0.0.1", 50000))
 
     def setUp(self):
         crear_engine_pruebas()
@@ -33,9 +33,7 @@ class TestApiRbac(unittest.TestCase):
         db.add_all([_licencia("admin1", "admin"), _licencia("analista1", "analista")])
         db.commit()
         db.close()
-        auth_api._rl_store.clear()
-        if hasattr(auth_api, "_bloqueos"):
-            auth_api._bloqueos.clear()
+        auth_api.limitador.limpiar()
 
     def _token(self, user, password="Clave-Segura-2026!"):
         r = self.client.post("/auth/validate", json={"username": user, "password": password})

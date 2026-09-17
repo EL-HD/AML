@@ -308,6 +308,59 @@ def clear_browser_session():
     </script>
     """, height=0, width=0)
 
+def _cabeceras_origen() -> dict:
+    """Propaga la IP real del navegador a la API (X-Forwarded-For) para el límite de intentos."""
+    try:
+        cabeceras = st.context.headers
+    except (AttributeError, RuntimeError):
+        return {}
+    origen = cabeceras.get("X-Forwarded-For") or cabeceras.get("x-forwarded-for")
+    return {"X-Forwarded-For": origen} if origen else {}
+
+
+def _procesar_login(user: str, pwd: str) -> None:
+    """Llama a la API de autenticación y muestra mensajes accionables por tipo de fallo."""
+    if not user or not pwd:
+        st.error("Ingrese usuario y contraseña.")
+        return
+    api_url = os.getenv("AUTH_API_URL", "http://localhost:8000")
+    try:
+        response = requests.post(
+            f"{api_url}/auth/validate",
+            json={"username": user, "password": pwd},
+            headers=_cabeceras_origen(),
+            timeout=10,
+        )
+    except requests.Timeout:
+        st.error("El servidor de autenticación tardó demasiado en responder. Intente nuevamente en unos segundos.")
+        return
+    except requests.RequestException:
+        st.error("No se pudo conectar con el servidor de autenticación. Verifique el servicio o contacte al administrador.")
+        return
+
+    if response.status_code == 429:
+        detalle = response.json().get("detail") if response.headers.get("content-type", "").startswith("application/json") else None
+        st.error(detalle or "Demasiados intentos. Espere unos minutos antes de volver a intentar.")
+        return
+    if response.status_code != 200:
+        st.error(f"El servidor de autenticación devolvió un error (HTTP {response.status_code}). Contacte al administrador.")
+        return
+    try:
+        data = response.json()
+    except ValueError:
+        st.error("Respuesta inválida del servidor de autenticación.")
+        return
+    if not (data.get("exists") and data.get("is_active") and data.get("licencia")):
+        st.error(data.get("message", "Acceso denegado."))
+        return
+    st.session_state.authenticated = True
+    st.session_state.user_data = data.get("licencia")
+    st.session_state.access_token = data.get("access_token")
+    st.session_state.session_id = data.get("session_id")
+    st.session_state.last_activity_at = datetime.now()
+    st.rerun()
+
+
 def login_flow():
     # --- CSS para Login Premium (Sovereign AML New Design) ---
     st.markdown("""
@@ -481,26 +534,7 @@ def login_flow():
             submit = st.form_submit_button("INICIAR SESIÓN →", use_container_width=True)
             
             if submit:
-                try:
-                    api_url = os.getenv("AUTH_API_URL", "http://localhost:8000")
-                    endpoint = f"{api_url}/auth/validate"
-                    response = requests.post(endpoint, json={"username": user, "password": pwd})
-                    
-                    if response.status_code == 200:
-                        data = response.json()
-                        if data.get("exists") and data.get("is_active"):
-                            st.session_state.authenticated = True
-                            st.session_state.user_data = data.get("licencia")
-                            st.session_state.access_token = data.get("access_token")
-                            st.session_state.session_id = data.get("session_id")
-                            st.session_state.last_activity_at = datetime.now()
-                            st.rerun()
-                        else:
-                            st.error(data.get("message", "Acceso denegado."))
-                    else:
-                        st.error("Error de conexión con la API.")
-                except Exception:
-                    st.error("No se pudo conectar con el servidor de autenticación. Intente nuevamente.")
+                _procesar_login(user, pwd)
             
             st.markdown("""
                 <div style="text-align: center; margin-top: 2rem;">

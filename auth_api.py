@@ -1,13 +1,12 @@
 import os
 import logging
-from collections import defaultdict
-from time import time
 from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from typing import List
-from backend import models, schemas, crud
+from backend import models, schemas, crud, auditoria
+from backend.rate_limit import LimitadorIntentos, ip_cliente
 from backend.database import SessionLocal, engine, get_db
 import jwt
 from datetime import datetime, timedelta, timezone
@@ -48,20 +47,52 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
-# --- Rate limiting en memoria (A3 fix: protección básica contra fuerza bruta) ---
-# Nota: para múltiples workers en producción, migrar a Redis.
-_rl_store: dict = defaultdict(list)
+# --- Limitación de intentos (S-07): por IP real y por usuario, con bloqueo temporal ---
+# Nota: contadores en memoria (un worker). Para varios workers migrar a Redis.
 _RL_MAX_ATTEMPTS = 5
-_RL_WINDOW_SECONDS = 300  # 5 minutos
+_RL_WINDOW_SECONDS = 300
+_RL_LOCK_SECONDS = 900
+limitador = LimitadorIntentos(_RL_MAX_ATTEMPTS, _RL_WINDOW_SECONDS, _RL_LOCK_SECONDS)
+MENSAJE_CREDENCIALES = "Credenciales inválidas"
 
-def _check_rate_limit(identifier: str) -> bool:
-    now = time()
-    window_start = now - _RL_WINDOW_SECONDS
-    _rl_store[identifier] = [t for t in _rl_store[identifier] if t > window_start]
-    if len(_rl_store[identifier]) >= _RL_MAX_ATTEMPTS:
-        return False
-    _rl_store[identifier].append(now)
-    return True
+
+def _claves_limite(request: Request, username: str):
+    ip = ip_cliente(request.client.host if request.client else None,
+                    request.headers.get("x-forwarded-for"))
+    return f"ip:{ip}", f"user:{(username or '').strip().lower()[:100]}"
+
+
+def _exigir_no_bloqueado(*claves: str) -> None:
+    restante = max(limitador.segundos_bloqueo(c) for c in claves)
+    if restante:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Demasiados intentos de autenticación. Intente nuevamente en {max(1, restante // 60)} minuto(s).",
+            headers={"Retry-After": str(restante)},
+        )
+
+
+def _autenticar(db: Session, request: Request, username: str, password: str, mail: str = None):
+    """Valida credenciales aplicando límite de intentos y auditoría. Devuelve (is_active, message, licencia)."""
+    claves = _claves_limite(request, username)
+    _exigir_no_bloqueado(*claves)
+    exists, is_active, message, licencia = crud.validate_auth(db, username=username, password=password, mail=mail)
+    if is_active and licencia:
+        for clave in claves:
+            limitador.registrar_exito(clave)
+        auditoria.registrar_evento(db, licencia.licence_id, licencia.user,
+                                   auditoria.MODULO_AUTENTICACION, auditoria.LOGIN_OK)
+        return True, message, licencia
+    for clave in claves:
+        limitador.registrar_fallo(clave)
+    if exists:
+        registro = crud.get_licencia_by_user(db, username)
+        if registro is not None:
+            auditoria.registrar_evento(db, registro.licence_id, registro.user,
+                                       auditoria.MODULO_AUTENTICACION, auditoria.LOGIN_FALLIDO)
+    logger.warning("Intento de autenticación fallido (usuario=%s, origen=%s)", username, claves[0])
+    return False, message, None
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -122,17 +153,17 @@ async def log_requests(request, call_next):
 # --- Endpoint para obtener Token ---
 
 @app.post("/token", response_model=schemas.Token)
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    exists, is_active, message, user = crud.validate_auth(db, username=form_data.username, password=form_data.password)
+def login_for_access_token(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    is_active, message, user = _autenticar(db, request, form_data.username, form_data.password)
     if not is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=message,
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.user, "session_id": user.current_session_id}, expires_delta=access_token_expires
+        data={"sub": user.user, "session_id": user.current_session_id},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -190,24 +221,15 @@ def search_users(q: str, db: Session = Depends(get_db), current_user: models.Lic
 
 @app.post("/auth/validate", response_model=schemas.AuthResponse)
 def validate_user(auth: schemas.AuthRequest, request: Request, db: Session = Depends(get_db)):
-    client_ip = request.client.host if request.client else "unknown"
-    if not _check_rate_limit(client_ip):
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Demasiados intentos de autenticación. Intente nuevamente en 5 minutos."
-        )
-
-    exists, is_active, message, licencia = crud.validate_auth(db, username=auth.username, password=auth.password, mail=auth.mail)
-
+    is_active, message, licencia = _autenticar(db, request, auth.username, auth.password, mail=auth.mail)
     token = None
     if is_active and licencia:
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         token = create_access_token(
-            data={"sub": licencia.user, "session_id": licencia.current_session_id}, expires_delta=access_token_expires
+            data={"sub": licencia.user, "session_id": licencia.current_session_id},
+            expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
         )
-    
     return {
-        "exists": exists,
+        "exists": is_active,
         "is_active": is_active,
         "message": message,
         "licencia": licencia,
@@ -215,6 +237,13 @@ def validate_user(auth: schemas.AuthRequest, request: Request, db: Session = Dep
         "session_id": licencia.current_session_id if (is_active and licencia) else None,
     }
 
+
+@app.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(current_user: models.Licencia = Depends(get_current_user), db: Session = Depends(get_db)):
+    auditoria.registrar_evento(db, current_user.licence_id, current_user.user,
+                               auditoria.MODULO_AUTENTICACION, auditoria.LOGOUT)
+    return None
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
