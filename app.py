@@ -14,10 +14,8 @@ import streamlit.components.v1 as components
 import requests
 import base64
 import re
-import tempfile
-import time
+import io
 import uuid
-from pathlib import Path
 import os
 from datetime import date, datetime, timedelta
 
@@ -36,6 +34,7 @@ from frontend import (
     mod_imperator_diagnostics, mod_sesion, mod_riesgo_ldft
 )
 from frontend.mod_sesion import _registrar_acceso_auditoria
+from frontend import cache_analisis
 
 def _auditar(modulo: str, accion: str = "VISUALIZACION") -> None:
     """Registra acceso de sesión activa: Art. 19 Ley 6593."""
@@ -65,70 +64,46 @@ SESSION_RESTORE_QUERY_PARAM = "restore_session"
 SESSION_RESTORE_PAYLOAD_PARAM = "restore_payload"
 SESSION_STORAGE_KEY = "sovereign_aml_session"
 ANALYSIS_CACHE_QUERY_PARAM = "analysis_cache"
-ANALYSIS_CACHE_DIR = Path(tempfile.gettempdir()) / "sovereign_aml_cache"
-ANALYSIS_CACHE_TTL_SECONDS = SESSION_TIMEOUT_SECONDS
 
 
-def _safe_cache_id(value):
-    value = str(value or "")
-    return value if re.fullmatch(r"[a-f0-9-]{36}", value) else None
+def _licence_id_actual():
+    user_data = st.session_state.get("user_data") or {}
+    return user_data.get("licence_id") if isinstance(user_data, dict) else None
 
 
 if "analysis_cache_id" not in st.session_state:
-    st.session_state.analysis_cache_id = _safe_cache_id(
+    st.session_state.analysis_cache_id = cache_analisis.uuid_seguro(
         st.query_params.get(ANALYSIS_CACHE_QUERY_PARAM)
     ) or str(uuid.uuid4())
 elif st.query_params.get(ANALYSIS_CACHE_QUERY_PARAM):
-    st.session_state.analysis_cache_id = _safe_cache_id(
+    st.session_state.analysis_cache_id = cache_analisis.uuid_seguro(
         st.query_params.get(ANALYSIS_CACHE_QUERY_PARAM)
     ) or st.session_state.analysis_cache_id
-
-
-def _cache_path(cache_id=None):
-    cache_id = _safe_cache_id(cache_id or st.session_state.get("analysis_cache_id"))
-    if not cache_id:
-        return None
-    return ANALYSIS_CACHE_DIR / f"{cache_id}.saml"
-
-
-def _cleanup_analysis_cache():
-    ANALYSIS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    now = time.time()
-    for path in ANALYSIS_CACHE_DIR.glob("*.saml"):
-        try:
-            if now - path.stat().st_mtime > ANALYSIS_CACHE_TTL_SECONDS:
-                path.unlink()
-        except OSError:
-            pass
 
 
 def save_analysis_cache():
     if "data_raw" not in st.session_state or "aml_config" not in st.session_state:
         return
-    path = _cache_path()
-    if not path:
-        return
-    ANALYSIS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     bytes_saml = mod_sesion.exportar_sesion(
         st.session_state["data_raw"],
         st.session_state["aml_config"],
         st.session_state.get("archivo_nombre", "analisis")
     )
-    path.write_bytes(bytes_saml)
+    cache_analisis.guardar(_licence_id_actual(), st.session_state.get("analysis_cache_id"), bytes_saml)
 
 
 def restore_analysis_cache():
     if "data" in st.session_state:
         return False
-    path = _cache_path()
-    if not path or not path.exists():
+    contenido = cache_analisis.cargar(_licence_id_actual(), st.session_state.get("analysis_cache_id"))
+    if contenido is None:
         return False
-    if time.time() - path.stat().st_mtime > ANALYSIS_CACHE_TTL_SECONDS:
+    try:
+        df_raw, cfg_restaurado, session_meta = mod_sesion.importar_sesion(io.BytesIO(contenido))
+    except ValueError as exc:
         clear_analysis_cache()
+        st.warning(f"No se pudo restaurar el análisis temporal: {exc}")
         return False
-
-    with path.open("rb") as f:
-        df_raw, cfg_restaurado, session_meta = mod_sesion.importar_sesion(f)
 
     st.session_state["aml_config"] = cfg_restaurado
     es_valido, faltantes = validar_columnas(df_raw)
@@ -144,17 +119,11 @@ def restore_analysis_cache():
     st.session_state["archivo_nombre"] = session_meta.get("nombre_archivo", "analisis.xlsx")
     st.session_state["session_meta"] = session_meta
     st.session_state["from_cache"] = True
-    path.touch()
     return True
 
 
 def clear_analysis_cache():
-    path = _cache_path()
-    if path and path.exists():
-        try:
-            path.unlink()
-        except OSError:
-            pass
+    cache_analisis.eliminar(_licence_id_actual(), st.session_state.get("analysis_cache_id"))
 
 
 def _usuario_a_dict(usuario) -> dict:
@@ -187,12 +156,12 @@ def _restaurar_desde_token(token: str):
 
 
 def _logout_session(timed_out=False):
+    clear_analysis_cache()
     st.session_state.authenticated = False
     st.session_state.user_data = None
     st.session_state.access_token = None
     st.session_state.session_id = None
     st.session_state.last_activity_at = datetime.now()
-    clear_analysis_cache()
     for key in ["data", "data_raw", "aml_config", "archivo_nombre",
                 "pep_cpe_info", "session_meta", "from_cache",
                 "analysis_cache_id"]:
@@ -201,7 +170,7 @@ def _logout_session(timed_out=False):
         st.session_state.session_timeout_alert = True
 
 
-_cleanup_analysis_cache()
+cache_analisis.limpiar_expirados()
 
 
 if st.query_params.get(SESSION_TIMEOUT_QUERY_PARAM) == "1":
