@@ -1,0 +1,117 @@
+/* Fondo de la App */
+.stApp { background-color: var(--sv-fondo) !important; }
+
+/* DESAPARECER SIDEBAR COMPLETAMENTE EN LOGIN */
+[data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"] {
+    display: none !important;
+    width: 0px !important;
+}
+
+/* Ajustar contenedor principal al centro total */
+[data-testid="stMain"] {
+    margin-left: 0px !important;
+    width: 100% !important;
+}
+
+/* Ocultar elementos innecesarios de Streamlit */
+[data-testid="stWidgetLabel"] { display: none; }
+[data-testid="stForm"] {
+    background-color: var(--sv-superficie-form) !important;
+    border: none !important;
+    border-left: 2px solid var(--sv-acento) !important;
+    padding: 3rem !important;
+    border-radius: 0px !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Estilo de los Inputs */
+.stTextInput input {
+    background-color: rgba(15, 20, 27, 0.8) !important;
+    border: none !important;
+    border-bottom: 1px solid var(--sv-borde) !important;
+    color: var(--sv-blanco) !important;
+    border-radius: 0px !important;
+    padding: 1rem 1rem !important;
+    font-family: 'IBM Plex Mono', monospace !important;
+}
+.stTextInput input:focus {
+    border-bottom: 1px solid var(--sv-acento) !important;
+    box-shadow: none !important;
+}
+
+/* Botón de Iniciar Sesión */
+div.stButton > button {
+    background-color: var(--sv-acento) !important;
+    color: var(--sv-fondo) !important;
+    border-radius: 0px !important;
+    height: 3.5rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.1em !important;
+    text-transform: uppercase !important;
+    border: none !important;
+    transition: all 0.3s ease !important;
+    margin-top: 1rem !important;
+}
+div.stButton > button:hover {
+    background-color: var(--sv-acento-claro) !important;
+    color: var(--sv-fondo) !important;
+}
+
+.brand-title { 
+    color: var(--sv-blanco); 
+    font-size: 2.5rem; 
+    font-weight: 300; 
+    letter-spacing: -0.05em; 
+    text-align: center;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+}
+.brand-title span { font-weight: 900; color: var(--sv-acento); }
+
+.brand-subtitle { 
+    color: var(--sv-texto-secundario); 
+    font-size: 0.6rem; 
+    letter-spacing: 0.4em; 
+    text-align: center; 
+    text-transform: uppercase;
+    margin-bottom: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.login-label {
+    color: var(--sv-texto-secundario);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 0.5rem;
+    margin-top: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.footer-notice {
+    margin-top: 4rem;
+    text-align: center;
+    color: rgba(139, 148, 158, 0.4);
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: 1.5;
+}
+.security-badge {
+    background-color: var(--sv-superficie);
+    border: 1px solid rgba(160, 142, 122, 0.1);
+    padding: 0.6rem 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--sv-texto-secundario);
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    margin-bottom: 1rem;
+}

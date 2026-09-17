@@ -2,6 +2,7 @@ import streamlit as st
 import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout, render_html_table
 from frontend.ui_safe import h
+from frontend import ui_components
 
 def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
     st.markdown("""<div class="info-box"><strong>RESUMEN EJECUTIVO</strong>: Análisis de alto nivel IMPERATOR Intelligence. Muestra indicadores críticos y distribución de riesgo detectada. Optimizado para supervisión operativa mediante capas tonales.</div>""", unsafe_allow_html=True)
@@ -49,31 +50,11 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
         # Mini-metricas horizontales
         c1, c2 = st.columns(2)
         with c1:
-            st.markdown(f"""
-            <div class="metric-card blue">
-                <div class="metric-number">{h(total_clientes)}</div>
-                <div class="metric-label">Clientes Analizados</div>
-                <div class="metric-sub">{h(clientes_alerta)} con alguna alerta</div>
-            </div>""", unsafe_allow_html=True)
-            st.markdown(f"""
-            <div class="metric-card amber">
-                <div class="metric-number">{h(format(total_alertas, ','))}</div>
-                <div class="metric-label">Total de Alertas</div>
-                <div class="metric-sub">{h(altos)} clientes en nivel Alto</div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.kpi("Clientes Analizados", total_clientes, f"{clientes_alerta} con alguna alerta", tone="blue")
+            ui_components.kpi("Total de Alertas", format(total_alertas, ','), f"{altos} clientes en nivel Alto", tone="amber")
         with c2:
-            st.markdown(f"""
-            <div class="metric-card red">
-                <div class="metric-number">{h(criticos)}</div>
-                <div class="metric-label">Clientes Críticos</div>
-                <div class="metric-sub">Requieren revisión inmediata</div>
-            </div>""", unsafe_allow_html=True)
-            st.markdown(f"""
-            <div class="metric-card green">
-                <div class="metric-number">Q{h(format(monto_total, ',.0f'))}</div>
-                <div class="metric-label">Volumen Total</div>
-                <div class="metric-sub">Monto acumulado analizado</div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.kpi("Clientes Críticos", criticos, "Requieren revisión inmediata", tone="red")
+            ui_components.kpi("Volumen Total", f"Q{monto_total:,.0f}", "Monto acumulado analizado", tone="green")
 
     # ── KPIs de gestión de alertas (Arts. 28-30 Ley 6593) ────────────────────
     if "Estado_Alerta" in casos.columns:
@@ -102,7 +83,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
     col_a, col_b = st.columns(2)
 
     with col_a:
-        st.markdown('<div class="section-title">Distribución de Riesgo por Cliente</div>', unsafe_allow_html=True)
+        ui_components.section_title("Distribución de Riesgo por Cliente")
         riesgo_counts = casos["Nivel_Riesgo"].value_counts()
 
         def color_por_nivel(nivel):
@@ -130,7 +111,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
         st.markdown("""<div class="info-box" style="margin-top: 10px;"><b>Interpretación:</b> Segmentación porcentual por nivel de riesgo. Los valores se derivan de la matriz de ponderación activa en el motor de cumplimiento.</div>""", unsafe_allow_html=True)
 
     with col_b:
-        st.markdown('<div class="section-title">Alertas por Tipo</div>', unsafe_allow_html=True)
+        ui_components.section_title("Alertas por Tipo")
 
         tipos_bar = matriz_alertas["Tipo de Alerta"].str.replace(r'\s*\(.*\)', '', regex=True).tolist()
         cantidades_bar = matriz_alertas["Cantidad"].tolist()
@@ -157,7 +138,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
 
     # Línea de tiempo
     st.markdown("---")
-    st.markdown('<div class="section-title">Volumen de Transacciones en el Tiempo</div>', unsafe_allow_html=True)
+    ui_components.section_title("Volumen de Transacciones en el Tiempo")
     st.markdown("""
     <div class="info-box">
         Evolución diaria del volumen transaccional. Los picos pueden indicar ventanas de actividad sospechosa
@@ -205,7 +186,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
     # Gráfica para Tipo de Operación
     if "TipoOperacion" in df.columns:
         st.markdown("---")
-        st.markdown('<div class="section-title">Flujo por Tipo de Operación</div>', unsafe_allow_html=True)
+        ui_components.section_title("Flujo por Tipo de Operación")
         st.markdown("""
         <div class="info-box">
             Distribución del volumen según el canal o rubro reportado. Esto ayuda a segmentar el monitoreo
@@ -230,7 +211,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
         st.markdown("""<div class="info-box" style="margin-top: 10px;"><b>Interpretación:</b> Este gráfico compara el volumen agregado por tipo de operación y permite identificar qué canales concentran mayor exposición económica dentro del período analizado.</div>""", unsafe_allow_html=True)
         # --- BUBBLE CHART: MATRIZ DE OPORTUNIDAD DE CANAL ---
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown('<div class="section-title">Matriz de Oportunidad de Canal (Mercadeo vs Riesgo)</div>', unsafe_allow_html=True)
+        ui_components.section_title("Matriz de Oportunidad de Canal (Mercadeo vs Riesgo)")
         st.markdown("""
         <div class="info-box">
             Esta matriz cruza el <b>Volumen Económico</b> (Y) contra el <b>Alcance de Clientes</b> (X). 
@@ -277,7 +258,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
         st.plotly_chart(fig_bubble, use_container_width=True)
         # --- ESTRATEGIA Y BUSINESS INTELLIGENCE (BI) ---
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown('<div class="section-title">Insight Estratégico y Oportunidades</div>', unsafe_allow_html=True)
+        ui_components.section_title("Insight Estratégico y Oportunidades")
         
         # 1. Cálculos de Inteligencia
         conteo_tipo = df["TipoOperacion"].value_counts()
@@ -324,7 +305,7 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
 
     if tiene_pep or tiene_cpe:
         st.markdown("---")
-        st.markdown('<div class="section-title">Asociados PEP / CPE Detectados</div>', unsafe_allow_html=True)
+        ui_components.section_title("Asociados PEP / CPE Detectados")
         st.markdown("""
         <div class="info-box" style="border-left-color: #ef4444;">
             <strong>GAFI: Personas Expuestas Políticamente (PEP) y Contratista o Proveedor del Estado (CPE).</strong>

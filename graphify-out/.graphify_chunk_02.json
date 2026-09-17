@@ -1,0 +1,19 @@
+{
+  "nodes": [
+    {
+      "id": "logo_aml",
+      "label": "AML Logo (Logo AML.png)",
+      "file_type": "image",
+      "source_file": "/Users/hobeddiaz/Documents/AML/Logo AML.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

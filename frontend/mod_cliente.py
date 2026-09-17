@@ -2,6 +2,7 @@ import streamlit as st
 import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout
 from frontend.ui_safe import h
+from frontend import ui_components
 
 TIPOS_CLIENTE = [
     "Persona Individual",
@@ -33,30 +34,13 @@ def mostrar(df, casos, cfg):
     color_card = "red" if "Crítico" in nivel else ("amber" if "Alto" in nivel else ("blue" if "Medio" in nivel else "green"))
 
     with col1:
-        st.markdown(f"""
-        <div class="metric-card {h(color_card)}">
-            <div class="metric-number">{h(nivel)}</div>
-            <div class="metric-label">Nivel de Riesgo</div>
-        </div>""", unsafe_allow_html=True)
+        ui_components.kpi("Nivel de Riesgo", nivel, tone=color_card)
     with col2:
-        st.markdown(f"""
-        <div class="metric-card amber">
-            <div class="metric-number">{h(int(info_cliente['Score_Max']))}</div>
-            <div class="metric-label">Score Máximo</div>
-            <div class="metric-sub">sobre 12 posibles</div>
-        </div>""", unsafe_allow_html=True)
+        ui_components.kpi("Score Máximo", int(info_cliente['Score_Max']), "sobre 12 posibles", tone="amber")
     with col3:
-        st.markdown(f"""
-        <div class="metric-card blue">
-            <div class="metric-number">{h(int(info_cliente['Transacciones']))}</div>
-            <div class="metric-label">Transacciones</div>
-        </div>""", unsafe_allow_html=True)
+        ui_components.kpi("Transacciones", int(info_cliente['Transacciones']), tone="blue")
     with col4:
-        st.markdown(f"""
-        <div class="metric-card green">
-            <div class="metric-number">Q{h(format(info_cliente['Total_Mensual'], ',.0f'))}</div>
-            <div class="metric-label">Total Mensual</div>
-        </div>""", unsafe_allow_html=True)
+        ui_components.kpi("Total Mensual", f"Q{info_cliente['Total_Mensual']:,.0f}", tone="green")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -103,7 +87,7 @@ def mostrar(df, casos, cfg):
     nivel_c          = info_cliente["Nivel_Riesgo"]
 
     # ── RESUMEN DEL CLIENTE (MANUAL) ──────────────────────────────
-    st.markdown('<div class="section-title">Resumen del Cliente</div>', unsafe_allow_html=True)
+    ui_components.section_title("Resumen del Cliente")
 
     # Construcción de resumen manual basado en reglas
     resumen_manual = f"El cliente presenta un nivel de riesgo {nivel_c} con un score acumulado de {score_max_c}/12. "
@@ -156,7 +140,7 @@ def mostrar(df, casos, cfg):
     st.markdown("<br>", unsafe_allow_html=True)
 
     # Tendencia
-    st.markdown('<div class="section-title">Tendencia de Montos</div>', unsafe_allow_html=True)
+    ui_components.section_title("Tendencia de Montos")
     st.markdown("""
     <div class="info-box">
         Evolución de los montos transaccionados por el cliente. La línea punteada indica su <strong>perfil de riesgo</strong>
@@ -198,7 +182,7 @@ def mostrar(df, casos, cfg):
     col_g1, col_g2 = st.columns(2)
 
     with col_g1:
-        st.markdown('<div class="section-title">Detección de Picos Anómalos</div>', unsafe_allow_html=True)
+        ui_components.section_title("Detección de Picos Anómalos")
         st.markdown("""
         <div class="info-box">
             Transacciones que superan la media histórica + 2 desviaciones estándar del cliente.
@@ -238,7 +222,7 @@ def mostrar(df, casos, cfg):
 
 
     with col_g2:
-        st.markdown('<div class="section-title">Frecuencia Diaria de Operaciones</div>', unsafe_allow_html=True)
+        ui_components.section_title("Frecuencia Diaria de Operaciones")
         st.markdown("""
         <div class="info-box">
             Número de transacciones por día. Días con ≥5 operaciones activan la alerta de <strong>smurfing</strong>

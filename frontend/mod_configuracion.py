@@ -7,6 +7,7 @@ from backend.database import SessionLocal
 from frontend import exportacion, permisos
 from frontend.mod_utils import apply_dark_style, render_html_table
 from frontend.ui_safe import h
+from frontend import ui_components
 
 # Catálogos globales del RTS disponibles para verificación (normativa IVE vigente).
 # Un solo diccionario de configuración evita repetir la misma consulta 10 veces.
@@ -128,30 +129,16 @@ def mostrar(_DEFAULTS):
             c["regla_absoluto"] = st.toggle("", value=c["regla_absoluto"], key="tog_abs")
         with col_title:
             estado_abs = "ACTIVA" if c["regla_absoluto"] else "DESACTIVADA"
-            st.markdown(f'<div class="section-title">Regla 1: Monto Alto Absoluto &nbsp;<span class="section-badge">{h(estado_abs)}</span></div>', unsafe_allow_html=True)
+            ui_components.regla_titulo("Regla 1: Monto Alto Absoluto", c["regla_absoluto"])
 
         col_desc1, col_ctrl1 = st.columns([3, 2])
         with col_desc1:
-            st.markdown(f"""
-            <div style="background:#171c23; border:1px solid #534434; border-radius:0px; padding:20px; margin-bottom:12px;">
-                <div style="color:#f59e0b; font-size:11px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:12px;">
-                    <span class="pulse-dot"></span> ESPECIFICACIÓN TÉCNICA
-                </div>
-                <div style="color:#dee2ed; font-size:13px; line-height:1.8; margin-bottom:15px;">
-                    Validación contra <strong style='color:#f59e0b;'>umbral absoluto configurado</strong>.
-                    Regla de detección directa: activación inmediata si el monto individual excede el límite institucional.
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                    <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
-                        <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Variable IMPERATOR</div>
-                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">Vector_Absoluto</div>
-                    </div>
-                    <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
-                        <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Lógica Algebraica</div>
-                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">Monto &gt; Q{h(format(c['umbral_absoluto'], ','))}</div>
-                    </div>
-                </div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.spec_card(
+                """Validación contra <strong>umbral absoluto configurado</strong>.
+Regla de detección directa: activación inmediata si el monto individual excede el límite institucional.""",
+                "Vector_Absoluto",
+                f"Monto > Q{c['umbral_absoluto']:,}",
+            )
         with col_ctrl1:
             c["umbral_absoluto"] = st.number_input(
                 "Umbral absoluto (Q)",
@@ -159,12 +146,7 @@ def mostrar(_DEFAULTS):
                 help="Cualquier transacción individual mayor a este monto activa la alerta.",
                 disabled=not c["regla_absoluto"]
             )
-            st.markdown(f"""
-            <div class="metric-card {h('amber' if c['regla_absoluto'] else 'blue')}" style="margin-top:8px;">
-                <div class="metric-number" style="font-size:22px;">Q{h(format(c['umbral_absoluto'], ','))}</div>
-                <div class="metric-label">Umbral actual</div>
-                <div class="metric-sub">Peso en score: <strong>{h(c['peso_absoluto'])} pts</strong></div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.regla_kpi(f"Q{c['umbral_absoluto']:,}", "Umbral actual", c['peso_absoluto'], c['regla_absoluto'])
 
         st.markdown("---")
 
@@ -174,38 +156,21 @@ def mostrar(_DEFAULTS):
             c["regla_acumulado"] = st.toggle("", value=c["regla_acumulado"], key="tog_acum")
         with col_title2:
             estado_acum = "ACTIVA" if c["regla_acumulado"] else "DESACTIVADA"
-            st.markdown(f'<div class="section-title">Regla 2: Acumulado Mensual &nbsp;<span class="section-badge">{h(estado_acum)}</span></div>', unsafe_allow_html=True)
+            ui_components.regla_titulo("Regla 2: Acumulado Mensual", c["regla_acumulado"])
 
         col_desc2, col_ctrl2 = st.columns([3, 2])
         with col_desc2:
-            st.markdown(f"""
-            <div style="background:#171c23; border:1px solid #534434; border-radius:0px; padding:20px; margin-bottom:12px;">
-                <div style="color:#f59e0b; font-size:11px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:12px;">
-                    <span class="pulse-dot"></span> ESPECIFICACIÓN TÉCNICA
-                </div>
-                <div style="color:#dee2ed; font-size:13px; line-height:1.8; margin-bottom:15px;">
-                    Evaluación de <strong style='color:#f59e0b;'>volumen acumulado por ciclo</strong>.
-                    Identifica acumulación de capital por encima del multiplicador de perfil configurado.
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                    <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
-                        <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Variable IMPERATOR</div>
-                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">Vector_Acumulado</div>
-                    </div>
-                    <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
-                        <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Lógica Algebraica</div>
-                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">Total &gt; Perfil × {h(c['mult_acumulado'])}x</div>
-                    </div>
-                </div>
-                <div style="margin-top:12px; padding:10px; background:#1b2027; border-left:2px solid #3b82f6;">
-                    <div style="color:#a08e7a; font-size:11px; font-family:IBM Plex Mono,monospace;">IMPACTO AL MODIFICAR</div>
-                    <div style="color:#a08e7a; font-size:12px; margin-top:4px; line-height:1.7;">
-                        <strong style='color:#c9d1d9;'>Bajar el multiplicador -></strong> Se detectan más clientes con acumulación sospechosa.<br>
-                        <strong style='color:#c9d1d9;'>Subir el multiplicador -></strong> Solo se alertan clientes con acumulaciones extremas.<br>
-                        <strong style='color:#c9d1d9;'>Desactivar -></strong> El sistema ignora el volumen total; útil si los perfiles no están bien calibrados.
-                    </div>
-                </div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.spec_card(
+                """Evaluación de <strong>volumen acumulado por ciclo</strong>.
+Identifica acumulación de capital por encima del multiplicador de perfil configurado.""",
+                "Vector_Acumulado",
+                f"Total > Perfil × {c['mult_acumulado']}x",
+                impacto_html=(
+                    "<strong>Bajar el multiplicador -></strong> Se detectan más clientes con acumulación sospechosa.<br>"
+                    "<strong>Subir el multiplicador -></strong> Solo se alertan clientes con acumulaciones extremas.<br>"
+                    "<strong>Desactivar -></strong> El sistema ignora el volumen total; útil si los perfiles no están bien calibrados."
+                ),
+            )
         with col_ctrl2:
             c["mult_acumulado"] = st.slider(
                 "Multiplicador sobre perfil (Nx)",
@@ -213,12 +178,7 @@ def mostrar(_DEFAULTS):
                 help="Si total_mensual > perfil × N, se activa la alerta.",
                 disabled=not c["regla_acumulado"]
             )
-            st.markdown(f"""
-            <div class="metric-card {h('amber' if c['regla_acumulado'] else 'blue')}" style="margin-top:8px;">
-                <div class="metric-number" style="font-size:22px;">{h(c['mult_acumulado'])}x</div>
-                <div class="metric-label">Multiplicador actual</div>
-                <div class="metric-sub">Peso en score: <strong>{h(c['peso_acumulado'])} pts</strong></div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.regla_kpi(f"{c['mult_acumulado']}x", "Multiplicador actual", c['peso_acumulado'], c['regla_acumulado'])
 
         st.markdown("---")
 
@@ -228,30 +188,16 @@ def mostrar(_DEFAULTS):
             c["regla_perfil"] = st.toggle("", value=c["regla_perfil"], key="tog_perf")
         with col_title3:
             estado_perf = "ACTIVA" if c["regla_perfil"] else "DESACTIVADA"
-            st.markdown(f'<div class="section-title">Regla 3: Exceso sobre Perfil &nbsp;<span class="section-badge">{h(estado_perf)}</span></div>', unsafe_allow_html=True)
+            ui_components.regla_titulo("Regla 3: Exceso sobre Perfil", c["regla_perfil"])
 
         col_desc3, col_ctrl3 = st.columns([3, 2])
         with col_desc3:
-            st.markdown(f"""
-            <div style="background:#171c23; border:1px solid #534434; border-radius:0px; padding:20px; margin-bottom:12px;">
-                <div style="color:#f59e0b; font-size:11px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:12px;">
-                    <span class="pulse-dot"></span> ESPECIFICACIÓN TÉCNICA
-                </div>
-                <div style="color:#dee2ed; font-size:13px; line-height:1.8; margin-bottom:15px;">
-                    Detección de <strong style='color:#f59e0b;'>ruptura de perfil individual</strong>.
-                    Valida desviaciones porcentuales sobre el comportamiento histórico del cliente.
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                    <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
-                        <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Variable IMPERATOR</div>
-                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">Vector_Riesgo_P</div>
-                    </div>
-                    <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
-                        <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Lógica Algebraica</div>
-                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">&gt; Perfil + {h(c['tolerancia_perfil'])}%</div>
-                    </div>
-                </div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.spec_card(
+                """Detección de <strong>ruptura de perfil individual</strong>.
+Valida desviaciones porcentuales sobre el comportamiento histórico del cliente.""",
+                "Vector_Riesgo_P",
+                f"> Perfil + {c['tolerancia_perfil']}%",
+            )
         with col_ctrl3:
             c["tolerancia_perfil"] = st.slider(
                 "Tolerancia sobre perfil (%)",
@@ -259,12 +205,7 @@ def mostrar(_DEFAULTS):
                 help="Porcentaje máximo que puede superar el monto al perfil esperado.",
                 disabled=not c["regla_perfil"]
             )
-            st.markdown(f"""
-            <div class="metric-card {h('amber' if c['regla_perfil'] else 'blue')}" style="margin-top:8px;">
-                <div class="metric-number" style="font-size:22px;">{h(c['tolerancia_perfil'])}%</div>
-                <div class="metric-label">Tolerancia actual</div>
-                <div class="metric-sub">Peso en score: <strong>{h(c['peso_perfil'])} pts</strong></div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.regla_kpi(f"{c['tolerancia_perfil']}%", "Tolerancia actual", c['peso_perfil'], c['regla_perfil'])
 
         st.markdown("---")
 
@@ -274,30 +215,16 @@ def mostrar(_DEFAULTS):
             c["regla_frecuencia"] = st.toggle("", value=c["regla_frecuencia"], key="tog_frec")
         with col_title4:
             estado_frec = "ACTIVA" if c["regla_frecuencia"] else "DESACTIVADA"
-            st.markdown(f'<div class="section-title">Regla 4: Frecuencia Alta &nbsp;<span class="section-badge">{h(estado_frec)}</span></div>', unsafe_allow_html=True)
+            ui_components.regla_titulo("Regla 4: Frecuencia Alta", c["regla_frecuencia"])
 
         col_desc4, col_ctrl4 = st.columns([3, 2])
         with col_desc4:
-            st.markdown(f"""
-            <div style="background:#171c23; border:1px solid #534434; border-radius:0px; padding:20px; margin-bottom:12px;">
-                <div style="color:#f59e0b; font-size:11px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:12px;">
-                    <span class="pulse-dot"></span> ESPECIFICACIÓN TÉCNICA
-                </div>
-                <div style="color:#dee2ed; font-size:13px; line-height:1.8; margin-bottom:15px;">
-                    Análisis de <strong style='color:#f59e0b;'>densidad operativa</strong>.
-                    Identifica saturación de transacciones en el ciclo, vector clave para detección de uso de cuenta puente.
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                    <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
-                        <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Variable IMPERATOR</div>
-                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">Vector_Frecuencia</div>
-                    </div>
-                    <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
-                        <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Lógica Algebraica</div>
-                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">N &gt; {h(c['umbral_frecuencia'])} ops</div>
-                    </div>
-                </div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.spec_card(
+                """Análisis de <strong>densidad operativa</strong>.
+Identifica saturación de transacciones en el ciclo, vector clave para detección de uso de cuenta puente.""",
+                "Vector_Frecuencia",
+                f"N > {c['umbral_frecuencia']} ops",
+            )
         with col_ctrl4:
             c["umbral_frecuencia"] = st.number_input(
                 "Máximo de transacciones en el período",
@@ -305,12 +232,7 @@ def mostrar(_DEFAULTS):
                 help="Si el cliente supera este número de transacciones, se activa la alerta.",
                 disabled=not c["regla_frecuencia"]
             )
-            st.markdown(f"""
-            <div class="metric-card {h('amber' if c['regla_frecuencia'] else 'blue')}" style="margin-top:8px;">
-                <div class="metric-number" style="font-size:22px;">&gt;{h(c['umbral_frecuencia'])}</div>
-                <div class="metric-label">Umbral de transacciones</div>
-                <div class="metric-sub">Peso en score: <strong>{h(c['peso_frecuencia'])} pts</strong></div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.regla_kpi(f"&gt;{c['umbral_frecuencia']}", "Umbral de transacciones", c['peso_frecuencia'], c['regla_frecuencia'])
 
         st.markdown("---")
 
@@ -320,30 +242,16 @@ def mostrar(_DEFAULTS):
             c["regla_smurfing"] = st.toggle("", value=c["regla_smurfing"], key="tog_smurf")
         with col_title5:
             estado_smurf = "ACTIVA" if c["regla_smurfing"] else "DESACTIVADA"
-            st.markdown(f'<div class="section-title">Regla 5: Smurfing (Fragmentación) &nbsp;<span class="section-badge">{h(estado_smurf)}</span></div>', unsafe_allow_html=True)
+            ui_components.regla_titulo("Regla 5: Smurfing (Fragmentación)", c["regla_smurfing"])
 
         col_desc5, col_ctrl5 = st.columns([3, 2])
         with col_desc5:
-            st.markdown(f"""
-            <div style="background:#171c23; border:1px solid #534434; border-radius:0px; padding:20px; margin-bottom:12px;">
-                <div style="color:#f59e0b; font-size:11px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:12px;">
-                    <span class="pulse-dot"></span> ESPECIFICACIÓN TÉCNICA
-                </div>
-                <div style="color:#dee2ed; font-size:13px; line-height:1.8; margin-bottom:15px;">
-                    Detección de <strong style='color:#f59e0b;'>pitufeo (smurfing)</strong>.
-                    Identifica fragmentación técnica de capital en ventanas de 24 horas para evadir controles de umbral fijo.
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                    <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
-                        <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Variable IMPERATOR</div>
-                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">Vector_Smurfing</div>
-                    </div>
-                    <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
-                        <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Lógica Algebraica</div>
-                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">Ops/Día ≥ {h(c['umbral_smurfing'])}</div>
-                    </div>
-                </div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.spec_card(
+                """Detección de <strong>pitufeo (smurfing)</strong>.
+Identifica fragmentación técnica de capital en ventanas de 24 horas para evadir controles de umbral fijo.""",
+                "Vector_Smurfing",
+                f"Ops/Día ≥ {c['umbral_smurfing']}",
+            )
         with col_ctrl5:
             c["umbral_smurfing"] = st.number_input(
                 "Transacciones en mismo día para activar",
@@ -351,12 +259,7 @@ def mostrar(_DEFAULTS):
                 help="Número de transacciones en un mismo día que activa la alerta de smurfing.",
                 disabled=not c["regla_smurfing"]
             )
-            st.markdown(f"""
-            <div class="metric-card red" style="margin-top:8px;">
-                <div class="metric-number" style="font-size:22px;">≥{h(c['umbral_smurfing'])}/día</div>
-                <div class="metric-label">Umbral smurfing + gráfica</div>
-                <div class="metric-sub">Peso en score: <strong>{h(c['peso_smurfing'])} pts</strong></div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.regla_kpi(f"≥{c['umbral_smurfing']}/día", "Umbral smurfing + gráfica", c['peso_smurfing'], True, tone="red")
 
         st.markdown("---")
 
@@ -367,30 +270,16 @@ def mostrar(_DEFAULTS):
             c["regla_pico"] = st.toggle("", value=c["regla_pico"], key="tog_pico")
         with col_title6:
             estado_pico = "ACTIVA" if c["regla_pico"] else "DESACTIVADA"
-            st.markdown(f'<div class="section-title">Regla 6: Pico Anómalo Estadístico &nbsp;<span class="section-badge">{h(estado_pico)}</span></div>', unsafe_allow_html=True)
+            ui_components.regla_titulo("Regla 6: Pico Anómalo Estadístico", c["regla_pico"])
 
         col_desc6, col_ctrl6 = st.columns([3, 2])
         with col_desc6:
-            st.markdown(f"""
-            <div style="background:#171c23; border:1px solid #534434; border-radius:0px; padding:20px; margin-bottom:12px;">
-                <div style="color:#f59e0b; font-size:11px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:12px;">
-                    <span class="pulse-dot"></span> ESPECIFICACIÓN TÉCNICA
-                </div>
-                <div style="color:#dee2ed; font-size:13px; line-height:1.8; margin-bottom:15px;">
-                    Detección de <strong style='color:#f59e0b;'>outliers estadísticos</strong>.
-                    Valida anomalías de comportamiento mediante desviación estándar (Sigma) sobre la media histórica del cliente.
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                    <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
-                        <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Variable IMPERATOR</div>
-                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">Vector_Sigma_P</div>
-                    </div>
-                    <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
-                        <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Lógica Algebraica</div>
-                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">&gt; Media + {h(c['mult_std_pico'])}σ</div>
-                    </div>
-                </div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.spec_card(
+                """Detección de <strong>outliers estadísticos</strong>.
+Valida anomalías de comportamiento mediante desviación estándar (Sigma) sobre la media histórica del cliente.""",
+                "Vector_Sigma_P",
+                f"> Media + {c['mult_std_pico']}σ",
+            )
         with col_ctrl6:
             c["mult_std_pico"] = st.slider(
                 "Multiplicador de desviación estándar (N)",
@@ -398,12 +287,7 @@ def mostrar(_DEFAULTS):
                 help="Activa si monto > (media + N × std). Menor valor = más sensible.",
                 disabled=not c["regla_pico"]
             )
-            st.markdown(f"""
-            <div class="metric-card {h('amber' if c['regla_pico'] else 'blue')}" style="margin-top:8px;">
-                <div class="metric-number" style="font-size:22px;">μ + {h(c['mult_std_pico'])}σ</div>
-                <div class="metric-label">Umbral estadístico</div>
-                <div class="metric-sub">Peso en score: <strong>{h(c['peso_pico'])} pts</strong></div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.regla_kpi(f"μ + {c['mult_std_pico']}σ", "Umbral estadístico", c['peso_pico'], c['regla_pico'])
 
         st.markdown("---")
 
@@ -412,44 +296,26 @@ def mostrar(_DEFAULTS):
         with col_on7:
             c["regla_feic"] = st.toggle("", value=c.get("regla_feic", True), key="tog_feic")
         with col_title7:
-            estado_feic = "ACTIVA" if c.get("regla_feic", True) else "DESACTIVADA"
-            st.markdown(
-                f'<div class="section-title">Regla 7: Verificación FEIS → FEIC &nbsp;'
-                f'<span class="section-badge">{h(estado_feic)}</span></div>',
-                unsafe_allow_html=True
-            )
+            ui_components.regla_titulo("Regla 7: Verificación FEIS → FEIC", c.get("regla_feic", True))
 
         col_desc7, col_ctrl7 = st.columns([3, 2])
         with col_desc7:
             umbral_actual = c.get("umbral_feic", 45000)
-            st.markdown(f"""
-            <div style="background:#171c23; border:1px solid #534434; border-radius:0px; padding:20px; margin-bottom:12px;">
-                <div style="color:#a855f7; font-size:11px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:12px;">
-                    <span class="pulse-dot" style="background:#a855f7; box-shadow:0 0 10px rgba(168,85,247,0.8);"></span> ESPECIFICACIÓN TÉCNICA
-                </div>
-                <div style="color:#dee2ed; font-size:13px; line-height:1.8; margin-bottom:15px;">
-                    Verifica que los <strong style='color:#a855f7;'>asociados con perfil transaccional bajo</strong>
-                    registrados con FEIS actualicen a FEIC cuando sus transacciones superan el umbral definido.
-                    Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acción de mitigación.
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                    <div style="background:#1b2027; border-radius:0px; padding:12px; border:1px solid rgba(168,85,247,0.2);">
-                        <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Formulario origen</div>
-                        <div style="color:#a855f7; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">FEIS: Simplificado</div>
-                    </div>
-                    <div style="background:#1b2027; border-radius:0px; padding:12px; border:1px solid rgba(168,85,247,0.2);">
-                        <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Formulario objetivo</div>
-                        <div style="color:#a855f7; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">FEIC: Completo</div>
-                    </div>
-                </div>
-                <div style="margin-top:12px; padding:10px; background:#1b2027; border-left:2px solid #a855f7;">
-                    <div style="color:#a08e7a; font-size:11px; font-family:IBM Plex Mono,monospace;">LÓGICA DE ACTIVACIÓN</div>
-                    <div style="color:#a08e7a; font-size:12px; margin-top:4px; line-height:1.7;">
-                        <strong style='color:#c9d1d9;'>Total Mensual &gt; Q{h(format(umbral_actual, ','))} →</strong> Se agrega acción F-01 en Mitigación.<br>
-                        <strong style='color:#c9d1d9;'>Total Mensual ≤ Q{h(format(umbral_actual, ','))} →</strong> No se muestra la acción (perfil bajo OK).
-                    </div>
-                </div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.spec_card(
+                """Verifica que los <strong>asociados con perfil transaccional bajo</strong>
+registrados con FEIS actualicen a FEIC cuando sus transacciones superan el umbral definido.
+Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acción de mitigación.""",
+                "FEIS: Simplificado",
+                "FEIC: Completo",
+                acento="#a855f7",
+                etiqueta_variable="Formulario origen",
+                etiqueta_logica="Formulario objetivo",
+                impacto_titulo="LÓGICA DE ACTIVACIÓN",
+                impacto_html=(
+                    f"<strong>Total Mensual &gt; Q{h(format(umbral_actual, ','))} →</strong> Se agrega acción F-01 en Mitigación.<br>"
+                    f"<strong>Total Mensual ≤ Q{h(format(umbral_actual, ','))} →</strong> No se muestra la acción (perfil bajo OK)."
+                ),
+            )
         with col_ctrl7:
             c["umbral_feic"] = st.number_input(
                 "Umbral máximo perfil bajo (Q)",
@@ -459,13 +325,10 @@ def mostrar(_DEFAULTS):
                 help="Si el total mensual del asociado supera este monto, se activa la acción F-01 (actualizar a FEIC).",
                 disabled=not c.get("regla_feic", True)
             )
-            color_feic = "amber" if c.get("regla_feic", True) else "blue"
-            st.markdown(f"""
-            <div class="metric-card {h(color_feic)}" style="margin-top:8px; border-left-color:#a855f7;">
-                <div class="metric-number" style="font-size:22px; color:#a855f7;">Q{h(format(c.get('umbral_feic', 45000), ','))}</div>
-                <div class="metric-label">Umbral FEIC actual</div>
-                <div class="metric-sub">Código de acción: <strong>F-01</strong> | Norma: GAFI Rec. 10</div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.regla_kpi(
+                f"Q{c.get('umbral_feic', 45000):,}", "Umbral FEIC actual", "F-01 | GAFI Rec. 10",
+                c.get("regla_feic", True), tone="violet",
+            )
 
     # ── TAB 2: Pesos del Score ──────────────────────────────────────────
     with tab2:

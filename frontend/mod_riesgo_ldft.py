@@ -35,6 +35,7 @@ from backend import schemas
 from backend.database import SessionLocal
 from frontend.mod_utils import plotly_dark_layout, render_html_table
 from frontend import exportacion, permisos
+from frontend import ui_components
 
 
 def _solo_lectura() -> bool:
@@ -100,7 +101,7 @@ def mostrar():
 # ── Segmentación ─────────────────────────────────────────────────────────
 
 def _tab_segmentacion(db, licenciaid, username):
-    st.markdown('<div class="section-title">Nuevo segmento</div>', unsafe_allow_html=True)
+    ui_components.section_title("Nuevo segmento")
     st.caption("Clasifique sus eventos de riesgo por Factor -> Segmento -> Variable (Art. 9 Decreto 15-2026).")
     with st.form("form_nuevo_segmento", clear_on_submit=True):
         col1, col2, col3 = st.columns(3)
@@ -119,7 +120,7 @@ def _tab_segmentacion(db, licenciaid, username):
                 st.rerun()
 
     st.markdown("---")
-    st.markdown('<div class="section-title">Segmentos configurados</div>', unsafe_allow_html=True)
+    ui_components.section_title("Segmentos configurados")
     segmentos = crud.listar_segmentos(db, licenciaid)
     if not segmentos:
         st.info("Aún no hay segmentos configurados.")
@@ -143,7 +144,7 @@ def _tab_segmentacion(db, licenciaid, username):
 # ── Eventos ───────────────────────────────────────────────────────────────
 
 def _tab_eventos(db, licenciaid, username):
-    st.markdown('<div class="section-title">Nuevo evento de riesgo</div>', unsafe_allow_html=True)
+    ui_components.section_title("Nuevo evento de riesgo")
     segmentos = crud.listar_segmentos(db, licenciaid)
     opciones_segmento = {"Sin segmentar": None}
     opciones_segmento.update({f"{s.factor} · {s.segmento} · {s.variable}": s.id for s in segmentos})
@@ -183,7 +184,7 @@ def _tab_eventos(db, licenciaid, username):
                 st.rerun()
 
     st.markdown("---")
-    st.markdown('<div class="section-title">Eventos registrados</div>', unsafe_allow_html=True)
+    ui_components.section_title("Eventos registrados")
     eventos = crud.listar_eventos(db, licenciaid)
     if not eventos:
         st.info("Aún no hay eventos de riesgo registrados.")
@@ -241,7 +242,7 @@ def _tab_eventos(db, licenciaid, username):
 # ── Controles ─────────────────────────────────────────────────────────────
 
 def _tab_controles(db, licenciaid, username):
-    st.markdown('<div class="section-title">Nuevo control / mitigador</div>', unsafe_allow_html=True)
+    ui_components.section_title("Nuevo control / mitigador")
     with st.form("form_nuevo_control", clear_on_submit=True):
         nombre = st.text_input("Nombre del control", placeholder="Ej. Conocimiento del cliente")
         descripcion = st.text_area("Descripción", placeholder="Ej. Procedimiento para identificación de PEP y aprobación del inicio de la relación comercial.")
@@ -276,7 +277,7 @@ def _tab_controles(db, licenciaid, username):
                 st.rerun()
 
     st.markdown("---")
-    st.markdown('<div class="section-title">Controles registrados</div>', unsafe_allow_html=True)
+    ui_components.section_title("Controles registrados")
     controles = crud.listar_controles(db, licenciaid)
     if not controles:
         st.info("Aún no hay controles registrados.")
@@ -306,7 +307,7 @@ def _tab_planes(db, licenciaid, username):
     eventos = crud.listar_eventos(db, licenciaid)
     eventos_requieren = [e for e in eventos if e.requiere_plan_accion]
 
-    st.markdown('<div class="section-title">Nuevo plan de acción</div>', unsafe_allow_html=True)
+    ui_components.section_title("Nuevo plan de acción")
     st.caption("Obligatorio para eventos con riesgo residual Medio Alto o Alto (Art. 11 Decreto 15-2026).")
     if not eventos_requieren:
         st.info("No hay eventos con riesgo residual Medio Alto o Alto que requieran plan de acción.")
@@ -342,7 +343,7 @@ def _tab_planes(db, licenciaid, username):
                         st.error("El evento seleccionado no está disponible para esta licencia.")
 
     st.markdown("---")
-    st.markdown('<div class="section-title">Planes de acción registrados</div>', unsafe_allow_html=True)
+    ui_components.section_title("Planes de acción registrados")
     planes = crud.listar_planes(db, licenciaid)
     if not planes:
         st.info("Aún no hay planes de acción registrados.")
@@ -416,7 +417,7 @@ def _render_mapa_calor(eventos, key: str):
 
 
 def _tab_resultados(db, licenciaid):
-    st.markdown('<div class="section-title">Panel de seguimiento</div>', unsafe_allow_html=True)
+    ui_components.section_title("Panel de seguimiento")
     sin_control = crud.eventos_sin_control(db, licenciaid)
     sin_plan = crud.eventos_sin_plan(db, licenciaid)
     sin_segmentar = crud.eventos_sin_segmentar(db, licenciaid)
@@ -429,7 +430,7 @@ def _tab_resultados(db, licenciaid):
     c4.metric("Controles sin evento vinculado", len(controles_libres))
 
     st.markdown("---")
-    st.markdown('<div class="section-title">Mapa de calor: Riesgo inherente de la Persona Obligada</div>', unsafe_allow_html=True)
+    ui_components.section_title("Mapa de calor: Riesgo inherente de la Persona Obligada")
     eventos = crud.listar_eventos(db, licenciaid)
     if not eventos:
         st.info("Registre eventos de riesgo para visualizar el mapa de calor.")
@@ -442,7 +443,7 @@ def _tab_resultados(db, licenciaid):
 # ── Reportes ──────────────────────────────────────────────────────────────
 
 def _tab_reportes(db, licenciaid):
-    st.markdown('<div class="section-title">Matriz de riesgo consolidada</div>', unsafe_allow_html=True)
+    ui_components.section_title("Matriz de riesgo consolidada")
     eventos = crud.listar_eventos(db, licenciaid)
     if not eventos:
         st.info("Registre eventos de riesgo para generar reportes.")
@@ -453,7 +454,7 @@ def _tab_reportes(db, licenciaid):
     _render_mapa_calor(eventos, key="mapa_calor_reportes")
 
     st.markdown("---")
-    st.markdown('<div class="section-title">Riesgo por factor</div>', unsafe_allow_html=True)
+    ui_components.section_title("Riesgo por factor")
     df_factor = pd.DataFrame([{
         "Factor": e.factor, "Evento": f"{e.codigo} · {e.nombre}",
         "Riesgo inherente": logic.descripcion_nivel(e.nivel_inherente),

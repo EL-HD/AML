@@ -14,6 +14,7 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
 import matplotlib
 from frontend.ui_safe import h
 from frontend import exportacion
+from frontend import ui_components
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -1291,25 +1292,13 @@ def mostrar(df, casos, matriz_alertas, cfg):
 
             col_p1, col_p2, col_p3, col_p4 = st.columns(4)
             with col_p1:
-                st.markdown(f"""<div class="metric-card {h(color_prev)}">
-                    <div class="metric-number">{h(nivel_prev)}</div>
-                    <div class="metric-label">Nivel de Riesgo</div></div>""",
-                    unsafe_allow_html=True)
+                ui_components.kpi("Nivel de Riesgo", nivel_prev, tone=color_prev)
             with col_p2:
-                st.markdown(f"""<div class="metric-card amber">
-                    <div class="metric-number">{h(int(info_prev['Score_Max']))}</div>
-                    <div class="metric-label">Score IMPERATOR</div></div>""",
-                    unsafe_allow_html=True)
+                ui_components.kpi("Score IMPERATOR", int(info_prev['Score_Max']), tone="amber")
             with col_p3:
-                st.markdown(f"""<div class="metric-card blue">
-                    <div class="metric-number">Q{h(format(info_prev['Total_Mensual'], ',.0f'))}</div>
-                    <div class="metric-label">Total Mensual</div></div>""",
-                    unsafe_allow_html=True)
+                ui_components.kpi("Total Mensual", f"Q{info_prev['Total_Mensual']:,.0f}", tone="blue")
             with col_p4:
-                st.markdown(f"""<div class="metric-card green">
-                    <div class="metric-number">{h(int(info_prev['Transacciones']))}</div>
-                    <div class="metric-label">Transacciones</div></div>""",
-                    unsafe_allow_html=True)
+                ui_components.kpi("Transacciones", int(info_prev['Transacciones']), tone="green")
 
         if generar_ind:
             with st.spinner(f"Generando ficha de investigaci\u00f3n para {cliente_pdf}..."):
@@ -1433,33 +1422,17 @@ def mostrar(df, casos, matriz_alertas, cfg):
                     color_p = {"🔴 Crítico": "red", "🟧 Alto": "amber",
                                "🟡 Medio": "blue", "🟢 Bajo": "green"}.get(nivel_p, "red")
                     with col_p1:
-                        st.markdown(
-                            f'<div class="metric-card {h(color_p)}">'
-                            f'<div class="metric-number">{h(nivel_label(str(nivel_p)))}</div>'
-                            f'<div class="metric-label">Nivel de Riesgo</div></div>',
-                            unsafe_allow_html=True)
+                        ui_components.kpi("Nivel de Riesgo", nivel_label(str(nivel_p)), tone=color_p)
                     with col_p2:
-                        st.markdown(
-                            f'<div class="metric-card amber">'
-                            f'<div class="metric-number">{h(int(fila_prev.get("Score_Max", 0)))}</div>'
-                            f'<div class="metric-label">Score IMPERATOR</div></div>',
-                            unsafe_allow_html=True)
+                        ui_components.kpi("Score IMPERATOR", int(fila_prev.get("Score_Max", 0)), tone="amber")
                     with col_p3:
                         monto_p = df[df["Cliente"] == caso_rts]["Monto"].sum() if "Monto" in df.columns else 0
-                        st.markdown(
-                            f'<div class="metric-card blue">'
-                            f'<div class="metric-number">Q{h(format(monto_p, ",.0f"))}</div>'
-                            f'<div class="metric-label">Monto Total</div></div>',
-                            unsafe_allow_html=True)
+                        ui_components.kpi("Monto Total", f"Q{monto_p:,.0f}", tone="blue")
                     with col_p4:
                         fund = str(fila_prev.get("Fundamento_Examen", ""))
                         estado_fund = "Registrado" if fund and fund not in ("nan", "N/D", "") else "Pendiente"
                         color_fund  = "green" if estado_fund == "Registrado" else "red"
-                        st.markdown(
-                            f'<div class="metric-card {h(color_fund)}">'
-                            f'<div class="metric-number">{h(estado_fund)}</div>'
-                            f'<div class="metric-label">Fundamento Examen</div></div>',
-                            unsafe_allow_html=True)
+                        ui_components.kpi("Fundamento Examen", estado_fund, tone=color_fund)
 
                 st.markdown("<br>", unsafe_allow_html=True)
                 col_i1, col_i2 = st.columns(2)
@@ -1509,25 +1482,13 @@ def mostrar(df, casos, matriz_alertas, cfg):
                 else:
                     col_r1, col_r2, col_r3 = st.columns(3)
                     with col_r1:
-                        st.markdown(
-                            f'<div class="metric-card red">'
-                            f'<div class="metric-number">{h(n_rte_prev)}</div>'
-                            f'<div class="metric-label">Transacciones RTE</div></div>',
-                            unsafe_allow_html=True)
+                        ui_components.kpi("Transacciones RTE", n_rte_prev, tone="red")
                     with col_r2:
                         cli_u = df_rte_prev["Cliente"].nunique() if "Cliente" in df_rte_prev.columns else 0
-                        st.markdown(
-                            f'<div class="metric-card amber">'
-                            f'<div class="metric-number">{h(cli_u)}</div>'
-                            f'<div class="metric-label">Clientes únicos</div></div>',
-                            unsafe_allow_html=True)
+                        ui_components.kpi("Clientes únicos", cli_u, tone="amber")
                     with col_r3:
                         monto_rte_prev = df_rte_prev["Monto"].sum() if "Monto" in df_rte_prev.columns else 0
-                        st.markdown(
-                            f'<div class="metric-card orange">'
-                            f'<div class="metric-number">Q{h(format(monto_rte_prev, ",.0f"))}</div>'
-                            f'<div class="metric-label">Monto total efectivo</div></div>',
-                            unsafe_allow_html=True)
+                        ui_components.kpi("Monto total efectivo", f"Q{monto_rte_prev:,.0f}", tone="orange")
 
                     st.warning(
                         f"⚠️ {n_rte_prev} transacción(es) requieren RTE ante la IVE (Art. 31 Ley 6593)")

@@ -2,6 +2,7 @@ import streamlit as st
 from datetime import datetime
 from frontend.mod_utils import render_html_table
 from frontend.ui_safe import h
+from frontend import ui_components
 
 ESTADOS_ALERTA = [
     "Inusual_Pendiente",       # Detectado por IMPERATOR, sin examinar
@@ -102,7 +103,7 @@ def mostrar(casos):
 
     # ── PANEL DE GESTIÓN DE CASOS (Arts. 28-30 Ley 6593) ─────────────────────
     st.markdown("---")
-    st.markdown('<div class="section-title">Gestión de Casos: Ciclo Inusual → Sospechosa</div>', unsafe_allow_html=True)
+    ui_components.section_title("Gestión de Casos: Ciclo Inusual → Sospechosa")
     if not casos_filtrados.empty:
         caso_idx = st.selectbox(
             "Seleccionar caso para gestionar",

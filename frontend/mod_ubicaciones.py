@@ -2,6 +2,7 @@ import streamlit as st
 
 from frontend import permisos
 from frontend.ui_safe import h
+from frontend import ui_components
 
 def mostrar():
     st.markdown("""
@@ -28,7 +29,7 @@ def mostrar():
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.markdown('<div class="section-title">➕ Agregar Nueva Zona</div>', unsafe_allow_html=True)
+        ui_components.section_title("➕ Agregar Nueva Zona")
         nueva_ubic = st.text_input("Nombre de la ubicación (Departamento o Municipio):", placeholder="Ej. El Progreso")
         
         c_add, _ = st.columns([1, 2])
@@ -44,7 +45,7 @@ def mostrar():
                 st.error("Ingrese un nombre válido.")
     
     with col2:
-        st.markdown('<div class="section-title">🚩 Zonas Bajo Vigilancia</div>', unsafe_allow_html=True)
+        ui_components.section_title("🚩 Zonas Bajo Vigilancia")
         if not st.session_state["aml_config"]["ubicaciones_manuales"]:
             st.info("No hay ubicaciones configuradas.")
         else:

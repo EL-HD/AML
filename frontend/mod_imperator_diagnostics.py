@@ -4,6 +4,7 @@ import numpy as np
 import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout, render_html_table
 from frontend.ui_safe import h
+from frontend import ui_components
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # IMPERATOR DIAGNOSTICS: Centro de Validación del Motor y Aseguramiento de Riesgo
@@ -26,12 +27,8 @@ _COLOR_SCORE = ["#f59e0b", "#3b82f6", "#10b981", "#a855f7"]
 
 
 def _card(titulo, valor, subtitulo, color="amber"):
-    return f"""
-    <div class="metric-card {h(color)}">
-        <div class="metric-label">{h(titulo)}</div>
-        <div class="metric-number" style="font-size:26px;">{h(valor)}</div>
-        <div class="metric-sub">{h(subtitulo)}</div>
-    </div>"""
+    """Tarjeta KPI (delegada al componente compartido; escapa todos los valores)."""
+    return ui_components.kpi_card(titulo, valor, subtitulo, tone=color, font_size=26)
 
 
 def _section(titulo):

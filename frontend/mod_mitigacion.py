@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 import streamlit as st
 from frontend.mod_utils import plotly_dark_layout
 from frontend.ui_safe import h
+from frontend import ui_components
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CATÁLOGO DE ACCIONES DE MITIGACIÓN: RBA (GAFI) + ISO 31000 + COSO ERM
@@ -130,7 +131,7 @@ def mostrar(df, casos):
     """, unsafe_allow_html=True)
 
     # ── MARCO NORMATIVO ────────────────────────────────────────────────────
-    st.markdown('<div class="section-title">Marco Normativo Aplicado</div>', unsafe_allow_html=True)
+    ui_components.section_title("Marco Normativo Aplicado")
     col_n1, col_n2, col_n3 = st.columns(3)
     marcos = [
         ("RBA: GAFI", "Núcleo operativo", "Evalúa el riesgo de cada cliente con enfoque basado en riesgo. Activa acciones proporcionales al nivel detectado.", "#ef4444"),
@@ -163,7 +164,7 @@ def mostrar(df, casos):
         </div>""", unsafe_allow_html=True)
 
     # ── CATÁLOGO DE ACCIONES DE MITIGACIÓN ────────────────────────────────
-    st.markdown('<div class="section-title">Catálogo de Acciones Estandarizadas</div>', unsafe_allow_html=True)
+    ui_components.section_title("Catálogo de Acciones Estandarizadas")
     col_cats = st.columns(5)
     for col, (cat_nombre, items) in zip(col_cats, _CATALOGO.items()):
         color = _COLOR_CAT[cat_nombre]
@@ -188,7 +189,7 @@ def mostrar(df, casos):
     st.markdown("---")
 
     # ── ACCIONES ASIGNADAS POR CLIENTE ────────────────────────────────────
-    st.markdown('<div class="section-title">Acciones Asignadas por Cliente</div>', unsafe_allow_html=True)
+    ui_components.section_title("Acciones Asignadas por Cliente")
 
     # Selector de nivel
     niveles_disp = ["Todos"] + sorted(casos["Nivel_Riesgo"].unique().tolist(), reverse=True)
@@ -229,11 +230,7 @@ def mostrar(df, casos):
     ]
     for col, (val, lbl, color) in zip([col_k1, col_k2, col_k3, col_k4], kpi_data):
         with col:
-            st.markdown(f"""
-            <div class="metric-card {h(color)}">
-                <div class="metric-number">{h(val)}</div>
-                <div class="metric-label">{h(lbl)}</div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.kpi(lbl, val, tone=color)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -303,7 +300,7 @@ def mostrar(df, casos):
 
     # ── GRÁFICO: Distribución de acciones por categoría ───────────────────
     st.markdown("---")
-    st.markdown('<div class="section-title">Distribución de Acciones por Categoría</div>', unsafe_allow_html=True)
+    ui_components.section_title("Distribución de Acciones por Categoría")
 
     conteo_cat = df_acciones["Categoría"].value_counts().reset_index()
     conteo_cat.columns = ["Categoría", "Cantidad"]

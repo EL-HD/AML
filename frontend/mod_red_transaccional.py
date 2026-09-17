@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 import math
 from frontend.mod_utils import render_html_table
 from frontend.ui_safe import h
+from frontend import ui_components
 
 try:
     import networkx as nx
@@ -214,11 +215,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
     ]
     for col, (val, lbl, color) in zip([col_k1, col_k2, col_k3, col_k4], kpi_vals):
         with col:
-            st.markdown(f"""
-            <div class="metric-card {h(color)}">
-                <div class="metric-number">{h(val)}</div>
-                <div class="metric-label">{h(lbl)}</div>
-            </div>""", unsafe_allow_html=True)
+            ui_components.kpi(lbl, val, tone=color)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -342,7 +339,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
     st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("---")
-    st.markdown('<div class="section-title">Relaciones Visibles y Trazabilidad Base</div>', unsafe_allow_html=True)
+    ui_components.section_title("Relaciones Visibles y Trazabilidad Base")
     st.markdown("""
     <div class="info-box">
         Esta tabla suele ser la vista más útil cuando la red ya tiene demasiados nodos: resume cada relación,
@@ -377,7 +374,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
 
     # ── TABLA DE RUTAS MULTI-HOP ───────────────────────────────────────────
     st.markdown("---")
-    st.markdown('<div class="section-title">Rutas Multi-Hop Detectadas</div>', unsafe_allow_html=True)
+    ui_components.section_title("Rutas Multi-Hop Detectadas")
     st.markdown("""
     <div class="info-box" style="border-left-color: #ef4444;">
         <strong>Análisis de encadenamiento:</strong> Rutas donde el dinero pasa por ≥2 clientes intermedios.
@@ -422,7 +419,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
 
     # ── CENTRALIDAD DE NODOS ───────────────────────────────────────────────
     st.markdown("---")
-    st.markdown('<div class="section-title">Centralidad de Nodos (Importancia en la Red)</div>', unsafe_allow_html=True)
+    ui_components.section_title("Centralidad de Nodos (Importancia en la Red)")
     st.markdown("""
     <div class="info-box">
         La <b>centralidad de intermediario (betweenness)</b> identifica nodos que actúan como puente en la red.
