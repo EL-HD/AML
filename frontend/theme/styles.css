@@ -702,3 +702,56 @@ div[data-testid="stFileUploader"] section button {
 /* Radios de navegación agrupada */
 [data-testid="stSidebar"] [data-testid="stRadio"] { margin-bottom: 6px; }
 [data-testid="stSidebar"] [data-testid="stRadio"] label { font-size: 13px; }
+
+/* ---- TABLA HTML ESTÁTICA (render_html_table), paleta oscura coherente ---- */
+.sovereign-table-wrap {
+    width: 100%;
+    overflow: auto;
+    border: 1px solid var(--sv-borde);
+    border-top: 3px solid var(--sv-acento);
+    background: var(--sv-superficie);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+}
+
+.sovereign-table {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: collapse;
+    table-layout: auto;
+    color: var(--sv-texto);
+    font-family: var(--sv-font-sans);
+    font-size: 13px;
+    line-height: 1.35;
+    background: var(--sv-superficie);
+}
+
+.sovereign-table th,
+.sovereign-table td {
+    padding: 11px 14px;
+    text-align: left;
+    border-right: 1px solid var(--sv-borde);
+    border-bottom: 1px solid var(--sv-borde);
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.sovereign-table th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--sv-superficie-alta);
+    color: var(--sv-acento);
+    font-family: var(--sv-font-mono);
+    font-size: var(--sv-font-minima);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sovereign-table td { color: var(--sv-texto); font-weight: 500; }
+.sovereign-table tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.02); }
+.sovereign-table tbody tr:hover td { background: rgba(245, 158, 11, 0.08); }
+.sovereign-table th:last-child,
+.sovereign-table td:last-child { border-right: none; }
+.sovereign-table tbody tr:last-child td { border-bottom: none; }
