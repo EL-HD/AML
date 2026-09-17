@@ -22,7 +22,7 @@ Seguridad (validaciones explícitas, sin atajos que oculten comportamiento):
     `backend.schemas` (listas cerradas, rangos 1-4, longitudes máximas)
     antes de tocar la base de datos.
 """
-from html import escape as _esc
+from frontend.ui_safe import h
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -67,9 +67,9 @@ def _badge_nivel(nivel: int) -> str:
     color = logic.color_nivel(nivel)
     texto = logic.descripcion_nivel(nivel)
     return (
-        f'<span style="background:{color}22; color:{color}; border:1px solid {color}; '
+        f'<span style="background:{h(color)}22; color:{h(color)}; border:1px solid {h(color)}; '
         f'padding:2px 10px; font-size:12px; font-weight:700; border-radius:2px; '
-        f'font-family:IBM Plex Mono,monospace;">{texto}</span>'
+        f'font-family:IBM Plex Mono,monospace;">{h(texto)}</span>'
     )
 
 
@@ -210,7 +210,7 @@ def _tab_eventos(db, licenciaid, username):
         c1, c2, c3, c4 = st.columns([3, 1, 1, 1])
         # e.nombre / e.factor se escapan antes de interpolarse en HTML (previene XSS almacenado).
         c1.markdown(
-            f"**{_esc(e.codigo)} · {_esc(e.nombre)}**  \n<span style='color:#8b949e;font-size:12px;'>{_esc(e.factor)}</span>",
+            f"**{h(e.codigo)} · {h(e.nombre)}**  \n<span style='color:#8b949e;font-size:12px;'>{h(e.factor)}</span>",
             unsafe_allow_html=True,
         )
         c2.markdown(f"Inherente<br>{_badge_nivel(e.nivel_inherente)}", unsafe_allow_html=True)

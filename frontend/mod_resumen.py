@@ -1,6 +1,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout, render_html_table
+from frontend.ui_safe import h
 
 def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
     st.markdown("""<div class="info-box"><strong>RESUMEN EJECUTIVO</strong>: Análisis de alto nivel IMPERATOR Intelligence. Muestra indicadores críticos y distribución de riesgo detectada. Optimizado para supervisión operativa mediante capas tonales.</div>""", unsafe_allow_html=True)
@@ -50,26 +51,26 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
         with c1:
             st.markdown(f"""
             <div class="metric-card blue">
-                <div class="metric-number">{total_clientes}</div>
+                <div class="metric-number">{h(total_clientes)}</div>
                 <div class="metric-label">Clientes Analizados</div>
-                <div class="metric-sub">{clientes_alerta} con alguna alerta</div>
+                <div class="metric-sub">{h(clientes_alerta)} con alguna alerta</div>
             </div>""", unsafe_allow_html=True)
             st.markdown(f"""
             <div class="metric-card amber">
-                <div class="metric-number">{total_alertas:,}</div>
+                <div class="metric-number">{h(format(total_alertas, ','))}</div>
                 <div class="metric-label">Total de Alertas</div>
-                <div class="metric-sub">{altos} clientes en nivel Alto</div>
+                <div class="metric-sub">{h(altos)} clientes en nivel Alto</div>
             </div>""", unsafe_allow_html=True)
         with c2:
             st.markdown(f"""
             <div class="metric-card red">
-                <div class="metric-number">{criticos}</div>
+                <div class="metric-number">{h(criticos)}</div>
                 <div class="metric-label">Clientes Críticos</div>
                 <div class="metric-sub">Requieren revisión inmediata</div>
             </div>""", unsafe_allow_html=True)
             st.markdown(f"""
             <div class="metric-card green">
-                <div class="metric-number">Q{monto_total:,.0f}</div>
+                <div class="metric-number">Q{h(format(monto_total, ',.0f'))}</div>
                 <div class="metric-label">Volumen Total</div>
                 <div class="metric-sub">Monto acumulado analizado</div>
             </div>""", unsafe_allow_html=True)
@@ -295,21 +296,21 @@ def mostrar(df, casos, matriz_alertas, pep_cpe_info=None):
 
         titulo_estrategia = "Estrategia Comercial Recomendada"
         if es_digital:
-            desc_estrategia = f"El canal <b>{canal_frecuente}</b> es el preferido por tus clientes. Se recomienda lanzar campañas de fidelización digital (Cashback, Puntos) y notificaciones Push para productos de crédito rápido."
+            desc_estrategia = f"El canal <b>{h(canal_frecuente)}</b> es el preferido por tus clientes. Se recomienda lanzar campañas de fidelización digital (Cashback, Puntos) y notificaciones Push para productos de crédito rápido."
         elif es_cash:
-            desc_estrategia = f"El uso de <b>{canal_frecuente}</b> es predominante. Existe una oportunidad para migrar estos clientes a canales digitales mediante incentivos de 'Primera Transferencia' o quioscos de auto-servicio."
+            desc_estrategia = f"El uso de <b>{h(canal_frecuente)}</b> es predominante. Existe una oportunidad para migrar estos clientes a canales digitales mediante incentivos de 'Primera Transferencia' o quioscos de auto-servicio."
         else:
-            desc_estrategia = f"El canal <b>{canal_frecuente}</b> lidera la transaccionalidad. Fortalecer la atención en este punto mejorará la retención del cliente."
+            desc_estrategia = f"El canal <b>{h(canal_frecuente)}</b> lidera la transaccionalidad. Fortalecer la atención en este punto mejorará la retención del cliente."
 
         st.markdown(f"""
         <div style="background-color: #1b2027; border: 1px solid #f59e0b; border-radius: 0px; padding: 24px; border-left: 8px solid #f59e0b;">
             <div style="color: #f59e0b; font-weight: 700; font-size: 18px; margin-bottom: 15px; display: flex; align-items: center; font-family: 'IBM Plex Sans', sans-serif;">
-                <span class="pulse-dot"></span> {titulo_estrategia}
+                <span class="pulse-dot"></span> {h(titulo_estrategia)}
             </div>
             <div style="color: #dee2ed; font-size: 14px; line-height: 1.8;">
-                {desc_estrategia}<br><br>
-                <b style="color: #f59e0b;">SEGMENTACIÓN DE VALOR:</b> El canal <b>{canal_volumen}</b> concentra el mayor flujo de capital (Q{monto_tipo.max():,.0f}). Optimización recomendada para productos de alta rentabilidad.<br><br>
-                <b style="color: #ef4444;">PROTOCOLO DE RIESGO:</b> Detección de anomalías críticas en el canal <b>{canal_riesgoso}</b>. Se requiere monitoreo de transacciones en tiempo real y revisión de EDD.
+                {h(desc_estrategia)}<br><br>
+                <b style="color: #f59e0b;">SEGMENTACIÓN DE VALOR:</b> El canal <b>{h(canal_volumen)}</b> concentra el mayor flujo de capital (Q{h(format(monto_tipo.max(), ',.0f'))}). Optimización recomendada para productos de alta rentabilidad.<br><br>
+                <b style="color: #ef4444;">PROTOCOLO DE RIESGO:</b> Detección de anomalías críticas en el canal <b>{h(canal_riesgoso)}</b>. Se requiere monitoreo de transacciones en tiempo real y revisión de EDD.
             </div>
         </div>
         """, unsafe_allow_html=True)

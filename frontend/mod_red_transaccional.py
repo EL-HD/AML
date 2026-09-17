@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import math
 from frontend.mod_utils import render_html_table
+from frontend.ui_safe import h
 
 try:
     import networkx as nx
@@ -214,17 +215,17 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
     for col, (val, lbl, color) in zip([col_k1, col_k2, col_k3, col_k4], kpi_vals):
         with col:
             st.markdown(f"""
-            <div class="metric-card {color}">
-                <div class="metric-number">{val}</div>
-                <div class="metric-label">{lbl}</div>
+            <div class="metric-card {h(color)}">
+                <div class="metric-number">{h(val)}</div>
+                <div class="metric-label">{h(lbl)}</div>
             </div>""", unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     st.markdown(f"""
     <div class="info-box" style="margin-top:0;">
-        <b>Vista aplicada:</b> se muestran hasta <b>{G.number_of_edges()}</b> relaciones agregadas por par origen-destino.
-        {"La red está centrada en <b>" + cliente_foco + "</b> con profundidad de <b>" + str(profundidad) + " hop(s)</b>." if cliente_foco != "Todos" else "Para una trazabilidad más exacta, conviene enfocar un cliente y bajar la profundidad a 1 o 2 hops."}
+        <b>Vista aplicada:</b> se muestran hasta <b>{h(G.number_of_edges())}</b> relaciones agregadas por par origen-destino.
+        {h("La red está centrada en <b>" + cliente_foco + "</b> con profundidad de <b>" + str(profundidad) + " hop(s)</b>." if cliente_foco != "Todos" else "Para una trazabilidad más exacta, conviene enfocar un cliente y bajar la profundidad a 1 o 2 hops.")}
     </div>
     """, unsafe_allow_html=True)
 
@@ -267,10 +268,10 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
             mode="markers+text",
             marker=dict(symbol="arrow", size=10, color="#f59e0b",
                         angle=math.degrees(math.atan2(y1 - y0, x1 - x0))),
-            text=[f"Q{monto_arista:,.0f}<br>{n_tx_arista} tx"] if mostrar_etiquetas else [""],
+            text=[f"Q{h(format(monto_arista, ',.0f'))}<br>{h(n_tx_arista)} tx"] if mostrar_etiquetas else [""],
             textposition="top center",
             textfont=dict(color="#8b949e", size=9),
-            hovertemplate=f"<b>{u} → {v}</b><br>Monto: Q{monto_arista:,.0f}<br>Transacciones: {n_tx_arista}<extra></extra>",
+            hovertemplate=f"<b>{h(u)} → {h(v)}</b><br>Monto: Q{h(format(monto_arista, ',.0f'))}<br>Transacciones: {h(n_tx_arista)}<extra></extra>",
             showlegend=False,
         ))
 
@@ -293,11 +294,11 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
         node_sizes.append(max(18, min(45, 18 + score * 2.5)))
         node_text.append(nodo[:12] + "…" if len(nodo) > 12 else nodo)
         node_hover.append(
-            f"<b>{nodo}</b><br>"
-            f"Nivel: <b>{nivel}</b><br>"
-            f"Score: <b>{score:.2f}/10</b><br>"
-            f"Envía a: <b>{grado_salida}</b> nodo(s)<br>"
-            f"Recibe de: <b>{grado_entrada}</b> nodo(s)"
+            f"<b>{h(nodo)}</b><br>"
+            f"Nivel: <b>{h(nivel)}</b><br>"
+            f"Score: <b>{h(format(score, '.2f'))}/10</b><br>"
+            f"Envía a: <b>{h(grado_salida)}</b> nodo(s)<br>"
+            f"Recibe de: <b>{h(grado_entrada)}</b> nodo(s)"
         )
 
     node_trace = go.Scatter(

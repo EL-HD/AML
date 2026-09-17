@@ -1,6 +1,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout, render_html_table
+from frontend.ui_safe import h
 
 def mostrar(casos, matriz_alertas):
     st.markdown("""<div class="info-box"><strong>MATRICES DE RIESGO</strong>: Arquitectura de decisión IMPERATOR. Clasificación técnica por perfiles de riesgo y tipologías de alerta analitica. Optimizado para calibración de umbrales y priorización táctica.</div>""", unsafe_allow_html=True)
@@ -58,11 +59,11 @@ def mostrar(casos, matriz_alertas):
             imp_color = "#22c55e"
         filas_html += f"""
         <tr>
-            <td style="font-weight: 600;">{row['Tipo de Alerta']}</td>
-            <td style='text-align:center; font-family:IBM Plex Mono,monospace; font-weight:600; color:{imp_color};'>{int(row['Cantidad'])}</td>
-            <td><span style='color:{imp_color}; font-weight:600; font-family:IBM Plex Mono,monospace;'>{imp}</span></td>
-            <td style='text-align:center; font-family:IBM Plex Mono,monospace;'>{int(row['Peso en Score'])}</td>
-            <td style='color:#d8c3ad; font-size:12px;'>{row['Descripción']}</td>
+            <td style="font-weight: 600;">{h(row['Tipo de Alerta'])}</td>
+            <td style='text-align:center; font-family:IBM Plex Mono,monospace; font-weight:600; color:{h(imp_color)};'>{h(int(row['Cantidad']))}</td>
+            <td><span style='color:{h(imp_color)}; font-weight:600; font-family:IBM Plex Mono,monospace;'>{h(imp)}</span></td>
+            <td style='text-align:center; font-family:IBM Plex Mono,monospace;'>{h(int(row['Peso en Score']))}</td>
+            <td style='color:#d8c3ad; font-size:12px;'>{h(row['Descripción'])}</td>
         </tr>"""
 
     st.markdown(f"""

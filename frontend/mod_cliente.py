@@ -1,6 +1,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout
+from frontend.ui_safe import h
 
 TIPOS_CLIENTE = [
     "Persona Individual",
@@ -33,27 +34,27 @@ def mostrar(df, casos, cfg):
 
     with col1:
         st.markdown(f"""
-        <div class="metric-card {color_card}">
-            <div class="metric-number">{nivel}</div>
+        <div class="metric-card {h(color_card)}">
+            <div class="metric-number">{h(nivel)}</div>
             <div class="metric-label">Nivel de Riesgo</div>
         </div>""", unsafe_allow_html=True)
     with col2:
         st.markdown(f"""
         <div class="metric-card amber">
-            <div class="metric-number">{int(info_cliente['Score_Max'])}</div>
+            <div class="metric-number">{h(int(info_cliente['Score_Max']))}</div>
             <div class="metric-label">Score Máximo</div>
             <div class="metric-sub">sobre 12 posibles</div>
         </div>""", unsafe_allow_html=True)
     with col3:
         st.markdown(f"""
         <div class="metric-card blue">
-            <div class="metric-number">{int(info_cliente['Transacciones'])}</div>
+            <div class="metric-number">{h(int(info_cliente['Transacciones']))}</div>
             <div class="metric-label">Transacciones</div>
         </div>""", unsafe_allow_html=True)
     with col4:
         st.markdown(f"""
         <div class="metric-card green">
-            <div class="metric-number">Q{info_cliente['Total_Mensual']:,.0f}</div>
+            <div class="metric-number">Q{h(format(info_cliente['Total_Mensual'], ',.0f'))}</div>
             <div class="metric-label">Total Mensual</div>
         </div>""", unsafe_allow_html=True)
 
@@ -142,12 +143,12 @@ def mostrar(df, casos, cfg):
     )
 
     st.markdown(f"""
-    <div style="background-color: #1b2027; border: 1px solid {nivel_color}; border-radius: 0px; padding: 24px; border-left: 8px solid {nivel_color};">
+    <div style="background-color: #1b2027; border: 1px solid {h(nivel_color)}; border-radius: 0px; padding: 24px; border-left: 8px solid {h(nivel_color)};">
         <div style="font-size: 11px; color: #f59e0b; text-transform: uppercase; letter-spacing: 2px; font-family: 'IBM Plex Mono', monospace; margin-bottom: 15px;">
             <span class="pulse-dot"></span> RESUMEN TÉCNICO IMPERATOR INTELLIGENCE
         </div>
         <div style="color: #dee2ed; font-size: 14px; line-height: 1.8;">
-            {resumen_manual}
+            {h(resumen_manual)}
         </div>
     </div>
     """, unsafe_allow_html=True)

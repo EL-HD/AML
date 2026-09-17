@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout, render_html_table
+from frontend.ui_safe import h
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # IMPERATOR DIAGNOSTICS: Centro de Validación del Motor y Aseguramiento de Riesgo
@@ -26,15 +27,15 @@ _COLOR_SCORE = ["#f59e0b", "#3b82f6", "#10b981", "#a855f7"]
 
 def _card(titulo, valor, subtitulo, color="amber"):
     return f"""
-    <div class="metric-card {color}">
-        <div class="metric-label">{titulo}</div>
-        <div class="metric-number" style="font-size:26px;">{valor}</div>
-        <div class="metric-sub">{subtitulo}</div>
+    <div class="metric-card {h(color)}">
+        <div class="metric-label">{h(titulo)}</div>
+        <div class="metric-number" style="font-size:26px;">{h(valor)}</div>
+        <div class="metric-sub">{h(subtitulo)}</div>
     </div>"""
 
 
 def _section(titulo):
-    st.markdown(f'<div class="section-title">{titulo}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="section-title">{h(titulo)}</div>', unsafe_allow_html=True)
 
 
 def _calcular_dominancia(df):
@@ -188,7 +189,7 @@ def mostrar(df, casos, cfg):
                 fig_comp.add_trace(go.Bar(
                     name=nivel, x=_LABEL_SCORE, y=vals,
                     marker_color=colores_comp[i % len(colores_comp)],
-                    hovertemplate=f"<b>{nivel}</b><br>%{{x}}: <b>%{{y:.2f}}</b><extra></extra>",
+                    hovertemplate=f"<b>{h(nivel)}</b><br>%{{x}}: <b>%{{y:.2f}}</b><extra></extra>",
                 ))
             fig_comp.update_layout(plotly_dark_layout(
                 barmode="group",
@@ -327,8 +328,8 @@ def mostrar(df, casos, cfg):
 
         st.markdown(f"""
         <div class="info-box">
-            Valor actual: <strong>{val_actual}</strong> genera
-            <strong>{_stress_test(df, cfg, param_key, [val_actual])[0]}</strong> alertas para esta regla.
+            Valor actual: <strong>{h(val_actual)}</strong> genera
+            <strong>{h(_stress_test(df, cfg, param_key, [val_actual])[0])}</strong> alertas para esta regla.
             Ajuste el rango para ver cómo cambia la sensibilidad del motor.
         </div>""", unsafe_allow_html=True)
 

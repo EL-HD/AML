@@ -1,4 +1,5 @@
 import streamlit as st
+from frontend.ui_safe import h
 st.set_page_config(
     page_title="SOVEREIGN AML | Intelligence Platform",
     layout="wide",
@@ -462,7 +463,7 @@ def login_flow():
         with st.form("login_form", clear_on_submit=False):
             st.markdown(f"""
                 <div style="text-align: center; margin-bottom: 2rem;">
-                    <img src="data:image/png;base64,{logo_b64}" 
+                    <img src="data:image/png;base64,{h(logo_b64)}" 
                          style="height: 6rem; margin-bottom: 1.5rem; filter: drop-shadow(0 0 15px rgba(245, 158, 11, 0.3));">
                     <div style="color: white; font-size: 1.5rem; font-weight: 600;">Acceso al Sistema</div>
                     <div style="color: #8b949e; font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase;">SISTEMA IMPERATOR ENGINE</div>
@@ -543,12 +544,12 @@ with st.sidebar:
         st.markdown(f"""
         <div class='sidebar-card sidebar-license'>
             <div class='sidebar-label'>Licencia Activa</div>
-            <div class='sidebar-primary'>{lic['name']}</div>
-            <div class='sidebar-accent'>{lic['mail']}</div>
+            <div class='sidebar-primary'>{h(lic['name'])}</div>
+            <div class='sidebar-accent'>{h(lic['mail'])}</div>
             <div class='sidebar-label sidebar-spaced'>Empresa</div>
-            <div class='sidebar-value'>{lic['empresa']}</div>
+            <div class='sidebar-value'>{h(lic['empresa'])}</div>
             <div class='sidebar-label sidebar-spaced'>Expira</div>
-            <div class='sidebar-value'>{lic['fecha_expiracion']}</div>
+            <div class='sidebar-value'>{h(lic['fecha_expiracion'])}</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -1093,11 +1094,11 @@ with st.sidebar:
         st.markdown(f"""
         <div class='sidebar-card'>
             <div class='sidebar-params'>
-                Reglas activas: {reglas_activas}/7<br>
-                Crítico ≥ score {cfg['score_critico']}<br>
-                Alto ≥ score {cfg['score_alto']}<br>
-                Medio ≥ score {cfg['score_medio']}<br>
-                Umbral base: Q{cfg['umbral_absoluto']:,}
+                Reglas activas: {h(reglas_activas)}/7<br>
+                Crítico ≥ score {h(cfg['score_critico'])}<br>
+                Alto ≥ score {h(cfg['score_alto'])}<br>
+                Medio ≥ score {h(cfg['score_medio'])}<br>
+                Umbral base: Q{h(format(cfg['umbral_absoluto'], ','))}
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1228,7 +1229,7 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
         <div class="welcome-panel">
             <div class="welcome-kicker">Centro de análisis</div>
             <div class="welcome-rule"></div>
-            <div class="welcome-title">Bienvenido, <span style='color:#ffffff;'>{user_name}</span>.</div>
+            <div class="welcome-title">Bienvenido, <span style='color:#ffffff;'>{h(user_name)}</span>.</div>
             <div class="welcome-copy">
                 Es un gusto tenerle de vuelta. Inicie un nuevo análisis o restaure una sesión guardada
                 para continuar monitoreando transacciones, alertas y perfiles de riesgo desde un solo espacio.
@@ -1336,9 +1337,9 @@ if vista not in ["Configuración", "Manual de Usuario", "Gestión de Ubicaciones
                 <div style="background:#171c23; border-left:3px solid #f59e0b; padding:12px 16px;
                             font-family:'IBM Plex Mono',monospace; font-size:12px; color:#a08e7a;">
                     <span style="color:#f59e0b; font-weight:700;">SESIÓN RESTAURADA</span>
-                    &nbsp;·&nbsp; {nombre}
-                    &nbsp;·&nbsp; {filas} registros
-                    &nbsp;·&nbsp; Exportada: {exportado}
+                    &nbsp;·&nbsp; {h(nombre)}
+                    &nbsp;·&nbsp; {h(filas)} registros
+                    &nbsp;·&nbsp; Exportada: {h(exportado)}
                 </div>""", unsafe_allow_html=True)
             else:
                 st.success(f"Archivo '{st.session_state['archivo_nombre']}' cargado y analizado de forma correcta.")

@@ -6,6 +6,7 @@ from backend import models
 from backend.database import SessionLocal
 from frontend import permisos
 from frontend.mod_utils import apply_dark_style, render_html_table
+from frontend.ui_safe import h
 
 # Catálogos globales del RTS disponibles para verificación (normativa IVE vigente).
 # Un solo diccionario de configuración evita repetir la misma consulta 10 veces.
@@ -117,7 +118,7 @@ def mostrar(_DEFAULTS):
             c["regla_absoluto"] = st.toggle("", value=c["regla_absoluto"], key="tog_abs")
         with col_title:
             estado_abs = "ACTIVA" if c["regla_absoluto"] else "DESACTIVADA"
-            st.markdown(f'<div class="section-title">Regla 1: Monto Alto Absoluto &nbsp;<span class="section-badge">{estado_abs}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">Regla 1: Monto Alto Absoluto &nbsp;<span class="section-badge">{h(estado_abs)}</span></div>', unsafe_allow_html=True)
 
         col_desc1, col_ctrl1 = st.columns([3, 2])
         with col_desc1:
@@ -137,7 +138,7 @@ def mostrar(_DEFAULTS):
                     </div>
                     <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
                         <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Lógica Algebraica</div>
-                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">Monto &gt; Q{c['umbral_absoluto']:,}</div>
+                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">Monto &gt; Q{h(format(c['umbral_absoluto'], ','))}</div>
                     </div>
                 </div>
             </div>""", unsafe_allow_html=True)
@@ -149,10 +150,10 @@ def mostrar(_DEFAULTS):
                 disabled=not c["regla_absoluto"]
             )
             st.markdown(f"""
-            <div class="metric-card {'amber' if c['regla_absoluto'] else 'blue'}" style="margin-top:8px;">
-                <div class="metric-number" style="font-size:22px;">Q{c['umbral_absoluto']:,}</div>
+            <div class="metric-card {h('amber' if c['regla_absoluto'] else 'blue')}" style="margin-top:8px;">
+                <div class="metric-number" style="font-size:22px;">Q{h(format(c['umbral_absoluto'], ','))}</div>
                 <div class="metric-label">Umbral actual</div>
-                <div class="metric-sub">Peso en score: <strong>{c['peso_absoluto']} pts</strong></div>
+                <div class="metric-sub">Peso en score: <strong>{h(c['peso_absoluto'])} pts</strong></div>
             </div>""", unsafe_allow_html=True)
 
         st.markdown("---")
@@ -163,7 +164,7 @@ def mostrar(_DEFAULTS):
             c["regla_acumulado"] = st.toggle("", value=c["regla_acumulado"], key="tog_acum")
         with col_title2:
             estado_acum = "ACTIVA" if c["regla_acumulado"] else "DESACTIVADA"
-            st.markdown(f'<div class="section-title">Regla 2: Acumulado Mensual &nbsp;<span class="section-badge">{estado_acum}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">Regla 2: Acumulado Mensual &nbsp;<span class="section-badge">{h(estado_acum)}</span></div>', unsafe_allow_html=True)
 
         col_desc2, col_ctrl2 = st.columns([3, 2])
         with col_desc2:
@@ -183,7 +184,7 @@ def mostrar(_DEFAULTS):
                     </div>
                     <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
                         <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Lógica Algebraica</div>
-                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">Total &gt; Perfil × {c['mult_acumulado']}x</div>
+                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">Total &gt; Perfil × {h(c['mult_acumulado'])}x</div>
                     </div>
                 </div>
                 <div style="margin-top:12px; padding:10px; background:#1b2027; border-left:2px solid #3b82f6;">
@@ -203,10 +204,10 @@ def mostrar(_DEFAULTS):
                 disabled=not c["regla_acumulado"]
             )
             st.markdown(f"""
-            <div class="metric-card {'amber' if c['regla_acumulado'] else 'blue'}" style="margin-top:8px;">
-                <div class="metric-number" style="font-size:22px;">{c['mult_acumulado']}x</div>
+            <div class="metric-card {h('amber' if c['regla_acumulado'] else 'blue')}" style="margin-top:8px;">
+                <div class="metric-number" style="font-size:22px;">{h(c['mult_acumulado'])}x</div>
                 <div class="metric-label">Multiplicador actual</div>
-                <div class="metric-sub">Peso en score: <strong>{c['peso_acumulado']} pts</strong></div>
+                <div class="metric-sub">Peso en score: <strong>{h(c['peso_acumulado'])} pts</strong></div>
             </div>""", unsafe_allow_html=True)
 
         st.markdown("---")
@@ -217,7 +218,7 @@ def mostrar(_DEFAULTS):
             c["regla_perfil"] = st.toggle("", value=c["regla_perfil"], key="tog_perf")
         with col_title3:
             estado_perf = "ACTIVA" if c["regla_perfil"] else "DESACTIVADA"
-            st.markdown(f'<div class="section-title">Regla 3: Exceso sobre Perfil &nbsp;<span class="section-badge">{estado_perf}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">Regla 3: Exceso sobre Perfil &nbsp;<span class="section-badge">{h(estado_perf)}</span></div>', unsafe_allow_html=True)
 
         col_desc3, col_ctrl3 = st.columns([3, 2])
         with col_desc3:
@@ -237,7 +238,7 @@ def mostrar(_DEFAULTS):
                     </div>
                     <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
                         <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Lógica Algebraica</div>
-                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">&gt; Perfil + {c['tolerancia_perfil']}%</div>
+                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">&gt; Perfil + {h(c['tolerancia_perfil'])}%</div>
                     </div>
                 </div>
             </div>""", unsafe_allow_html=True)
@@ -249,10 +250,10 @@ def mostrar(_DEFAULTS):
                 disabled=not c["regla_perfil"]
             )
             st.markdown(f"""
-            <div class="metric-card {'amber' if c['regla_perfil'] else 'blue'}" style="margin-top:8px;">
-                <div class="metric-number" style="font-size:22px;">{c['tolerancia_perfil']}%</div>
+            <div class="metric-card {h('amber' if c['regla_perfil'] else 'blue')}" style="margin-top:8px;">
+                <div class="metric-number" style="font-size:22px;">{h(c['tolerancia_perfil'])}%</div>
                 <div class="metric-label">Tolerancia actual</div>
-                <div class="metric-sub">Peso en score: <strong>{c['peso_perfil']} pts</strong></div>
+                <div class="metric-sub">Peso en score: <strong>{h(c['peso_perfil'])} pts</strong></div>
             </div>""", unsafe_allow_html=True)
 
         st.markdown("---")
@@ -263,7 +264,7 @@ def mostrar(_DEFAULTS):
             c["regla_frecuencia"] = st.toggle("", value=c["regla_frecuencia"], key="tog_frec")
         with col_title4:
             estado_frec = "ACTIVA" if c["regla_frecuencia"] else "DESACTIVADA"
-            st.markdown(f'<div class="section-title">Regla 4: Frecuencia Alta &nbsp;<span class="section-badge">{estado_frec}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">Regla 4: Frecuencia Alta &nbsp;<span class="section-badge">{h(estado_frec)}</span></div>', unsafe_allow_html=True)
 
         col_desc4, col_ctrl4 = st.columns([3, 2])
         with col_desc4:
@@ -283,7 +284,7 @@ def mostrar(_DEFAULTS):
                     </div>
                     <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
                         <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Lógica Algebraica</div>
-                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">N &gt; {c['umbral_frecuencia']} ops</div>
+                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">N &gt; {h(c['umbral_frecuencia'])} ops</div>
                     </div>
                 </div>
             </div>""", unsafe_allow_html=True)
@@ -295,10 +296,10 @@ def mostrar(_DEFAULTS):
                 disabled=not c["regla_frecuencia"]
             )
             st.markdown(f"""
-            <div class="metric-card {'amber' if c['regla_frecuencia'] else 'blue'}" style="margin-top:8px;">
-                <div class="metric-number" style="font-size:22px;">&gt;{c['umbral_frecuencia']}</div>
+            <div class="metric-card {h('amber' if c['regla_frecuencia'] else 'blue')}" style="margin-top:8px;">
+                <div class="metric-number" style="font-size:22px;">&gt;{h(c['umbral_frecuencia'])}</div>
                 <div class="metric-label">Umbral de transacciones</div>
-                <div class="metric-sub">Peso en score: <strong>{c['peso_frecuencia']} pts</strong></div>
+                <div class="metric-sub">Peso en score: <strong>{h(c['peso_frecuencia'])} pts</strong></div>
             </div>""", unsafe_allow_html=True)
 
         st.markdown("---")
@@ -309,7 +310,7 @@ def mostrar(_DEFAULTS):
             c["regla_smurfing"] = st.toggle("", value=c["regla_smurfing"], key="tog_smurf")
         with col_title5:
             estado_smurf = "ACTIVA" if c["regla_smurfing"] else "DESACTIVADA"
-            st.markdown(f'<div class="section-title">Regla 5: Smurfing (Fragmentación) &nbsp;<span class="section-badge">{estado_smurf}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">Regla 5: Smurfing (Fragmentación) &nbsp;<span class="section-badge">{h(estado_smurf)}</span></div>', unsafe_allow_html=True)
 
         col_desc5, col_ctrl5 = st.columns([3, 2])
         with col_desc5:
@@ -329,7 +330,7 @@ def mostrar(_DEFAULTS):
                     </div>
                     <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
                         <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Lógica Algebraica</div>
-                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">Ops/Día ≥ {c['umbral_smurfing']}</div>
+                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">Ops/Día ≥ {h(c['umbral_smurfing'])}</div>
                     </div>
                 </div>
             </div>""", unsafe_allow_html=True)
@@ -342,9 +343,9 @@ def mostrar(_DEFAULTS):
             )
             st.markdown(f"""
             <div class="metric-card red" style="margin-top:8px;">
-                <div class="metric-number" style="font-size:22px;">≥{c['umbral_smurfing']}/día</div>
+                <div class="metric-number" style="font-size:22px;">≥{h(c['umbral_smurfing'])}/día</div>
                 <div class="metric-label">Umbral smurfing + gráfica</div>
-                <div class="metric-sub">Peso en score: <strong>{c['peso_smurfing']} pts</strong></div>
+                <div class="metric-sub">Peso en score: <strong>{h(c['peso_smurfing'])} pts</strong></div>
             </div>""", unsafe_allow_html=True)
 
         st.markdown("---")
@@ -356,7 +357,7 @@ def mostrar(_DEFAULTS):
             c["regla_pico"] = st.toggle("", value=c["regla_pico"], key="tog_pico")
         with col_title6:
             estado_pico = "ACTIVA" if c["regla_pico"] else "DESACTIVADA"
-            st.markdown(f'<div class="section-title">Regla 6: Pico Anómalo Estadístico &nbsp;<span class="section-badge">{estado_pico}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">Regla 6: Pico Anómalo Estadístico &nbsp;<span class="section-badge">{h(estado_pico)}</span></div>', unsafe_allow_html=True)
 
         col_desc6, col_ctrl6 = st.columns([3, 2])
         with col_desc6:
@@ -376,7 +377,7 @@ def mostrar(_DEFAULTS):
                     </div>
                     <div style="background:#1b2027; border-radius:0px; padding:12px; border: 1px solid rgba(83, 68, 52, 0.2);">
                         <div style="color:#a08e7a; font-size:10px; text-transform:uppercase; letter-spacing:1px;">Lógica Algebraica</div>
-                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">&gt; Media + {c['mult_std_pico']}σ</div>
+                        <div style="color:#f59e0b; font-family:IBM Plex Mono,monospace; font-size:12px; margin-top:4px;">&gt; Media + {h(c['mult_std_pico'])}σ</div>
                     </div>
                 </div>
             </div>""", unsafe_allow_html=True)
@@ -388,10 +389,10 @@ def mostrar(_DEFAULTS):
                 disabled=not c["regla_pico"]
             )
             st.markdown(f"""
-            <div class="metric-card {'amber' if c['regla_pico'] else 'blue'}" style="margin-top:8px;">
-                <div class="metric-number" style="font-size:22px;">μ + {c['mult_std_pico']}σ</div>
+            <div class="metric-card {h('amber' if c['regla_pico'] else 'blue')}" style="margin-top:8px;">
+                <div class="metric-number" style="font-size:22px;">μ + {h(c['mult_std_pico'])}σ</div>
                 <div class="metric-label">Umbral estadístico</div>
-                <div class="metric-sub">Peso en score: <strong>{c['peso_pico']} pts</strong></div>
+                <div class="metric-sub">Peso en score: <strong>{h(c['peso_pico'])} pts</strong></div>
             </div>""", unsafe_allow_html=True)
 
         st.markdown("---")
@@ -404,7 +405,7 @@ def mostrar(_DEFAULTS):
             estado_feic = "ACTIVA" if c.get("regla_feic", True) else "DESACTIVADA"
             st.markdown(
                 f'<div class="section-title">Regla 7: Verificación FEIS → FEIC &nbsp;'
-                f'<span class="section-badge">{estado_feic}</span></div>',
+                f'<span class="section-badge">{h(estado_feic)}</span></div>',
                 unsafe_allow_html=True
             )
 
@@ -434,8 +435,8 @@ def mostrar(_DEFAULTS):
                 <div style="margin-top:12px; padding:10px; background:#1b2027; border-left:2px solid #a855f7;">
                     <div style="color:#a08e7a; font-size:11px; font-family:IBM Plex Mono,monospace;">LÓGICA DE ACTIVACIÓN</div>
                     <div style="color:#a08e7a; font-size:12px; margin-top:4px; line-height:1.7;">
-                        <strong style='color:#c9d1d9;'>Total Mensual &gt; Q{umbral_actual:,} →</strong> Se agrega acción F-01 en Mitigación.<br>
-                        <strong style='color:#c9d1d9;'>Total Mensual ≤ Q{umbral_actual:,} →</strong> No se muestra la acción (perfil bajo OK).
+                        <strong style='color:#c9d1d9;'>Total Mensual &gt; Q{h(format(umbral_actual, ','))} →</strong> Se agrega acción F-01 en Mitigación.<br>
+                        <strong style='color:#c9d1d9;'>Total Mensual ≤ Q{h(format(umbral_actual, ','))} →</strong> No se muestra la acción (perfil bajo OK).
                     </div>
                 </div>
             </div>""", unsafe_allow_html=True)
@@ -450,8 +451,8 @@ def mostrar(_DEFAULTS):
             )
             color_feic = "amber" if c.get("regla_feic", True) else "blue"
             st.markdown(f"""
-            <div class="metric-card {color_feic}" style="margin-top:8px; border-left-color:#a855f7;">
-                <div class="metric-number" style="font-size:22px; color:#a855f7;">Q{c.get('umbral_feic', 45000):,}</div>
+            <div class="metric-card {h(color_feic)}" style="margin-top:8px; border-left-color:#a855f7;">
+                <div class="metric-number" style="font-size:22px; color:#a855f7;">Q{h(format(c.get('umbral_feic', 45000), ','))}</div>
                 <div class="metric-label">Umbral FEIC actual</div>
                 <div class="metric-sub">Código de acción: <strong>F-01</strong> | Norma: GAFI Rec. 10</div>
             </div>""", unsafe_allow_html=True)
@@ -522,7 +523,7 @@ def mostrar(_DEFAULTS):
             st.markdown("**Distribución visual de pesos**")
             st.markdown(f"""
             <div class="metric-card red">
-                <div class="metric-number">{score_max_teorico}</div>
+                <div class="metric-number">{h(score_max_teorico)}</div>
                 <div class="metric-label">Score máximo teórico</div>
                 <div class="metric-sub">Con todas las reglas activas simultáneamente</div>
             </div><br>
@@ -549,7 +550,7 @@ def mostrar(_DEFAULTS):
             <div class="warning-box" style="margin-top:12px;">
                 <strong>⚠️ Recuerda:</strong> Si cambias los pesos, ajusta también los umbrales de
                 clasificación en <em>Clasificación de Riesgo</em> para que Crítico/Alto/Medio
-                sigan siendo proporcionales al nuevo score máximo de <strong>{score_max_teorico} pts</strong>.
+                sigan siendo proporcionales al nuevo score máximo de <strong>{h(score_max_teorico)} pts</strong>.
             </div>""", unsafe_allow_html=True)
 
     # ── TAB 3: Clasificación de Riesgo ─────────────────────────────────
@@ -624,13 +625,13 @@ def mostrar(_DEFAULTS):
             ]
             for nivel_e, cond_e, color_e, accion_e in escala:
                 st.markdown(f"""
-                <div style="background:#1b2027; border-left:8px solid {color_e}; border-radius:0px; padding:16px; margin-bottom:12px; border-bottom: 1px solid rgba(83, 68, 52, 0.1);">
-                    <div style="color:{color_e}; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:1px;">{nivel_e}</div>
+                <div style="background:#1b2027; border-left:8px solid {h(color_e)}; border-radius:0px; padding:16px; margin-bottom:12px; border-bottom: 1px solid rgba(83, 68, 52, 0.1);">
+                    <div style="color:{h(color_e)}; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:1px;">{h(nivel_e)}</div>
                     <div style="color:#dee2ed; font-size:12px; margin-top:6px; font-family:IBM Plex Mono,monospace;">
-                        CRITERIO: {cond_e}
+                        CRITERIO: {h(cond_e)}
                     </div>
                     <div style="color:#a08e7a; font-size:11px; margin-top:4px;">
-                        PROTOCOLO DE ACCIÓN: {accion_e}
+                        PROTOCOLO DE ACCIÓN: {h(accion_e)}
                     </div>
                 </div>""", unsafe_allow_html=True)
 
@@ -662,12 +663,12 @@ def mostrar(_DEFAULTS):
                 <div style="background:#171c23; border:1px solid #21262d; border-radius:0px;
                             padding:10px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
                     <div>
-                        <div style="color:#c9d1d9; font-size:13px;">{nombre_r}</div>
-                        <div style="color:#6e7681; font-size:11px; font-family:IBM Plex Mono,monospace;">{detalle_r}</div>
+                        <div style="color:#c9d1d9; font-size:13px;">{h(nombre_r)}</div>
+                        <div style="color:#6e7681; font-size:11px; font-family:IBM Plex Mono,monospace;">{h(detalle_r)}</div>
                     </div>
-                    <div style="color:{estado_color}; font-size:10px; font-weight:700;
-                                font-family:IBM Plex Mono,monospace; border:1px solid {estado_color};
-                                padding:2px 8px; border-radius:0px;">{estado_txt}</div>
+                    <div style="color:{h(estado_color)}; font-size:10px; font-weight:700;
+                                font-family:IBM Plex Mono,monospace; border:1px solid {h(estado_color)};
+                                padding:2px 8px; border-radius:0px;">{h(estado_txt)}</div>
                 </div>""", unsafe_allow_html=True)
 
         with col_res2:
@@ -677,19 +678,19 @@ def mostrar(_DEFAULTS):
                 <div style="font-family:IBM Plex Mono,monospace; font-size:12px; color:#8b949e; line-height:2;">
                     <hr style='border-color:#21262d; margin:8px 0;'>
                     <div style='color:#f0f6fc; font-weight:700; margin-bottom:5px;'>Ponderación de Pilares:</div>
-                    S_T (Transaccional) → <span style='color:#3b82f6;'>{c['w_st']:.2f}</span><br>
-                    S_C (Contextual) → <span style='color:#3b82f6;'>{c['w_sc']:.2f}</span><br>
-                    S_B (Conductual) → <span style='color:#3b82f6;'>{c['w_sb']:.2f}</span><br>
-                    S_N (Red) → <span style='color:#3b82f6;'>{c['w_sn']:.2f}</span>
+                    S_T (Transaccional) → <span style='color:#3b82f6;'>{h(format(c['w_st'], '.2f'))}</span><br>
+                    S_C (Contextual) → <span style='color:#3b82f6;'>{h(format(c['w_sc'], '.2f'))}</span><br>
+                    S_B (Conductual) → <span style='color:#3b82f6;'>{h(format(c['w_sb'], '.2f'))}</span><br>
+                    S_N (Red) → <span style='color:#3b82f6;'>{h(format(c['w_sn'], '.2f'))}</span>
                     <hr style='border-color:#21262d; margin:8px 0;'>
                     Score máx. teórico → <span style='color:#ef4444; font-weight:700;'>
-                        {c['peso_absoluto']+c['peso_acumulado']+c['peso_perfil']+c['peso_frecuencia']+c['peso_smurfing']+c['peso_pico']} pts
+                        {h(c['peso_absoluto']+c['peso_acumulado']+c['peso_perfil']+c['peso_frecuencia']+c['peso_smurfing']+c['peso_pico'])} pts
                     </span><br><br>
-                    Crítico: score ≥ <span style='color:#ef4444;'>{c['score_critico']}</span>
-                        o total &gt; <span style='color:#ef4444;'>Q{c['monto_critico']:,}</span><br>
-                    Alto: score ≥ <span style='color:#f97316;'>{c['score_alto']}</span><br>
-                    Medio: score ≥ <span style='color:#eab308;'>{c['score_medio']}</span><br>
-                    Bajo: score &lt; <span style='color:#22c55e;'>{c['score_medio']}</span>
+                    Crítico: score ≥ <span style='color:#ef4444;'>{h(c['score_critico'])}</span>
+                        o total &gt; <span style='color:#ef4444;'>Q{h(format(c['monto_critico'], ','))}</span><br>
+                    Alto: score ≥ <span style='color:#f97316;'>{h(c['score_alto'])}</span><br>
+                    Medio: score ≥ <span style='color:#eab308;'>{h(c['score_medio'])}</span><br>
+                    Bajo: score &lt; <span style='color:#22c55e;'>{h(c['score_medio'])}</span>
                 </div>
             </div>""", unsafe_allow_html=True)
 
@@ -791,8 +792,8 @@ def mostrar(_DEFAULTS):
                     color_estado = "#2ecc71" if activo_actual else "#e74c3c"
                     texto_estado = "Activo" if activo_actual else "Inactivo"
                     st.markdown(
-                        f"<div style='text-align:center; font-weight:600; color:{color_estado};'>"
-                        f"{texto_estado}</div>",
+                        f"<div style='text-align:center; font-weight:600; color:{h(color_estado)};'>"
+                        f"{h(texto_estado)}</div>",
                         unsafe_allow_html=True,
                     )
                 with col_btn:

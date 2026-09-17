@@ -1,6 +1,7 @@
 import streamlit as st
 
 from frontend import permisos
+from frontend.ui_safe import h
 
 def mostrar():
     st.markdown("""
@@ -52,7 +53,7 @@ def mostrar():
                 c_text, c_del = container.columns([4, 1])
                 c_text.markdown(f"""
                     <div style="background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 0px; margin-bottom: 4px; border-left: 3px solid #f59e0b;">
-                        {loc}
+                        {h(loc)}
                     </div>
                 """, unsafe_allow_html=True)
                 if c_del.button("Quitar", key=f"del_{i}", disabled=not puede_editar):

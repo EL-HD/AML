@@ -1,6 +1,7 @@
 import streamlit as st
 from datetime import datetime
 from frontend.mod_utils import render_html_table
+from frontend.ui_safe import h
 
 ESTADOS_ALERTA = [
     "Inusual_Pendiente",       # Detectado por IMPERATOR, sin examinar
@@ -75,7 +76,7 @@ def mostrar(casos):
 
     st.markdown(f"""
     <div class="warning-box" style="margin-top:10px;">
-        <strong>{len(casos_view)} caso(s) identificados</strong> con los criterios actuales.
+        <strong>{h(len(casos_view))} caso(s) identificados</strong> con los criterios actuales.
         El listado se presenta de mayor a menor score para facilitar priorización operativa.
     </div>
     """, unsafe_allow_html=True)

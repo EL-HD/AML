@@ -1,5 +1,6 @@
 import plotly.graph_objects as go
 from html import escape
+from frontend.ui_safe import h
 
 def apply_dark_style(fig, ax):
     """Aplica el tema oscuro consistente a todas las gráficas (Matplotlib)."""
@@ -112,19 +113,21 @@ def render_html_table(df, max_height=420, table_id=None):
         </style>
     """
 
-    attrs = f' id="{escape(str(table_id))}"' if table_id else ""
-    headers = "".join(f"<th>{escape(str(col))}</th>" for col in df.columns)
-    rows = []
+    attrs_html = f' id="{escape(str(table_id))}"' if table_id else ""
+    headers_html = "".join(f"<th>{escape(str(col))}</th>" for col in df.columns)
+    filas = []
     for _, row in df.iterrows():
-        cells = "".join(f"<td>{escape(str(value))}</td>" for value in row)
-        rows.append(f"<tr>{cells}</tr>")
+        celdas_html = "".join(f"<td>{escape(str(value))}</td>" for value in row)
+        filas.append(f"<tr>{celdas_html}</tr>")
+    filas_html = "".join(filas)
+    css_html = css
 
     return f"""
-    {css}
-    <div class="sovereign-table-wrap" style="max-height:{int(max_height)}px;">
-        <table class="sovereign-table"{attrs}>
-            <thead><tr>{headers}</tr></thead>
-            <tbody>{''.join(rows)}</tbody>
+    {css_html}
+    <div class="sovereign-table-wrap" style="max-height:{h(int(max_height))}px;">
+        <table class="sovereign-table"{attrs_html}>
+            <thead><tr>{headers_html}</tr></thead>
+            <tbody>{filas_html}</tbody>
         </table>
     </div>
     """

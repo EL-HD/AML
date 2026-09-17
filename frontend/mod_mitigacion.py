@@ -1,9 +1,9 @@
-import html
 
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 from frontend.mod_utils import plotly_dark_layout
+from frontend.ui_safe import h
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CATÁLOGO DE ACCIONES DE MITIGACIÓN: RBA (GAFI) + ISO 31000 + COSO ERM
@@ -49,7 +49,7 @@ def _texto_seguro(valor):
     """Escapa texto dinámico para evitar que el HTML se renderice como contenido."""
     if pd.isna(valor):
         return "N/D"
-    return html.escape(str(valor))
+    return h(valor)
 
 def _determinar_acciones(row, cfg=None):
     """
@@ -140,10 +140,10 @@ def mostrar(df, casos):
     for col, (titulo, subtitulo, desc, color) in zip([col_n1, col_n2, col_n3], marcos):
         with col:
             st.markdown(f"""
-            <div style="background:#1b2027; border-left:4px solid {color}; padding:16px; margin-bottom:8px; min-height:120px;">
-                <div style="color:{color}; font-size:13px; font-weight:700; font-family:'IBM Plex Mono',monospace;">{titulo}</div>
-                <div style="color:#f0f6fc; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin:6px 0 4px;">{subtitulo}</div>
-                <div style="color:#a08e7a; font-size:12px; line-height:1.6;">{desc}</div>
+            <div style="background:#1b2027; border-left:4px solid {h(color)}; padding:16px; margin-bottom:8px; min-height:120px;">
+                <div style="color:{h(color)}; font-size:13px; font-weight:700; font-family:'IBM Plex Mono',monospace;">{h(titulo)}</div>
+                <div style="color:#f0f6fc; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin:6px 0 4px;">{h(subtitulo)}</div>
+                <div style="color:#a08e7a; font-size:12px; line-height:1.6;">{h(desc)}</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -157,7 +157,7 @@ def mostrar(df, casos):
         st.markdown(f"""
         <div style="background:#1b1027; border-left:4px solid #a855f7; padding:14px; margin-bottom:16px; font-size:12px; color:#d8c3ad;">
             <span style="color:#a855f7; font-weight:700; font-family:'IBM Plex Mono',monospace;">VERIFICACIÓN FEIS → FEIC ACTIVA</span>
-            &nbsp;|&nbsp; Umbral configurado: <strong>Q{umbral_feic:,}</strong><br>
+            &nbsp;|&nbsp; Umbral configurado: <strong>Q{h(format(umbral_feic, ','))}</strong><br>
             Los asociados que superen este monto mensual recibirán la acción <strong>F-01</strong>:
             actualización de FEIS a FEIC (Formulario Electrónico de Información del Cliente).
         </div>""", unsafe_allow_html=True)
@@ -170,17 +170,17 @@ def mostrar(df, casos):
         with col:
             filas_html = "".join([
                 f"""<div style="display:flex; gap:8px; margin-bottom:8px; align-items:flex-start;">
-                    <span style="color:{color}; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:700; min-width:36px; padding-top:1px;">{i['codigo']}</span>
+                    <span style="color:{h(color)}; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:700; min-width:36px; padding-top:1px;">{h(i['codigo'])}</span>
                     <div>
-                        <div style="color:#dee2ed; font-size:12px; line-height:1.4;">{i['accion']}</div>
-                        <div style="color:#6e7681; font-size:10px; font-family:'IBM Plex Mono',monospace;">{i['norma']}</div>
+                        <div style="color:#dee2ed; font-size:12px; line-height:1.4;">{h(i['accion'])}</div>
+                        <div style="color:#6e7681; font-size:10px; font-family:'IBM Plex Mono',monospace;">{h(i['norma'])}</div>
                     </div>
                 </div>"""
                 for i in items
             ])
             st.markdown(f"""
-            <div style="background:#171c23; border:1px solid {color}; border-top:3px solid {color}; padding:16px;">
-                <div style="color:{color}; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:12px; font-family:'IBM Plex Mono',monospace;">{cat_nombre}</div>
+            <div style="background:#171c23; border:1px solid {h(color)}; border-top:3px solid {h(color)}; padding:16px;">
+                <div style="color:{h(color)}; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:12px; font-family:'IBM Plex Mono',monospace;">{h(cat_nombre)}</div>
                 {filas_html}
             </div>
             """, unsafe_allow_html=True)
@@ -230,9 +230,9 @@ def mostrar(df, casos):
     for col, (val, lbl, color) in zip([col_k1, col_k2, col_k3, col_k4], kpi_data):
         with col:
             st.markdown(f"""
-            <div class="metric-card {color}">
-                <div class="metric-number">{val}</div>
-                <div class="metric-label">{lbl}</div>
+            <div class="metric-card {h(color)}">
+                <div class="metric-number">{h(val)}</div>
+                <div class="metric-label">{h(lbl)}</div>
             </div>""", unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -261,7 +261,7 @@ def mostrar(df, casos):
 
         # Encabezado cliente
         st.markdown(f"""
-        <div style="background:#171c23; border:1px solid {color_nivel}; border-left:6px solid {color_nivel};
+        <div style="background:#171c23; border:1px solid {h(color_nivel)}; border-left:6px solid {h(color_nivel)};
                     padding:14px 18px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
             <div style="display:flex; flex-direction:column; gap:6px; min-width:0;">
                 <div style="color:#f0f6fc; font-weight:700; font-size:15px; font-family:'Manrope',sans-serif;">{cliente_html}</div>
@@ -269,8 +269,8 @@ def mostrar(df, casos):
                     {meta_html}
                 </div>
             </div>
-            <div style="color:{color_nivel}; font-weight:700; font-size:12px; font-family:'IBM Plex Mono',monospace;
-                        border:1px solid {color_nivel}; padding:3px 10px; white-space:nowrap;">{nivel_html}</div>
+            <div style="color:{h(color_nivel)}; font-weight:700; font-size:12px; font-family:'IBM Plex Mono',monospace;
+                        border:1px solid {h(color_nivel)}; padding:3px 10px; white-space:nowrap;">{nivel_html}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -281,8 +281,8 @@ def mostrar(df, casos):
             color_cat = _COLOR_CAT.get(cat, "#8b949e")
             filas_acc += f"""
             <tr>
-                <td style="padding:9px 14px; color:{color_cat}; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:700;">{_texto_seguro(acc['Código'])}</td>
-                <td style="padding:9px 14px; color:{color_cat}; font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">{_texto_seguro(acc['Categoría'])}</td>
+                <td style="padding:9px 14px; color:{h(color_cat)}; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:700;">{_texto_seguro(acc['Código'])}</td>
+                <td style="padding:9px 14px; color:{h(color_cat)}; font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">{_texto_seguro(acc['Categoría'])}</td>
                 <td style="padding:9px 14px; color:#dee2ed; font-size:13px;">{_texto_seguro(acc['Acción'])}</td>
                 <td style="padding:9px 14px; color:#6e7681; font-family:'IBM Plex Mono',monospace; font-size:11px;">{_texto_seguro(acc['Norma'])}</td>
             </tr>"""
@@ -297,7 +297,7 @@ def mostrar(df, casos):
                     <th style="width:160px;">Referencia Normativa</th>
                 </tr>
             </thead>
-            <tbody>{filas_acc}</tbody>
+            <tbody>{h(filas_acc)}</tbody>
         </table>
         """, unsafe_allow_html=True)
 
