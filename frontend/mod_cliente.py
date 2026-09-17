@@ -2,7 +2,7 @@ import streamlit as st
 import plotly.graph_objects as go
 from frontend.mod_utils import plotly_dark_layout
 from frontend.ui_safe import h
-from frontend import ui_components
+from frontend import mod_screening, ui_components
 
 TIPOS_CLIENTE = [
     "Persona Individual",
@@ -42,6 +42,8 @@ def mostrar(df, casos, cfg):
     with col4:
         ui_components.kpi("Total Mensual", ui_components.fmt_moneda(info_cliente['Total_Mensual'], 0), tone="green")
 
+    # Señal de screening contra listas de sanciones (GAFI R.6/R.7, T3)
+    mod_screening.senal_cliente(cliente)
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ── BENEFICIARIO FINAL (UBO): Art. 21 num. 2 Ley 6593 ───────────────────

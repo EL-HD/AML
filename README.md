@@ -99,6 +99,7 @@ Implementación del enfoque basado en riesgo institucional (Art. 8-11 Decreto 15
 | `JWT_ISSUER`, `JWT_AUDIENCE` | Recomendadas | Claims `iss`/`aud` del JWT (por defecto `sovereign-aml-auth` / `sovereign-aml-app`). |
 | `AUTH_API_URL` | Sí (Streamlit) | URL interna de la API (`http://localhost:8000` en Railway). |
 | `CORS_ALLOWED_ORIGINS` | Recomendada | Orígenes permitidos por la API. |
+| `SCREENING_AUTO_DOWNLOAD` | No (por defecto `false`) | Habilita la descarga de listas de sanciones desde las URLs oficiales fijas (OFAC, ONU) definidas en `backend/screening.py`. La carga manual por el Administrador funciona siempre. |
 
 ## 7. Pruebas y calidad
 

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, DateTime, Boolean, Float, text
+from sqlalchemy import Column, Integer, String, Date, DateTime, Boolean, Float, Text, text
 from sqlalchemy import CheckConstraint, Index, UniqueConstraint, event
 from sqlalchemy import Uuid as UUID  # tipo genérico: UUID nativo en PostgreSQL, CHAR(32) en SQLite (pruebas)
 from .database import Base
@@ -350,3 +350,119 @@ def _historial_sin_delete(mapper, connection, target):  # noqa: ARG001
 @event.listens_for(CasoAlerta, "before_delete")
 def _caso_sin_delete(mapper, connection, target):  # noqa: ARG001
     raise HistorialInmutableError("CasosAlerta tiene retención mínima de 5 años (Art. 34 Ley 6593): no se permite borrar.")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SCREENING DE LISTAS DE SANCIONES (GAFI R.6 / R.7)
+# Las listas y sus entradas son globales (sin licenciaid): OFAC SDN y ONU
+# consolidada son públicas y comunes a todas las licencias. Las coincidencias
+# y sus decisiones sí se segmentan por licenciaid (multi-tenant).
+# ═══════════════════════════════════════════════════════════════════════════
+
+ESTADOS_COINCIDENCIA = ("Pendiente", "Descartada", "Confirmada")
+
+
+class ListaSancion(Base):
+    """Versión cargada de una lista de sanciones (una activa por fuente)."""
+    __tablename__ = "ListasSancion"
+    __table_args__ = (
+        Index("idx_listassancion_fuente_activa", "fuente", "activa"),
+        CheckConstraint("fuente IN ('OFAC_SDN','ONU')", name="listassancion_fuente_check"),
+        {"schema": "public"},
+    )
+
+    id                = Column("id",                UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    fuente            = Column("fuente",            String(20),  nullable=False)
+    version           = Column("version",           String(60),  nullable=False)
+    nombre_archivo    = Column("nombre_archivo",    String(255), nullable=False)
+    hash_sha256       = Column("hash_sha256",       String(64),  nullable=False)
+    cantidad_entradas = Column("cantidad_entradas", Integer,     nullable=False, default=0)
+    filas_rechazadas  = Column("filas_rechazadas",  Integer,     nullable=False, default=0)
+    origen            = Column("origen",            String(20),  nullable=False, default="carga_manual")
+    activa            = Column("activa",            Boolean,     nullable=False, default=True)
+    cargada_por       = Column("cargada_por",       String(100), nullable=False)
+    cargada_en        = Column("cargada_en",        DateTime,    nullable=False, default=ahora_utc)
+
+
+class ListaSancionEntrada(Base):
+    """Sujeto listado (persona, entidad, embarcación) con sus alias."""
+    __tablename__ = "ListasSancionEntradas"
+    __table_args__ = (
+        Index("idx_listasentradas_lista_ref", "lista_id", "referencia"),
+        {"schema": "public"},
+    )
+
+    id                 = Column("id",                 UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    lista_id           = Column("lista_id",           UUID(as_uuid=True), nullable=False, index=True)
+    fuente             = Column("fuente",             String(20),  nullable=False)
+    referencia         = Column("referencia",         String(60),  nullable=False)
+    nombre             = Column("nombre",             String(300), nullable=False)
+    nombre_normalizado = Column("nombre_normalizado", String(300), nullable=False)
+    tipo               = Column("tipo",               String(40),  nullable=True)
+    programa           = Column("programa",           String(200), nullable=True)
+    nacionalidad       = Column("nacionalidad",       String(100), nullable=True)
+    alias_json         = Column("alias_json",         Text,        nullable=False, default="[]")
+
+
+class ScreeningCoincidencia(Base):
+    """Coincidencia de un cliente de la licencia contra una entrada de lista, con decisión humana."""
+    __tablename__ = "ScreeningCoincidencias"
+    __table_args__ = (
+        UniqueConstraint("licenciaid", "cliente_normalizado", "entrada_id", name="uq_screening_licencia_cliente_entrada"),
+        Index("idx_screening_licencia_estado", "licenciaid", "estado"),
+        Index("idx_screening_licencia_cliente", "licenciaid", "cliente_normalizado"),
+        CheckConstraint("estado IN ('Pendiente','Descartada','Confirmada')", name="screening_estado_check"),
+        {"schema": "public"},
+    )
+
+    id                  = Column("id",                  UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    licenciaid          = Column("licenciaid",          UUID(as_uuid=True), nullable=False, index=True)
+    cliente             = Column("cliente",             String(200), nullable=False)
+    cliente_normalizado = Column("cliente_normalizado", String(300), nullable=False)
+    origen              = Column("origen",              String(30),  nullable=False, default="Cliente")
+    hash_lote           = Column("hash_lote",           String(64),  nullable=True)
+    lista_id            = Column("lista_id",            UUID(as_uuid=True), nullable=False)
+    entrada_id          = Column("entrada_id",          UUID(as_uuid=True), nullable=False)
+    fuente              = Column("fuente",              String(20),  nullable=False)
+    referencia          = Column("referencia",          String(60),  nullable=False)
+    nombre_lista        = Column("nombre_lista",        String(300), nullable=False)
+    alias_coincidente   = Column("alias_coincidente",   String(300), nullable=True)
+    puntaje             = Column("puntaje",             Float,       nullable=False)
+    motivo              = Column("motivo",              String(300), nullable=False)
+    estado              = Column("estado",              String(20),  nullable=False, default="Pendiente")
+    fundamento          = Column("fundamento",          String(4000), nullable=False, default="")
+    revisor             = Column("revisor",             String(100), nullable=True)
+    revisado_en         = Column("revisado_en",         DateTime,    nullable=True)
+    caso_id             = Column("caso_id",             UUID(as_uuid=True), nullable=True)
+    detectado_por       = Column("detectado_por",       String(100), nullable=False)
+    detectado_en        = Column("detectado_en",        DateTime,    nullable=False, default=ahora_utc)
+    actualizado_en      = Column("actualizado_en",      DateTime,    nullable=False, default=ahora_utc, onupdate=ahora_utc)
+
+
+class ScreeningDecision(Base):
+    """Historial append-only de decisiones sobre coincidencias (auditoría de cada decisión)."""
+    __tablename__ = "ScreeningDecisiones"
+    __table_args__ = (
+        Index("idx_screeningdec_licencia_coinc", "licenciaid", "coincidencia_id"),
+        {"schema": "public"},
+    )
+
+    id              = Column("id",              UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    licenciaid      = Column("licenciaid",      UUID(as_uuid=True), nullable=False, index=True)
+    coincidencia_id = Column("coincidencia_id", UUID(as_uuid=True), nullable=False, index=True)
+    estado_anterior = Column("estado_anterior", String(20),  nullable=False)
+    estado_nuevo    = Column("estado_nuevo",    String(20),  nullable=False)
+    fundamento      = Column("fundamento",      String(4000), nullable=False)
+    revisor         = Column("revisor",         String(100), nullable=False)
+    rol             = Column("rol",             String(20),  nullable=False)
+    registrado_en   = Column("registrado_en",   DateTime,    nullable=False, default=ahora_utc)
+
+
+@event.listens_for(ScreeningDecision, "before_update")
+def _decision_sin_update(mapper, connection, target):  # noqa: ARG001
+    raise HistorialInmutableError("ScreeningDecisiones es append-only: no se permite actualizar.")
+
+
+@event.listens_for(ScreeningDecision, "before_delete")
+def _decision_sin_delete(mapper, connection, target):  # noqa: ARG001
+    raise HistorialInmutableError("ScreeningDecisiones es append-only: no se permite borrar.")

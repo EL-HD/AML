@@ -15,7 +15,7 @@ from frontend.ui_safe import h
 
 GRUPOS: Dict[str, List[str]] = {
     "Monitoreo": ["Resumen Ejecutivo", "Casos de Alerta", "Transacciones"],
-    "Investigación": ["Análisis por Cliente", "Red Transaccional"],
+    "Investigación": ["Análisis por Cliente", "Red Transaccional", "Listas de Sanciones"],
     "Riesgo": [
         "Matrices de Riesgo", "Riesgo Institucional LD/FT", "Imperator Diagnostics",
         "Gestión de Ubicaciones", "Acciones de Mitigación",
@@ -29,7 +29,7 @@ VISTA_POR_DEFECTO = "Resumen Ejecutivo"
 # Vistas que no requieren un archivo cargado
 VISTAS_SIN_DATOS = {
     "Configuración", "Manual de Usuario", "Gestión de Ubicaciones",
-    "Riesgo Institucional LD/FT",
+    "Riesgo Institucional LD/FT", "Listas de Sanciones",
 }
 
 _ALIAS = {"IMPERATOR Diagnostics": "Imperator Diagnostics"}

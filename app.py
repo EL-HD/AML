@@ -47,7 +47,7 @@ from frontend import (
     mod_cliente, mod_matrices, mod_manual,
     mod_configuracion, mod_reportes, mod_ubicaciones,
     mod_mitigacion, mod_red_transaccional,
-    mod_imperator_diagnostics, mod_sesion, mod_riesgo_ldft
+    mod_imperator_diagnostics, mod_sesion, mod_riesgo_ldft, mod_screening
 )
 from frontend.mod_sesion import _registrar_acceso_auditoria
 from frontend import cache_analisis, casos_persistencia, exportacion, navegacion, permisos, theme, ui_components
@@ -731,6 +731,8 @@ data_ready = "data" in st.session_state
 if data_ready:
     # Estados persistidos de casos (T1): visibles en Alertas, Resumen y Reportes
     casos_persistencia.rehidratar_estados(st.session_state["data"][1])
+    # Señal de screening de sanciones (T3): columna Screening_Sanciones en casos
+    mod_screening.marcar_casos(st.session_state["data"][1])
 
 if vista == "Resumen Ejecutivo":
     if data_ready:
@@ -759,6 +761,10 @@ elif vista == "Matrices de Riesgo":
 elif vista == "Red Transaccional":
     if data_ready: mod_red_transaccional.mostrar(st.session_state["data"][0], st.session_state["data"][1])
     else: _sin_datos(vista)
+
+elif vista == "Listas de Sanciones":
+    _auditar("Listas de Sanciones")
+    mod_screening.mostrar()
 
 elif vista == "Acciones de Mitigación":
     _auditar("Acciones de Mitigación")

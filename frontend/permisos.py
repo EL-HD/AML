@@ -21,6 +21,9 @@ _MATRIZ = {
     "gestionar_alertas": {"admin", "oficial", "analista"},
     "proponer_caso_sospechoso": {"admin", "oficial", "analista"},
     "aprobar_caso_sospechoso": {"admin", "oficial"},
+    "cargar_listas_sancion": {"admin"},
+    "gestionar_screening": {"admin", "oficial"},
+    "ver_screening": {"admin", "oficial", "analista", "auditor"},
     "exportar_datos": {"admin", "oficial", "analista"},
     "ver_configuracion": {"admin", "oficial", "analista", "auditor"},
 }

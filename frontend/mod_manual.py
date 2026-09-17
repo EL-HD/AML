@@ -101,6 +101,13 @@ def mostrar():
 
     **Aislamiento de datos:** todas las tablas (`RiesgoSegmentos`, `RiesgoEventos`, `RiesgoControles`, `RiesgoEventoControl`, `RiesgoPlanesAccion`) se segmentan por `licenciaid`: una Persona Obligada solo ve su propia información, incluso en el mismo servidor.
 
+    ## 5.3. Listas de Sanciones (GAFI R.6 / R.7)
+    Vista **Investigación > Listas de Sanciones**. Compara los clientes y las contrapartes (`Cliente_Destino`) del análisis cargado contra la lista **OFAC SDN** y la **lista consolidada del Consejo de Seguridad de la ONU**.
+    * **Carga de listas (Administrador):** archivos oficiales `sdn.csv` y `alt.csv` (OFAC) o `consolidated.xml` (ONU). Cada versión registra fuente, fecha, SHA-256 del archivo y cantidad de entradas; la versión anterior queda inactiva. Se rechazan archivos mayores de 50 MB y XML con `DOCTYPE` o `ENTITY`.
+    * **Ejecución (Oficial o Administrador):** los nombres se normalizan (minúsculas, sin acentos ni puntuación, tokens ordenados, alias) y se comparan con Jaro-Winkler y por tokens; el umbral por defecto es 0.88. Cada coincidencia indica lista, entrada, alias, puntaje y motivo.
+    * **Bandeja de coincidencias:** toda coincidencia nace `Pendiente` y debe **Descartarse** o **Confirmarse** con un fundamento obligatorio; cada decisión queda en un historial inmutable y en la bitácora de auditoría. Una coincidencia confirmada de un cliente del lote se vincula a su Caso de Alerta. El Analista y el Auditor consultan en modo lectura.
+    * **Señal en la ficha del cliente:** Análisis por Cliente muestra si el cliente tiene coincidencias pendientes o confirmadas; la columna `Screening_Sanciones` se agrega al DataFrame de casos.
+
     ## 6. Acciones de Mitigación (RBA / GAFI / ISO 31000)
     El sistema asigna automáticamente acciones proporcionales al nivel de alerta:
     * **Preventivas (P):** Bloqueo temporal (P-01), Rechazo de operación (P-02), Limitación de montos (P-03).
