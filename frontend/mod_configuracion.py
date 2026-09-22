@@ -113,7 +113,7 @@ def mostrar(_DEFAULTS):
     # ── TAB 1: Reglas de Detección ──────────────────────────────────────
     with tab1:
         st.markdown("""
-        <div class="info-box" style="background-color: #1b2027; border-left-color: #f59e0b;">
+        <div class="info-box tone-accent">
             <strong>CALIBRACIÓN TÉCNICA:</strong> La alteración de umbrales impacta directamente en la sensibilidad del motor.
             Un umbral bajo incrementa la densidad de alertas. Ajuste según el apetito de riesgo institucional.
         </div>
@@ -135,16 +135,16 @@ def mostrar(_DEFAULTS):
                 """Validación contra <strong>umbral absoluto configurado</strong>.
 Regla de detección directa: activación inmediata si el monto individual excede el límite institucional.""",
                 "Vector_Absoluto",
-                f"Monto > Q{c['umbral_absoluto']:,}",
+                f"Monto > {ui_components.fmt_moneda(c['umbral_absoluto'])}",
             )
         with col_ctrl1:
             c["umbral_absoluto"] = st.number_input(
-                "Umbral absoluto (Q)",
+                ui_components.etiqueta_monto("Umbral absoluto"),
                 min_value=1000, max_value=10_000_000, value=int(c["umbral_absoluto"]), step=1000,
                 help="Cualquier transacción individual mayor a este monto activa la alerta.",
                 disabled=not c["regla_absoluto"]
             )
-            ui_components.regla_kpi(f"Q{c['umbral_absoluto']:,}", "Umbral actual", c['peso_absoluto'], c['regla_absoluto'])
+            ui_components.regla_kpi(ui_components.fmt_moneda(c['umbral_absoluto']), "Umbral actual", c['peso_absoluto'], c['regla_absoluto'])
 
         st.markdown("---")
 
@@ -310,13 +310,13 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
                 etiqueta_logica="Formulario objetivo",
                 impacto_titulo="LÓGICA DE ACTIVACIÓN",
                 impacto_html=(
-                    f"<strong>Total Mensual &gt; Q{h(format(umbral_actual, ','))} →</strong> Se agrega acción F-01 en Mitigación.<br>"
-                    f"<strong>Total Mensual ≤ Q{h(format(umbral_actual, ','))} →</strong> No se muestra la acción (perfil bajo OK)."
+                    f"<strong>Total Mensual &gt; {h(ui_components.fmt_moneda(umbral_actual))} →</strong> Se agrega acción F-01 en Mitigación.<br>"
+                    f"<strong>Total Mensual ≤ {h(ui_components.fmt_moneda(umbral_actual))} →</strong> No se muestra la acción (perfil bajo OK)."
                 ),
             )
         with col_ctrl7:
             c["umbral_feic"] = st.number_input(
-                "Umbral máximo perfil bajo (Q)",
+                ui_components.etiqueta_monto("Umbral máximo perfil bajo"),
                 min_value=1000, max_value=500_000,
                 value=int(c.get("umbral_feic", 45000)),
                 step=1000,
@@ -324,9 +324,69 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
                 disabled=not c.get("regla_feic", True)
             )
             ui_components.regla_kpi(
-                f"Q{c.get('umbral_feic', 45000):,}", "Umbral FEIC actual", "F-01 | GAFI Rec. 10",
+                ui_components.fmt_moneda(c.get('umbral_feic', 45000)), "Umbral FEIC actual", "F-01 | GAFI Rec. 10",
                 c.get("regla_feic", True), tone="violet",
             )
+
+        st.markdown("---")
+
+        # ── Señal de anomalía (T8): complementaria, no altera el Score ─────
+        col_on8, col_title8 = st.columns([1, 9])
+        with col_on8:
+            c["anomalia_activa"] = st.toggle("", value=bool(c.get("anomalia_activa", True)), key="tog_anomalia")
+        with col_title8:
+            ui_components.regla_titulo("Señal de anomalía (Isolation Forest, complementaria)", c.get("anomalia_activa", True))
+
+        col_desc8, col_ctrl8 = st.columns([3, 2])
+        with col_desc8:
+            ui_components.spec_card(
+                """Detección <strong>no supervisada</strong> de clientes atípicos frente a la cartera
+(montos, desviación del perfil, frecuencia, montos redondos, proximidad a umbrales, calendario, contrapartes y ubicación).
+Se muestra como percentil 0-100 y nivel. <strong>No modifica</strong> el Score IMPERATOR ni el estado de los casos.""",
+                "Percentil de anomalía",
+                f"Alto >= {int(c.get('anomalia_percentil_alto', 90))} · Medio >= {int(c.get('anomalia_percentil_medio', 75))}",
+                acento="#3b82f6",
+                etiqueta_variable="Señal",
+                etiqueta_logica="Niveles",
+                impacto_titulo="PUNTOS CIEGOS",
+                impacto_html=(
+                    f"<strong>Anomalía Alta y Score &lt; {h(format(float(c.get('anomalia_score_punto_ciego', 3.0)), 'g'))} →</strong> "
+                    "se destaca como posible punto ciego de las reglas en Imperator Diagnostics."
+                ),
+            )
+        with col_ctrl8:
+            activa_anom = bool(c.get("anomalia_activa", True))
+            c["anomalia_percentil_alto"] = st.number_input(
+                "Percentil mínimo para anomalía Alta", min_value=50, max_value=100,
+                value=int(c.get("anomalia_percentil_alto", 90)), step=1,
+                help="Clientes con percentil de anomalía igual o superior se marcan como Alto.",
+                disabled=not activa_anom,
+            )
+            c["anomalia_percentil_medio"] = st.number_input(
+                "Percentil mínimo para anomalía Media", min_value=0, max_value=99,
+                value=int(c.get("anomalia_percentil_medio", 75)), step=1,
+                help="Debe ser menor que el percentil de Alto.", disabled=not activa_anom,
+            )
+            c["anomalia_score_punto_ciego"] = st.number_input(
+                "Score IMPERATOR máximo para 'punto ciego'", min_value=0.0, max_value=10.0,
+                value=float(c.get("anomalia_score_punto_ciego", 3.0)), step=0.5,
+                help="Un cliente con anomalía Alta y score menor que este valor se destaca como posible punto ciego de las reglas.",
+                disabled=not activa_anom,
+            )
+            c["anomalia_n_arboles"] = st.number_input(
+                "Número de árboles (Isolation Forest)", min_value=10, max_value=500,
+                value=int(c.get("anomalia_n_arboles", 100)), step=10,
+                help="Más árboles = puntaje más estable y cálculo más lento. 100 es el valor de referencia.",
+                disabled=not activa_anom,
+            )
+            c["anomalia_semilla"] = st.number_input(
+                "Semilla (reproducibilidad)", min_value=0, max_value=2_147_483_647,
+                value=int(c.get("anomalia_semilla", 42)), step=1,
+                help="Misma semilla y mismos datos producen exactamente el mismo resultado (trazabilidad).",
+                disabled=not activa_anom,
+            )
+            if c["anomalia_percentil_medio"] >= c["anomalia_percentil_alto"]:
+                st.error("El percentil de anomalía Media debe ser menor que el de Alta.")
 
     # ── TAB 2: Pesos del Score ──────────────────────────────────────────
     with tab2:
@@ -338,17 +398,17 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
         </div>""", unsafe_allow_html=True)
 
         st.markdown("""
-        <div style="background:#171c23; border:1px solid #534434; border-radius:0px; padding:20px; margin-bottom:16px;">
-            <div style="color:#f59e0b; font-size:12px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:12px;">
+        <div class="panel-outline">
+            <div class="kicker">
                 <span class="pulse-dot"></span> MATRIZ DE PONDERACIÓN
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; font-size:12px; color:#b8a58e; line-height:1.8;">
-                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>CORRECCIÓN MONTO</span>: Penalización escalar por volumen transaccional directo.</div>
-                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>VOLUMEN CICLO</span>: Priorización de acumulación económica persistente.</div>
-                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>DESVIACIÓN PERFIL</span>: Sensibilidad ante cambios de nivel declarado.</div>
-                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>FRECUENCIA</span>: Control de densidad operativa en el período.</div>
-                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>FRAGMENTACIÓN</span>: Defensa contra técnicas de ocultamiento (Smurfing).</div>
-                <div><span style='color:#f59e0b; font-family:IBM Plex Mono;'>SIGMA ANOMALÍA</span>: Ponderación de rareza estadística histórica.</div>
+            <div class="grid-2">
+                <div><span class="kw">CORRECCIÓN MONTO</span>: Penalización escalar por volumen transaccional directo.</div>
+                <div><span class="kw">VOLUMEN CICLO</span>: Priorización de acumulación económica persistente.</div>
+                <div><span class="kw">DESVIACIÓN PERFIL</span>: Sensibilidad ante cambios de nivel declarado.</div>
+                <div><span class="kw">FRECUENCIA</span>: Control de densidad operativa en el período.</div>
+                <div><span class="kw">FRAGMENTACIÓN</span>: Defensa contra técnicas de ocultamiento (Smurfing).</div>
+                <div><span class="kw">SIGMA ANOMALÍA</span>: Ponderación de rareza estadística histórica.</div>
             </div>
         </div>""", unsafe_allow_html=True)
 
@@ -357,7 +417,7 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
         with col_p1:
             st.markdown("### Pilares Estratégicos (S_T, S_C, S_B, S_N)")
             st.markdown("""
-            <div style="font-size:12px; color:#b8a58e; margin-bottom:12px;">
+            <div class="field-help">
                 Defina la importancia relativa de cada pilar en el Score Total. La suma de estos pesos determinará el núcleo del motor.
             </div>""", unsafe_allow_html=True)
             
@@ -375,7 +435,7 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
             st.markdown("---")
             st.markdown("### Componentes Técnicos (S_T)")
             st.markdown("""
-            <div style="font-size:12px; color:#b8a58e; margin-bottom:12px;">
+            <div class="field-help">
                 Ajusta el peso individual de cada regla que alimenta al pilar Transaccional. (0 = off, 10 = max).
             </div>""", unsafe_allow_html=True)
             
@@ -418,7 +478,7 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
             plt.close()
 
             st.markdown(f"""
-            <div class="warning-box" style="margin-top:12px;">
+            <div class="warning-box mt-12">
                 <strong>Recuerda:</strong> Si cambias los pesos, ajusta también los umbrales de
                 clasificación en <em>Clasificación de Riesgo</em> para que Crítico/Alto/Medio
                 sigan siendo proporcionales al nuevo score máximo de <strong>{h(score_max_teorico)} pts</strong>.
@@ -434,15 +494,15 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
         </div>""", unsafe_allow_html=True)
 
         st.markdown("""
-        <div style="background:#171c23; border:1px solid #534434; border-radius:0px; padding:20px; margin-bottom:16px;">
-            <div style="color:#f59e0b; font-size:12px; text-transform:uppercase; letter-spacing:2px; font-family:IBM Plex Mono,monospace; margin-bottom:12px;">
+        <div class="panel-outline">
+            <div class="kicker">
                 <span class="pulse-dot"></span> LÓGICA DE SEGMENTACIÓN
             </div>
-            <div style="font-size:12px; color:#b8a58e; line-height:2;">
-                <span style='color:#ef4444; font-weight:700;'>NIVEL CRÍTICO</span>: Clientes en zona de reporte regulatorio inmediato.<br>
-                <span style='color:#f97316; font-weight:700;'>NIVEL ALTO</span>: Objetivos de debida diligencia ampliada (EDD).<br>
-                <span style='color:#eab308; font-weight:700;'>NIVEL MEDIO</span>: Monitoreo preventivo y actualización de perfil.<br>
-                <span style='color:#10b981; font-weight:700;'>NIVEL BAJO</span>: Actividad dentro de parámetros normales establecidos.
+            <div class="list-lines">
+                <span class="tx fw-700 tone-danger">NIVEL CRÍTICO</span>: Clientes en zona de reporte regulatorio inmediato.<br>
+                <span class="tx fw-700 tone-warn">NIVEL ALTO</span>: Objetivos de debida diligencia ampliada (EDD).<br>
+                <span class="tx fw-700 tone-yellow">NIVEL MEDIO</span>: Monitoreo preventivo y actualización de perfil.<br>
+                <span class="tx fw-700 tone-green">NIVEL BAJO</span>: Actividad dentro de parámetros normales establecidos.
             </div>
         </div>""", unsafe_allow_html=True)
 
@@ -456,7 +516,7 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
                 help="Clientes con score ≥ este valor son clasificados como Críticos. Requieren revisión urgente."
             )
             c["monto_critico"] = st.number_input(
-                "Monto total mínimo para Crítico (Q)",
+                ui_components.etiqueta_monto("Monto total mínimo para Crítico"),
                 min_value=1000, max_value=10_000_000, value=int(c["monto_critico"]), step=1000,
                 help="Clientes cuyo total mensual supere este monto son Críticos, independiente del score."
             )
@@ -476,7 +536,7 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
             )
 
             st.markdown("""
-            <div class="info-box" style="margin-top:12px;">
+            <div class="info-box mt-12">
                 <strong>Nivel Bajo</strong>: Se asigna automáticamente a todo cliente cuyo score
                 sea menor al umbral Medio y cuyo total mensual no supere el monto crítico.
                 Son clientes sin señales de alerta significativas en el período.
@@ -485,7 +545,7 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
         with col_r2:
             st.markdown("**Escala de clasificación actual**")
             escala = [
-                ("Crítico", f"Score ≥ {c['score_critico']} o Total > Q{c['monto_critico']:,}", "#ef4444",
+                ("Crítico", f"Score ≥ {c['score_critico']} o Total > {ui_components.fmt_moneda(c['monto_critico'])}", "#ef4444",
                  "Reporte RTS a la IVE (Art. 30 Ley 6593)"),
                 ("Alto",    f"Score ≥ {c['score_alto']}",  "#f97316",
                  "Seguimiento prioritario / Actualizar perfil"),
@@ -496,12 +556,12 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
             ]
             for nivel_e, cond_e, color_e, accion_e in escala:
                 st.markdown(f"""
-                <div style="background:#1b2027; border-left:8px solid {h(color_e)}; border-radius:0px; padding:16px; margin-bottom:12px; border-bottom: 1px solid rgba(83, 68, 52, 0.1);">
-                    <div style="color:{h(color_e)}; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:1px;">{h(nivel_e)}</div>
-                    <div style="color:#dee2ed; font-size:12px; margin-top:6px; font-family:IBM Plex Mono,monospace;">
+                <div class="level-card {h(ui_components.tone_class(color_e))}">
+                    <div class="level-card-title">{h(nivel_e)}</div>
+                    <div class="level-card-criteria">
                         CRITERIO: {h(cond_e)}
                     </div>
-                    <div style="color:#b8a58e; font-size:12px; margin-top:4px;">
+                    <div class="level-card-action">
                         PROTOCOLO DE ACCIÓN: {h(accion_e)}
                     </div>
                 </div>""", unsafe_allow_html=True)
@@ -520,48 +580,47 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
         with col_res1:
             st.markdown("**Reglas de Detección**")
             reglas_resumen = [
-                ("Monto Alto Absoluto", c["regla_absoluto"],   f"Umbral: Q{c['umbral_absoluto']:,}"),
+                ("Monto Alto Absoluto", c["regla_absoluto"],   f"Umbral: {ui_components.fmt_moneda(c['umbral_absoluto'])}"),
                 ("Acumulado Mensual",   c["regla_acumulado"],  f"Multiplicador: {c['mult_acumulado']}x"),
                 ("Exceso sobre Perfil", c["regla_perfil"],     f"Tolerancia: {c['tolerancia_perfil']}%"),
                 ("Frecuencia Alta",     c["regla_frecuencia"], f"Umbral: >{c['umbral_frecuencia']} transacciones"),
                 ("Smurfing",            c["regla_smurfing"],   f"Umbral: ≥{c['umbral_smurfing']} en mismo día"),
                 ("Pico Anómalo",        c["regla_pico"],       f"Umbral: μ + {c['mult_std_pico']}σ"),
+                ("Señal de anomalía",   c.get("anomalia_activa", True),
+                 f"Alto >= p{c.get('anomalia_percentil_alto', 90)} · Medio >= p{c.get('anomalia_percentil_medio', 75)} (no altera el score)"),
             ]
             for nombre_r, activa_r, detalle_r in reglas_resumen:
                 estado_color = "#22c55e" if activa_r else "#ef4444"
                 estado_txt   = "ACTIVA" if activa_r else "OFF"
                 st.markdown(f"""
-                <div style="background:#171c23; border:1px solid #21262d; border-radius:0px;
-                            padding:10px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                <div class="rule-row">
                     <div>
-                        <div style="color:#c9d1d9; font-size:13px;">{h(nombre_r)}</div>
-                        <div style="color:#a7b0bb; font-size:12px; font-family:IBM Plex Mono,monospace;">{h(detalle_r)}</div>
+                        <div class="rule-row-name">{h(nombre_r)}</div>
+                        <div class="rule-row-detail">{h(detalle_r)}</div>
                     </div>
-                    <div style="color:{h(estado_color)}; font-size:12px; font-weight:700;
-                                font-family:IBM Plex Mono,monospace; border:1px solid {h(estado_color)};
-                                padding:2px 8px; border-radius:0px;">{h(estado_txt)}</div>
+                    <div class="rule-row-state {h(ui_components.tone_class(estado_color))}">{h(estado_txt)}</div>
                 </div>""", unsafe_allow_html=True)
 
         with col_res2:
             st.markdown("**Pesos y Clasificación**")
             st.markdown(f"""
-            <div style="background:#171c23; border:1px solid #21262d; border-radius:0px; padding:16px;">
-                <div style="font-family:IBM Plex Mono,monospace; font-size:12px; color:#a7b0bb; line-height:2;">
-                    <hr style='border-color:#21262d; margin:8px 0;'>
-                    <div style='color:#f0f6fc; font-weight:700; margin-bottom:5px;'>Ponderación de Pilares:</div>
-                    S_T (Transaccional) → <span style='color:#3b82f6;'>{h(format(c['w_st'], '.2f'))}</span><br>
-                    S_C (Contextual) → <span style='color:#3b82f6;'>{h(format(c['w_sc'], '.2f'))}</span><br>
-                    S_B (Conductual) → <span style='color:#3b82f6;'>{h(format(c['w_sb'], '.2f'))}</span><br>
-                    S_N (Red) → <span style='color:#3b82f6;'>{h(format(c['w_sn'], '.2f'))}</span>
-                    <hr style='border-color:#21262d; margin:8px 0;'>
-                    Score máx. teórico → <span style='color:#ef4444; font-weight:700;'>
+            <div class="summary-box">
+                <div class="summary-box-body">
+                    <hr>
+                    <div class="summary-box-title">Ponderación de Pilares:</div>
+                    S_T (Transaccional) → <span class="tx tone-info">{h(format(c['w_st'], '.2f'))}</span><br>
+                    S_C (Contextual) → <span class="tx tone-info">{h(format(c['w_sc'], '.2f'))}</span><br>
+                    S_B (Conductual) → <span class="tx tone-info">{h(format(c['w_sb'], '.2f'))}</span><br>
+                    S_N (Red) → <span class="tx tone-info">{h(format(c['w_sn'], '.2f'))}</span>
+                    <hr>
+                    Score máx. teórico → <span class="tx fw-700 tone-danger">
                         {h(c['peso_absoluto']+c['peso_acumulado']+c['peso_perfil']+c['peso_frecuencia']+c['peso_smurfing']+c['peso_pico'])} pts
                     </span><br><br>
-                    Crítico: score ≥ <span style='color:#ef4444;'>{h(c['score_critico'])}</span>
-                        o total &gt; <span style='color:#ef4444;'>Q{h(format(c['monto_critico'], ','))}</span><br>
-                    Alto: score ≥ <span style='color:#f97316;'>{h(c['score_alto'])}</span><br>
-                    Medio: score ≥ <span style='color:#eab308;'>{h(c['score_medio'])}</span><br>
-                    Bajo: score &lt; <span style='color:#22c55e;'>{h(c['score_medio'])}</span>
+                    Crítico: score ≥ <span class="tx tone-danger">{h(c['score_critico'])}</span>
+                        o total &gt; <span class="tx tone-danger">{h(ui_components.fmt_moneda(c['monto_critico']))}</span><br>
+                    Alto: score ≥ <span class="tx tone-warn">{h(c['score_alto'])}</span><br>
+                    Medio: score ≥ <span class="tx tone-yellow">{h(c['score_medio'])}</span><br>
+                    Bajo: score &lt; <span class="tx tone-ok">{h(c['score_medio'])}</span>
                 </div>
             </div>""", unsafe_allow_html=True)
 
@@ -585,6 +644,8 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
             if not any([c["regla_absoluto"], c["regla_acumulado"], c["regla_perfil"],
                         c["regla_frecuencia"], c["regla_smurfing"], c["regla_pico"]]):
                 errores.append("Debes tener al menos una regla activa.")
+            if c.get("anomalia_percentil_medio", 75) >= c.get("anomalia_percentil_alto", 90):
+                errores.append("El percentil de anomalía Media debe ser menor que el de Alta.")
             if errores:
                 for err in errores:
                     st.error(f"Error: {err}")
@@ -671,7 +732,7 @@ Si el total mensual no supera el umbral, <strong>NO</strong> se genera la acció
                     color_estado = "#2ecc71" if activo_actual else "#e74c3c"
                     texto_estado = "Activo" if activo_actual else "Inactivo"
                     st.markdown(
-                        f"<div style='text-align:center; font-weight:600; color:{h(color_estado)};'>"
+                        f"<div class='state-center {h(ui_components.tone_class(color_estado))}'>"
                         f"{h(texto_estado)}</div>",
                         unsafe_allow_html=True,
                     )

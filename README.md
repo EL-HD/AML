@@ -8,7 +8,7 @@ Motor analítico propio: **IMPERATOR** (scoring de riesgo por transacción/clien
 
 ## 1. Arquitectura
 
-Un único servicio en Railway ejecuta dos procesos bajo `supervisord`:
+Un único servicio en Railway ejecuta tres procesos bajo `supervisord`:
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -16,7 +16,8 @@ Un único servicio en Railway ejecuta dos procesos bajo `supervisord`:
 │                                               │
 │   supervisord                                │
 │   ├── fastapi   (auth_api.py)  → 127.0.0.1:8000  (interno)
-│   └── streamlit (app.py)       → 0.0.0.0:$PORT   (público)
+│   ├── streamlit (app.py)       → 127.0.0.1:8501  (interno)
+│   └── caddy     (Caddyfile)    → 0.0.0.0:$PORT   (público: proxy inverso)
 │                                               │
 └─────────────────┬─────────────────────────────┘
                    │ SQLAlchemy
@@ -26,6 +27,7 @@ Un único servicio en Railway ejecuta dos procesos bajo `supervisord`:
 
 * **`auth_api.py`** (FastAPI): autenticación (JWT, rate limiting), CRUD de licencias/usuarios. Solo accesible en `127.0.0.1`: nunca expuesto directamente a internet.
 * **`app.py`** (Streamlit): interfaz principal, enruta a los módulos de `frontend/`.
+* **`Caddyfile`** (Caddy): proxy inverso delante de Streamlit. Añade las cabeceras de seguridad (CSP, HSTS, X-Frame-Options, Referrer-Policy, Permissions-Policy, X-Content-Type-Options), oculta `Server`, comprime y reenvía el WebSocket. La IP real del navegador llega en `X-Real-IP` (borde de Railway) y Caddy la reenvía como valor único en `X-Forwarded-For`. Verificación en vivo: `python scripts/verificar_cabeceras.py https://<dominio> --websocket`.
 * **PostgreSQL**: una tabla `Licencias` por Persona Obligada (multi-tenant vía `licenciaid`/`licence_id` UUID). El resto de las tablas de negocio se segmentan por ese mismo `licenciaid`.
 * Algunos módulos de frontend (p. ej. `mod_sesion.py`, `mod_riesgo_ldft.py`) abren su propia `SessionLocal()` (ver `backend/database.py`) para leer/escribir datos que no pasan por la API de autenticación: mismo patrón, sin duplicar lógica de conexión.
 
@@ -55,6 +57,7 @@ Un único servicio en Railway ejecuta dos procesos bajo `supervisord`:
 | `mod_manual.py` | Manual de usuario in-app (este documento tiene su equivalente técnico aquí). |
 | `mod_riesgo_ldft.py` | **Riesgo Institucional de LD/FT/FPADM** (GAFILAT/IVE): ver sección 3. |
 | `mod_utils.py` | Helpers compartidos de renderizado (`render_html_table`, `plotly_dark_layout`). |
+| `mod_mfa.py` | **Seguridad de la Cuenta**: enrolamiento del segundo factor TOTP (QR o clave manual), códigos de recuperación, restablecimiento propio y por administrador; pantalla de enrolamiento obligatorio (`MFA_ENFORCE`). |
 
 ## 3. Backend (`backend/`)
 
@@ -67,6 +70,8 @@ Un único servicio en Railway ejecuta dos procesos bajo `supervisord`:
 | `crud_riesgo.py` | Acceso a datos del módulo de Riesgo LD/FT: todas las funciones filtran por `licenciaid` (previene IDOR). |
 | `riesgo_ldft_logic.py` | Motor de cálculo **puro** (sin DB/Streamlit) del riesgo LD/FT: impacto, matriz de calor, ponderación de controles, riesgo residual. Ver docstring del módulo para los supuestos de ingeniería documentados. |
 | `procesador.py` | Motor de scoring IMPERATOR (S_T, S_C, S_B, S_N) sobre el Excel de transacciones. |
+| `totp.py` | HOTP/TOTP (RFC 4226 / RFC 6238) con biblioteca estándar, verificado contra los vectores de los RFC: ventana +-1, anti-replay por contador, comparación en tiempo constante, códigos de recuperación PBKDF2. |
+| `mfa.py` | Enrolamiento, verificación, recuperación, restablecimiento y política de MFA por usuario (`MfaUsuarios`, migración 007); secreto cifrado con Fernet; `sesion_autorizada` decide qué sesiones superaron el segundo factor (API y restauración de sesión). |
 
 ## 4. Módulo de Riesgo Institucional LD/FT/FPADM
 
@@ -84,8 +89,8 @@ Implementación del enfoque basado en riesgo institucional (Art. 8-11 Decreto 15
 | A01: Broken Access Control | RBAC por rol (`admin`, `oficial`, `analista`, `auditor`): `/licencias/*` y `/usuarios/` solo `admin` (`auth_api.require_role`), `/perfil` con campos restringidos; `frontend/permisos.py` deshabilita controles según rol. Caché de análisis ligado al `licence_id` y cifrado (`frontend/cache_analisis.py`). Todas las consultas filtran por `licenciaid`. |
 | A02: Cryptographic Failures | Contraseñas con bcrypt; `SECRET_KEY` obligatoria; restauración de sesión con token HMAC-SHA256 firmado, con expiración (30 min), nonce y validación contra la sesión vigente (`backend/session_token.py`, fail-closed sin `SESSION_SIGN_KEY`); JWT con `exp`, `iat`, `jti`, `iss`, `aud`. |
 | A03: Injection | ORM con binding de parámetros; `Literal` de Pydantic para listas cerradas; todo valor dinámico en HTML pasa por `frontend/ui_safe.h` (prueba estática en `tests/test_ui_safe.py`); saneado anti-inyección de fórmulas centralizado en `frontend/exportacion.py`. |
-| A05: Security Misconfiguration | Protección XSRF de Streamlit activa y configuración versionada en `.streamlit/config.toml` (subida máxima 25 MB); CORS de la API restringido por `CORS_ALLOWED_ORIGINS`; versiones exactas en `requirements.txt`; importación `.saml` con límites de tamaño, filas y lista blanca de configuración (`backend/config_aml.AmlConfig`). |
-| A07: Identification & Auth Failures | Límite de intentos por usuario e IP real (5 fallos / 5 min, bloqueo 15 min) en `/auth/validate` y `/token`; mensaje único "Credenciales inválidas"; política de contraseñas (12+, complejidad, lista de comunes); control de sesión única vía `BitacoraSesions`. MFA (TOTP) planificado como fase posterior. |
+| A05: Security Misconfiguration | Cabeceras de seguridad servidas por Caddy (`Caddyfile`: CSP con `frame-ancestors 'none'`, HSTS de un año, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `X-Content-Type-Options`, sin cabecera `Server`; prueba estática en `tests/test_caddyfile.py`); protección XSRF de Streamlit activa y configuración versionada en `.streamlit/config.toml` (subida máxima 25 MB); CORS de la API restringido por `CORS_ALLOWED_ORIGINS`; versiones exactas en `requirements.txt`; importación `.saml` con límites de tamaño, filas y lista blanca de configuración (`backend/config_aml.AmlConfig`). |
+| A07: Identification & Auth Failures | Límite de intentos por usuario e IP real (5 fallos / 5 min, bloqueo 15 min) en `/auth/validate`, `/token` y `/auth/mfa/verificar`; mensaje único "Credenciales inválidas"; política de contraseñas (12+, complejidad, lista de comunes); control de sesión única vía `BitacoraSesions`. **MFA TOTP (RFC 6238)** con biblioteca estándar (`backend/totp.py`): secreto cifrado con Fernet (`MFA_ENCRYPTION_KEY`), ventana de +-1 paso, anti-replay por contador, 10 códigos de recuperación hasheados (PBKDF2) de un solo uso, token intermedio de 5 minutos y un solo uso, obligatorio para `admin` y `oficial` con `MFA_ENFORCE=true`; ni el JWT ni la restauración de sesión firmada sirven sin haber superado el segundo factor (`backend/mfa.sesion_autorizada`). |
 | A09: Security Logging | `backend/auditoria.py` registra en `BitacoraAuditoria` (UTC) accesos a módulos, LOGIN_OK, LOGIN_FALLIDO, LOGOUT, EXPORTACION, IMPORTACION y CAMBIO_CONFIG (Art. 19 Ley 6593); ningún fallo se silencia. |
 
 ## 6. Variables de entorno
@@ -99,6 +104,11 @@ Implementación del enfoque basado en riesgo institucional (Art. 8-11 Decreto 15
 | `JWT_ISSUER`, `JWT_AUDIENCE` | Recomendadas | Claims `iss`/`aud` del JWT (por defecto `sovereign-aml-auth` / `sovereign-aml-app`). |
 | `AUTH_API_URL` | Sí (Streamlit) | URL interna de la API (`http://localhost:8000` en Railway). |
 | `CORS_ALLOWED_ORIGINS` | Recomendada | Orígenes permitidos por la API. |
+| `AUDIT_HMAC_KEY` | No (recomendada en producción) | Clave secreta para firmar con HMAC-SHA256 cada eslabón de la bitácora de auditoría encadenada (`BitacoraAuditoria.hash`). Sin ella se usa SHA-256 puro: la cadena detecta alteraciones, pero quien tenga acceso de escritura a la base y logre desactivar los triggers podría recalcularla. Al definirla, los eslabones anteriores siguen verificándose con SHA-256; no debe cambiarse ni retirarse después, porque los eslabones HMAC dejarían de ser verificables. |
+| `MFA_ENCRYPTION_KEY` | No (obligatoria para habilitar MFA) | Clave Fernet (`python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`) con la que se cifran los secretos TOTP en `MfaUsuarios`. Sin ella la aplicación funciona, pero no permite enrolar y la vista Seguridad de la Cuenta avisa al administrador. No debe cambiarse una vez hay usuarios enrolados: sus secretos dejarían de descifrarse (solo podrían entrar con códigos de recuperación y un administrador tendría que restablecerlos). |
+| `MFA_ENFORCE` | No (por defecto `false`) | `true` vuelve obligatorio el MFA para los roles `admin` y `oficial`: tras el login solo se permite la pantalla de enrolamiento hasta activarlo. Activar únicamente después de definir `MFA_ENCRYPTION_KEY` y de que al menos un administrador haya enrolado. |
+| `SCREENING_AUTO_DOWNLOAD` | No (por defecto `false`) | Habilita la descarga de listas de sanciones desde las URLs oficiales fijas (OFAC, ONU) definidas en `backend/screening.py`. La carga manual por el Administrador funciona siempre. |
+| `CSP_SCRIPT_EXTRA` | No (vacío) | Fuentes adicionales para `script-src` de la CSP servida por Caddy (p. ej. `'unsafe-eval'` si un componente lo exigiera). Permite ajustar la política sin reconstruir la imagen; documentar cualquier valor en el informe de despliegue. |
 
 ## 7. Pruebas y calidad
 
@@ -108,6 +118,21 @@ python scripts/medir_duplicacion.py            # duplicación de código (< 10 %
 bandit -r backend frontend auth_api.py app.py  # análisis estático de seguridad
 pip-audit -r requirements.txt                  # vulnerabilidades en dependencias
 ```
+
+### Integración continua (GitHub Actions)
+
+`.github/workflows/ci.yml` se ejecuta en cada push y pull request hacia `main` y `mejora/**`, con permisos mínimos (`contents: read`), sin secretos y con variables ficticias de prueba. Dos trabajos:
+
+* **calidad**: Python 3.11 con caché de pip, `unittest`, `bandit -c bandit.yaml ... -ll` (severidad media o superior; `bandit.yaml` excluye `tests/`), `pip-audit -r requirements.txt` y `scripts/medir_duplicacion.py --umbral 10`.
+* **migraciones**: servicio `postgres:16` efímero; ejecuta `scripts/db_migrate.py` dos veces sobre una base vacía (la segunda debe terminar sin SQL pendiente) y verifica `schema_migrations`, la columna `Licencias.rol` y su CHECK.
+
+Las acciones están fijadas a versión mayor; Dependabot (`.github/dependabot.yml`) propone actualizaciones para pasar a SHA fijados.
+
+**Desplegar en Railway solo si CI pasa ("Wait for CI").** Railway puede esperar a que los *check suites* de GitHub terminen en verde antes de construir. Activación manual (no se cambia desde el repositorio):
+
+1. Railway > proyecto > servicio de la aplicación > **Settings** > sección **Source** (repositorio `EL-HD/AML`, rama `main`).
+2. Activar **Wait for CI** (en algunas versiones del panel aparece como *Check Suites*).
+3. A partir de entonces, cada push a `main` solo despliega cuando el workflow `CI` finaliza con éxito; si falla, Railway omite el despliegue y conserva el anterior.
 
 ## 8. Levantar el sistema en local (comando `aml`)
 

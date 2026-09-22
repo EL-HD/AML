@@ -15,13 +15,13 @@ from frontend.ui_safe import h
 
 GRUPOS: Dict[str, List[str]] = {
     "Monitoreo": ["Resumen Ejecutivo", "Casos de Alerta", "Transacciones"],
-    "Investigación": ["Análisis por Cliente", "Red Transaccional"],
+    "Investigación": ["Análisis por Cliente", "Red Transaccional", "Listas de Sanciones"],
     "Riesgo": [
         "Matrices de Riesgo", "Riesgo Institucional LD/FT", "Imperator Diagnostics",
         "Gestión de Ubicaciones", "Acciones de Mitigación",
     ],
     "Reportería": ["Informes y Reportes"],
-    "Administración": ["Configuración", "Manual de Usuario"],
+    "Administración": ["Configuración", "Integridad de Bitácora", "Seguridad de la Cuenta", "Manual de Usuario"],
 }
 
 VISTA_POR_DEFECTO = "Resumen Ejecutivo"
@@ -29,7 +29,8 @@ VISTA_POR_DEFECTO = "Resumen Ejecutivo"
 # Vistas que no requieren un archivo cargado
 VISTAS_SIN_DATOS = {
     "Configuración", "Manual de Usuario", "Gestión de Ubicaciones",
-    "Riesgo Institucional LD/FT",
+    "Riesgo Institucional LD/FT", "Listas de Sanciones", "Integridad de Bitácora",
+    "Seguridad de la Cuenta",
 }
 
 _ALIAS = {"IMPERATOR Diagnostics": "Imperator Diagnostics"}
@@ -45,8 +46,13 @@ def _clave_radio(grupo: str) -> str:
 
 def _vistas_visibles(grupo: str) -> List[str]:
     vistas = GRUPOS[grupo]
-    if grupo == "Administración" and not permisos.puede("ver_configuracion"):
-        vistas = [v for v in vistas if v != "Configuración"]
+    if grupo == "Administración":
+        ocultas = set()
+        if not permisos.puede("ver_configuracion"):
+            ocultas.add("Configuración")
+        if not permisos.puede("verificar_bitacora"):
+            ocultas.add("Integridad de Bitácora")
+        vistas = [v for v in vistas if v not in ocultas]
     return vistas
 
 

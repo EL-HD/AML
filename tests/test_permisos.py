@@ -38,7 +38,7 @@ class TestMatrizPermisos(unittest.TestCase):
         acciones_de_escritura_o_exportacion = [
             "administrar_licencias", "configurar_parametros", "gestionar_catalogos",
             "gestionar_ubicaciones", "editar_riesgo_ldft", "gestionar_alertas",
-            "exportar_datos",
+            "exportar_datos", "proponer_caso_sospechoso", "aprobar_caso_sospechoso",
         ]
         for accion in acciones_de_escritura_o_exportacion:
             self.assertFalse(
@@ -53,6 +53,15 @@ class TestMatrizPermisos(unittest.TestCase):
         for rol in ROLES_SIN_AUDITOR:
             self.assertTrue(permisos.puede("gestionar_alertas", {"rol": rol}), rol)
         self.assertFalse(permisos.puede("gestionar_alertas", {"rol": "auditor"}))
+
+    def test_aprobar_caso_sospechoso_solo_oficial_o_admin(self):
+        """Cuatro ojos (Art. 29-30 Ley 6593): el analista propone, no aprueba."""
+        for rol in ROLES_SIN_AUDITOR:
+            self.assertTrue(permisos.puede("proponer_caso_sospechoso", {"rol": rol}), rol)
+        self.assertTrue(permisos.puede("aprobar_caso_sospechoso", {"rol": "admin"}))
+        self.assertTrue(permisos.puede("aprobar_caso_sospechoso", {"rol": "oficial"}))
+        self.assertFalse(permisos.puede("aprobar_caso_sospechoso", {"rol": "analista"}))
+        self.assertFalse(permisos.puede("aprobar_caso_sospechoso", {"rol": "auditor"}))
 
     def test_exportar_datos_excluye_auditor_incluye_operativos(self):
         """Generar/descargar PDFs RTS/RTE y reportes exige rol operativo."""

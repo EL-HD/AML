@@ -1,15 +1,19 @@
+import logging
+
+import pandas as pd
 import streamlit as st
-from datetime import datetime
+from sqlalchemy.exc import SQLAlchemyError
+
+from backend import casos_alerta
+from backend.database import SessionLocal
 from frontend.mod_utils import render_html_table
 from frontend.ui_safe import h
-from frontend import ui_components, permisos
+from frontend import casos_persistencia, ui_components, permisos
 
-ESTADOS_ALERTA = [
-    "Inusual_Pendiente",       # Detectado por IMPERATOR, sin examinar
-    "Inusual_Examinada",       # Analista revisó, no escaló
-    "Sospechosa_Confirmada",   # Analista confirmó: requiere RTS (Art. 30)
-    "Descartada",              # Falso positivo documentado
-]
+logger = logging.getLogger(__name__)
+
+# Estados del ciclo de vida (fuente única: backend.casos_alerta)
+ESTADOS_ALERTA = list(casos_alerta.ESTADOS)
 
 def mostrar(casos):
     st.markdown("""
@@ -36,13 +40,9 @@ def mostrar(casos):
     </div>
     """, unsafe_allow_html=True)
 
-    # Inicializar columnas del ciclo de vida (Arts. 28-30 Ley 6593)
-    if "Estado_Alerta" not in casos.columns:
-        casos["Estado_Alerta"] = "Inusual_Pendiente"
-    if "Fundamento_Examen" not in casos.columns:
-        casos["Fundamento_Examen"] = ""
-    if "Fecha_Clasificacion_Sospechosa" not in casos.columns:
-        casos["Fecha_Clasificacion_Sospechosa"] = None
+    # Columnas del ciclo de vida (Arts. 28-30 Ley 6593); los estados persistidos
+    # se rehidratan en app.py (casos_persistencia.rehidratar_estados) para toda vista.
+    casos_alerta.asegurar_columnas_estado(casos)
 
     # Filtros rápidos
     col_f1, col_f2 = st.columns([3, 1])
@@ -76,7 +76,7 @@ def mostrar(casos):
             casos_view[col] = casos_view[col].apply(lambda x: "Si" if x else "--")
 
     st.markdown(f"""
-    <div class="warning-box" style="margin-top:10px;">
+    <div class="warning-box mt-10">
         <strong>{h(len(casos_view))} caso(s) identificados</strong> con los criterios actuales.
         El listado se presenta de mayor a menor score para facilitar priorización operativa.
     </div>
@@ -89,8 +89,11 @@ def mostrar(casos):
     for col in ["ST_Max", "SC_Max", "SB_Max", "SN_Max"]:
         if col in tabla_casos.columns:
             tabla_casos[col] = tabla_casos[col].map(lambda v: f"{v:.4f}")
+    if "Anomalia_Percentil" in tabla_casos.columns:
+        tabla_casos["Anomalia_Percentil"] = tabla_casos["Anomalia_Percentil"].map(
+            lambda v: "--" if v is None or v != v else f"{float(v):.1f}")
     tabla_casos = tabla_casos.rename(columns={
-        "Total_Mensual": "Total Mensual (Q)",
+        "Total_Mensual": ui_components.etiqueta_monto("Total Mensual"),
         "Score_Max": "Score de Riesgo",
         "ST_Max": "S_T (Transaccional)",
         "SC_Max": "S_C (Contextual)",
@@ -98,36 +101,118 @@ def mostrar(casos):
         "SN_Max": "S_N (Red)",
         "Transacciones": "N. Transacciones",
         "Nivel_Riesgo": "Nivel de Riesgo",
+        "Anomalia_Percentil": "Señal de anomalía (percentil)",
+        "Anomalia_Nivel": "Nivel de anomalía",
     })
     st.markdown(render_html_table(tabla_casos, max_height=560), unsafe_allow_html=True)
 
-    # ── PANEL DE GESTIÓN DE CASOS (Arts. 28-30 Ley 6593) ─────────────────────
+    # ── PANEL DE GESTIÓN DE CASOS (Arts. 29-30 y 34 Ley 6593) ────────────────
     st.markdown("---")
-    ui_components.section_title("Gestión de Casos: Ciclo Inusual → Sospechosa")
-    if not casos_filtrados.empty:
-        caso_idx = st.selectbox(
-            "Seleccionar caso para gestionar",
-            casos_filtrados.index.tolist(),
-            format_func=lambda i: f"{casos_filtrados.at[i, 'Cliente']}: Score: {casos_filtrados.at[i, 'Score_Max']:.2f}: Estado: {casos_filtrados.at[i, 'Estado_Alerta']}",
-            key="sel_caso"
-        )
-        if caso_idx is not None:
-            with st.expander("Gestión del caso", expanded=False):
-                puede_clasificar = permisos.exigir_o_avisar("gestionar_alertas")
-                nuevo_estado = st.selectbox(
-                    "Clasificar como", ESTADOS_ALERTA, key="nuevo_estado", disabled=not puede_clasificar,
-                )
-                fundamento = st.text_area(
-                    "Fundamento del examen (Art. 29 Ley 6593)",
-                    value=str(casos_filtrados.at[caso_idx, "Fundamento_Examen"]),
-                    key="fundamento_examen",
-                    help="Describe la base legal/económica que justifica o descarta la operación sospechosa.",
-                    disabled=not puede_clasificar,
-                )
-                if st.button("Guardar clasificación", key="btn_clasificar", disabled=not puede_clasificar):
-                    casos_filtrados.at[caso_idx, "Estado_Alerta"] = nuevo_estado
-                    casos_filtrados.at[caso_idx, "Fundamento_Examen"] = fundamento
-                    if nuevo_estado == "Sospechosa_Confirmada":
-                        casos_filtrados.at[caso_idx, "Fecha_Clasificacion_Sospechosa"] = datetime.now().date()
-                        st.warning("Caso clasificado como SOSPECHOSO. Proceder a generar RTS ante la IVE (Art. 30 Ley 6593).")
-                    st.success("Clasificación guardada.")
+    ui_components.section_title("Gestión de Casos: Ciclo Inusual -> Sospechosa")
+    if casos_filtrados.empty:
+        return
+    caso_idx = st.selectbox(
+        "Seleccionar caso para gestionar",
+        casos_filtrados.index.tolist(),
+        format_func=lambda i: f"{casos_filtrados.at[i, 'Cliente']}: Score: {casos_filtrados.at[i, 'Score_Max']:.2f}: Estado: {casos_filtrados.at[i, 'Estado_Alerta']}",
+        key="sel_caso"
+    )
+    if caso_idx is None:
+        return
+    with st.expander("Gestión del caso", expanded=False):
+        _panel_gestion_caso(casos, casos_filtrados.loc[caso_idx])
+
+
+def _panel_gestion_caso(casos, fila) -> None:
+    """Carga (o crea) el caso persistido y ofrece solo las transiciones autorizadas."""
+    if not permisos.exigir_o_avisar("gestionar_alertas"):
+        return
+    licenciaid, usuario, rol = casos_persistencia.identidad_sesion()
+    hash_lote = casos_persistencia.hash_lote_sesion()
+    if not licenciaid or not hash_lote:
+        st.error("No se pudo determinar la licencia o el lote activo. Vuelva a iniciar sesión.")
+        return
+
+    db = SessionLocal()
+    try:
+        try:
+            caso = casos_alerta.obtener_o_crear_caso(
+                db, licenciaid, hash_lote, fila["Cliente"], usuario, rol,
+                score_max=fila.get("Score_Max"), nivel_riesgo=fila.get("Nivel_Riesgo"),
+                nombre_archivo=st.session_state.get("archivo_nombre"),
+            )
+        except casos_alerta.ErrorCasoAlerta as exc:
+            st.error(str(exc))
+            return
+        _resumen_caso(caso)
+        destinos = casos_alerta.transiciones_permitidas(caso, usuario, rol)
+        if caso.estado == casos_alerta.ESTADO_PROPUESTA:
+            if casos_alerta.ESTADO_CONFIRMADA in destinos:
+                st.warning("Propuesta pendiente de aprobación: al confirmar, proceda a generar el RTS ante la IVE (Art. 30 Ley 6593).")
+            else:
+                st.info("Propuesta pendiente de aprobación por un Oficial de Cumplimiento o Administrador distinto del proponente (cuatro ojos).")
+        if caso.estado == casos_alerta.ESTADO_CONFIRMADA:
+            st.warning("Caso confirmado como SOSPECHOSO: estado final. Genere el RTS en el módulo de Reportes (Art. 30 Ley 6593).")
+        if not destinos:
+            st.info("No hay transiciones disponibles para su rol en el estado actual.")
+        else:
+            nuevo_estado = st.selectbox("Clasificar como", destinos, key="nuevo_estado")
+            fundamento = st.text_area(
+                "Fundamento del examen (Art. 29 Ley 6593)",
+                value=str(caso.fundamento or ""),
+                key="fundamento_examen",
+                max_chars=casos_alerta.MAX_CARACTERES_FUNDAMENTO,
+                help="Describe la base legal y económica que justifica, escala o descarta la operación.",
+            )
+            if st.button("Guardar clasificación", key="btn_clasificar"):
+                _aplicar_transicion(db, casos, caso, nuevo_estado, fundamento, licenciaid, usuario, rol)
+        _tabla_historial(db, licenciaid, caso)
+    except SQLAlchemyError:
+        logger.exception("Error de base de datos en la gestión del caso de alerta.")
+        st.error("No fue posible acceder a la base de datos de casos. Intente de nuevo más tarde.")
+    finally:
+        db.close()
+
+
+def _aplicar_transicion(db, casos, caso, nuevo_estado, fundamento, licenciaid, usuario, rol) -> None:
+    try:
+        caso = casos_alerta.cambiar_estado(db, licenciaid, caso.id, nuevo_estado, fundamento, usuario, rol)
+    except casos_alerta.ErrorCasoAlerta as exc:
+        st.error(str(exc))
+        return
+    casos_alerta.rehidratar_dataframe(casos, [caso])
+    if nuevo_estado == casos_alerta.ESTADO_CONFIRMADA:
+        st.warning("Caso clasificado como SOSPECHOSO. Proceder a generar RTS ante la IVE (Art. 30 Ley 6593).")
+    st.success("Clasificación guardada de forma permanente.")
+    st.rerun()
+
+
+def _resumen_caso(caso) -> None:
+    detalle = [
+        ("Clave del caso", caso.clave_caso[:16]),
+        ("Estado", caso.estado),
+        ("Propuesto por", caso.propuesto_por or "--"),
+        ("Aprobado por", caso.aprobado_por or "--"),
+    ]
+    celdas_html = "".join(
+        f'<div class="glossary-item"><span class="glossary-key">{h(k)}</span><span>{h(v)}</span></div>'
+        for k, v in detalle
+    )
+    st.markdown(f'<div class="glossary">{celdas_html}</div>', unsafe_allow_html=True)
+
+
+def _tabla_historial(db, licenciaid, caso) -> None:
+    historial = casos_alerta.historial_caso(db, licenciaid, caso.id)
+    if not historial:
+        return
+    filas = pd.DataFrame([{
+        "Fecha (UTC)": r.registrado_en.strftime("%Y-%m-%d %H:%M") if r.registrado_en else "",
+        "Acción": r.accion,
+        "De": r.estado_anterior or "--",
+        "A": r.estado_nuevo,
+        "Usuario": r.usuario,
+        "Rol": r.rol,
+        "Fundamento": r.fundamento,
+    } for r in historial])
+    st.markdown("**Historial del caso (registro inmutable, Art. 34 Ley 6593)**")
+    st.markdown(render_html_table(filas, max_height=260), unsafe_allow_html=True)

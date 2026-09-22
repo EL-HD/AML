@@ -1,0 +1,150 @@
+# =============================================================================
+# CI de Sovereign AML (T2, Fase 2)
+# -----------------------------------------------------------------------------
+# Objetivo : ejecutar pruebas unitarias, análisis estático de seguridad (bandit),
+#            auditoría de dependencias (pip-audit), medición de duplicación y una
+#            prueba de migraciones contra PostgreSQL 16 en cada push y pull request.
+# Secretos : ninguno. Solo variables ficticias de prueba (las mismas que tests/conftest.py).
+# Permisos : mínimos (contents: read). El token no puede escribir en el repositorio.
+# Acciones : fijadas a versión mayor (actions/checkout@v4, actions/setup-python@v5).
+#            Decisión documentada: la fijación a SHA de commit es la práctica más
+#            estricta, pero no fue posible verificar los SHA sin acceso a GitHub
+#            desde el entorno de desarrollo, y un SHA erróneo rompería el pipeline.
+#            Dependabot (.github/dependabot.yml) propone las actualizaciones; al
+#            aceptar la primera, sustituir la versión mayor por el SHA que proponga
+#            (formato: uses: actions/checkout@<sha> # v4.x.y).
+# Railway  : ver README, sección 7 ("Wait for CI") para desplegar solo si CI pasa.
+# =============================================================================
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - "mejora/**"
+  pull_request:
+    branches:
+      - main
+      - "mejora/**"
+
+permissions:
+  contents: read
+
+# Cancela ejecuciones anteriores de la misma rama o PR para no acumular colas.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+  PYTHONDONTWRITEBYTECODE: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  # Variables de prueba NO sensibles (valores ficticios, iguales a tests/conftest.py).
+  SECRET_KEY: clave-de-prueba-secret-key-0123456789abcdef
+  SESSION_SIGN_KEY: clave-de-prueba-session-sign-0123456789abcdef
+  JWT_ISSUER: sovereign-aml-test
+  JWT_AUDIENCE: sovereign-aml-app
+  CACHE_ENCRYPTION_SALT: sal-de-prueba
+
+jobs:
+  calidad:
+    name: Pruebas, seguridad y duplicación
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: "sqlite://"
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Configurar Python ${{ env.PYTHON_VERSION }} con caché de pip
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Pruebas unitarias (unittest)
+        run: python -m unittest discover -s tests -v
+
+      - name: Análisis estático de seguridad (bandit, severidad media o superior)
+        run: bandit -c bandit.yaml -r backend frontend auth_api.py app.py scripts -ll
+
+      - name: Auditoría de vulnerabilidades en dependencias (pip-audit)
+        run: pip-audit -r requirements.txt --progress-spinner off
+
+      - name: Duplicación de código (umbral 10 %)
+        run: python scripts/medir_duplicacion.py --umbral 10 app.py auth_api.py backend frontend scripts
+
+  migraciones:
+    name: Migraciones idempotentes (PostgreSQL 16)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          # Credenciales efímeras del servicio de CI (no son secretos de producción).
+          POSTGRES_USER: aml_ci
+          POSTGRES_PASSWORD: aml_ci_password_ficticia
+          POSTGRES_DB: aml_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aml_ci -d aml_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://aml_ci:aml_ci_password_ficticia@localhost:5432/aml_ci
+      PGPASSWORD: aml_ci_password_ficticia
+      BOOTSTRAP_ADMIN_USERS: ""
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Configurar Python ${{ env.PYTHON_VERSION }} con caché de pip
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Primera ejecución sobre base vacía (ORM + migrations/*.sql)
+        run: python scripts/db_migrate.py
+
+      - name: Segunda ejecución (debe ser idempotente y sin SQL pendiente)
+        run: |
+          set -o pipefail
+          python scripts/db_migrate.py | tee segunda_ejecucion.log
+          grep -q "Sin migraciones SQL pendientes" segunda_ejecucion.log
+
+      - name: Verificar esquema resultante
+        run: |
+          esperadas=$(ls migrations/*.sql | wc -l)
+          aplicadas=$(psql -h localhost -U aml_ci -d aml_ci -tAc "SELECT COUNT(*) FROM public.schema_migrations")
+          echo "Migraciones SQL esperadas: $esperadas, registradas: $aplicadas"
+          test "$esperadas" -eq "$aplicadas"
+          psql -h localhost -U aml_ci -d aml_ci -v ON_ERROR_STOP=1 -tAc \
+            "SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='Licencias' AND column_name='rol'" \
+            | grep -q 1
+          psql -h localhost -U aml_ci -d aml_ci -v ON_ERROR_STOP=1 -tAc \
+            "SELECT 1 FROM pg_constraint WHERE conname='licencias_rol_check'" | grep -q 1

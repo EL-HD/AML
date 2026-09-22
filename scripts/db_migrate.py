@@ -34,6 +34,36 @@ def applied_migrations(conn):
     return {row[0] for row in rows}
 
 
+def ejecutar_sql_literal(conn, sql: str) -> None:
+    """Ejecuta SQL de migración tal cual, sin sustitución de parámetros.
+
+    Se usa el cursor DBAPI directamente y se invoca execute(sql) con un único
+    argumento. Motivos explícitos:
+
+    1) SQLAlchemy.exec_driver_sql(sql) entrega a psycopg2 un diccionario vacío
+       como parámetros. Al detectar "%" en el SQL, psycopg2 intenta interpolar
+       y rechaza ese tipo con:
+           TypeError: sqlalchemy.cyextension.immutabledict.immutabledict
+                      is not a sequence
+       Las migraciones contienen "%" legítimo como marcador de PL/pgSQL en
+       RAISE EXCEPTION (004, 005, 006), de modo que el fallo es inevitable por
+       esa vía.
+    2) Con execute(sql) de un solo argumento, psycopg2 no realiza ninguna
+       interpolación: ni "%" ni ":algo" se interpretan como parámetro.
+
+    El cursor pertenece a la conexión de la transacción abierta por
+    engine.begin(), por lo que el commit y el rollback siguen gobernados por
+    ese bloque: no se introduce una transacción paralela.
+    """
+    if not isinstance(sql, str) or not sql.strip():
+        raise ValueError("ejecutar_sql_literal recibió SQL vacío o de tipo inválido.")
+    cursor = conn.connection.cursor()
+    try:
+        cursor.execute(sql)
+    finally:
+        cursor.close()
+
+
 def apply_sql_migrations():
     with engine.begin() as conn:
         ensure_tracking_table(conn)
@@ -43,9 +73,8 @@ def apply_sql_migrations():
             print("-> Sin migraciones SQL pendientes.")
             return
         for f in pending:
-            print(f"-> Aplicando migración: {f.name}")
-            # exec_driver_sql: el SQL se envía sin parsear binds (evita que ":M" en comentarios se tome como parámetro)
-            conn.exec_driver_sql(f.read_text(encoding="utf-8"))
+            print(f"-> Aplicando migración: {f.name}", flush=True)
+            ejecutar_sql_literal(conn, f.read_text(encoding="utf-8"))
             conn.execute(
                 text("INSERT INTO public.schema_migrations (filename) VALUES (:f)"),
                 {"f": f.name},

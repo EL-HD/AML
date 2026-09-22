@@ -1,0 +1,10 @@
+# Configuración de bandit (análisis estático de seguridad) para Sovereign AML.
+# Uso en CI y local: bandit -c bandit.yaml -r backend frontend auth_api.py app.py scripts -ll
+# Se excluyen las pruebas (usan credenciales ficticias y asserts) y los entornos locales.
+exclude_dirs:
+  - tests
+  - aml_env
+  - backup_dark_fintech
+  - backups
+  - graphify-out
+  - __pycache__

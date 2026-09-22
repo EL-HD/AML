@@ -57,16 +57,20 @@ def mostrar():
     |--------|-------------|
     | `Inusual_Pendiente` | Detectado por IMPERATOR, pendiente de revisión del analista |
     | `Inusual_Examinada` | Analista revisó y descartó escalamiento |
-    | `Sospechosa_Confirmada` | Analista confirmó: **requiere RTS ante la IVE (Art. 30)** |
+    | `Sospechosa_Propuesta` | Analista propone RTS; pendiente de aprobación (cuatro ojos) |
+    | `Sospechosa_Confirmada` | Oficial de Cumplimiento o Administrador (distinto del proponente) confirmó: **requiere RTS ante la IVE (Art. 30)** |
     | `Descartada` | Falso positivo documentado |
 
-    El analista selecciona el caso, registra el **Fundamento del Examen** (Art. 29) y guarda la clasificación. Al marcar `Sospechosa_Confirmada`, el sistema activa el generador de **RTS** en el módulo de Reportes.
+    El analista selecciona el caso, registra el **Fundamento del Examen** (Art. 29) y guarda la clasificación. Solo un Oficial de Cumplimiento o Administrador distinto de quien propuso puede aprobar `Sospechosa_Confirmada`; al aprobarse, el sistema activa el generador de **RTS** en el módulo de Reportes.
+
+    Los casos y su historial se guardan en la base de datos con una clave estable (licencia, hash del lote de transacciones y cliente): al volver a cargar el mismo lote se recuperan los estados. El historial es inmutable y no se admite borrado desde la aplicación (retención mínima de 5 años, Art. 34 Ley 6593).
 
     ## 4. Reportes Regulatorios IVE (Ley 6593)
     El módulo **Reportes** incluye una pestaña dedicada **RTS / RTE: IVE**:
 
     * **RTS: Reporte de Transacción Sospechosa (Art. 30):** Se genera para casos clasificados como `Sospechosa_Confirmada`. Incluye datos del sujeto obligado, cliente, score IMPERATOR y fundamento del examen. Formato compatible con la IVE-SIB.
     * **RTE: Reporte de Transacción en Efectivo (Art. 31):** Se genera automáticamente para transacciones con `Tipo_Instrumento = EFECTIVO` y `Monto ≥ USD 10,000`. El sistema alerta en el módulo de Transacciones cuando existen casos pendientes.
+    * **Moneda de trabajo y monto normativo:** en Configuración se elige la moneda de trabajo (GTQ o USD) con la que se expresan montos, umbrales de reglas, ejes de gráficos y PDF. El umbral RTE del Art. 31 es un monto normativo fijado en dólares (USD 10,000) y se muestra siempre en USD, aunque la moneda de trabajo sea GTQ; cada PDF indica la moneda de trabajo en su portada.
 
     ## 5. Inteligencia de Red Transaccional
     El módulo de **Red Transaccional** visualiza el flujo de capital mediante grafos. Patrones detectados:
@@ -81,6 +85,7 @@ def mostrar():
     * **Falsos positivos:** Ruido analítico en clientes de bajo riesgo.
     * **Pruebas de estrés:** Simula cambios de parámetros antes de aplicarlos.
     * **Densidad de riesgo:** Concentración del riesgo en la cartera.
+    * **Señal de anomalía:** Detección no supervisada (Isolation Forest) por cliente y por transacción con percentil 0-100, nivel (Alto/Medio/Bajo) y las tres variables que más alejan al cliente de la cartera. Es complementaria: no altera el Score IMPERATOR ni el estado de los casos. Los clientes con anomalía alta y score bajo se destacan como posibles puntos ciegos de las reglas. Umbrales en Configuración > Reglas de Detección.
 
     ## 5.2. Riesgo Institucional de LD/FT/FPADM (Art. 8-11 Decreto 15-2026 / Modelo GAFILAT-IVE)
     Módulo independiente de **administración del riesgo institucional** de la Persona Obligada (distinto del riesgo por transacción/cliente de IMPERATOR). Sigue el modelo de la Intendencia de Verificación Especial de Guatemala (GERILAFT App) en 6 etapas:
@@ -97,6 +102,26 @@ def mostrar():
     **Niveles de riesgo (1-4):** Bajo, Medio Bajo, Medio Alto, Alto. Un riesgo residual de nivel 3 o 4 **exige** Plan de Acción (`requiere_plan_accion`).
 
     **Aislamiento de datos:** todas las tablas (`RiesgoSegmentos`, `RiesgoEventos`, `RiesgoControles`, `RiesgoEventoControl`, `RiesgoPlanesAccion`) se segmentan por `licenciaid`: una Persona Obligada solo ve su propia información, incluso en el mismo servidor.
+
+    ## 5.3. Listas de Sanciones (GAFI R.6 / R.7)
+    Vista **Investigación > Listas de Sanciones**. Compara los clientes y las contrapartes (`Cliente_Destino`) del análisis cargado contra la lista **OFAC SDN** y la **lista consolidada del Consejo de Seguridad de la ONU**.
+    * **Carga de listas (Administrador):** archivos oficiales `sdn.csv` y `alt.csv` (OFAC) o `consolidated.xml` (ONU). Cada versión registra fuente, fecha, SHA-256 del archivo y cantidad de entradas; la versión anterior queda inactiva. Se rechazan archivos mayores de 50 MB y XML con `DOCTYPE` o `ENTITY`.
+    * **Ejecución (Oficial o Administrador):** los nombres se normalizan (minúsculas, sin acentos ni puntuación, tokens ordenados, alias) y se comparan con Jaro-Winkler y por tokens; el umbral por defecto es 0.88. Cada coincidencia indica lista, entrada, alias, puntaje y motivo.
+    * **Bandeja de coincidencias:** toda coincidencia nace `Pendiente` y debe **Descartarse** o **Confirmarse** con un fundamento obligatorio; cada decisión queda en un historial inmutable y en la bitácora de auditoría. Una coincidencia confirmada de un cliente del lote se vincula a su Caso de Alerta. El Analista y el Auditor consultan en modo lectura.
+    * **Señal en la ficha del cliente:** Análisis por Cliente muestra si el cliente tiene coincidencias pendientes o confirmadas; la columna `Screening_Sanciones` se agrega al DataFrame de casos.
+
+    ## 5.4. Integridad de la Bitácora de Auditoría (Art. 19 Ley 6593, GAFI R.11)
+    Vista **Administración > Integridad de Bitácora**, disponible para el Administrador y el Auditor. Cada registro de la bitácora es un eslabón: lleva un correlativo por licencia (`seq`), el hash del registro anterior (`hash_prev`) y su propio hash SHA-256 (o HMAC-SHA256 cuando la aplicación tiene configurada la clave `AUDIT_HMAC_KEY`). La base de datos rechaza cualquier modificación o borrado de la bitácora.
+    * **Verificar cadena ahora:** recorre todos los eslabones de la licencia y reporta si la cadena está **íntegra** o **rota**, el primer eslabón roto y el motivo (campo alterado, hueco por borrado, inserción fuera de orden, retroceso de algoritmo). La verificación queda registrada en la propia bitácora.
+    * **Registros pre-cadena:** los eventos anteriores a la activación de la cadena no tienen hash; se cuentan de forma informativa y quedan protegidos contra cambios desde ese momento.
+    * **Exportar reporte:** CSV con el resumen y el estado de cada eslabón (saneado contra fórmulas). Se recomienda conservar el último hash de cada verificación para compararlo en la siguiente.
+
+    ## 5.5. Segundo factor de autenticación (MFA TOTP, RFC 6238)
+    Vista **Administración > Seguridad de la Cuenta**. El segundo factor usa códigos temporales de 6 dígitos generados por una aplicación autenticadora (Google Authenticator, Microsoft Authenticator, Authy, 1Password). Es **obligatorio para Administradores y Oficiales de Cumplimiento** cuando el servidor tiene activa la política `MFA_ENFORCE`: hasta completar el enrolamiento solo se muestra esa pantalla.
+    * **Enrolar:** pulse **Iniciar enrolamiento**, escanee el código QR (o ingrese la clave en bloques manualmente) y confirme con el código vigente del autenticador. El MFA solo se activa tras confirmar.
+    * **Códigos de recuperación:** al activar se muestran **una sola vez** diez códigos de un solo uso; guárdelos fuera del dispositivo. Sirven para entrar si pierde el teléfono.
+    * **Inicio de sesión:** tras la contraseña se pide el código del autenticador o uno de recuperación; cada código sirve una sola vez y hay límite de intentos.
+    * **Cambio de dispositivo:** restablezca su MFA con un código válido y vuelva a enrolar. Si perdió el dispositivo y los códigos, un **Administrador** puede restablecer el MFA de otro usuario (nunca el propio sin código); la acción queda en la bitácora de ambos.
 
     ## 6. Acciones de Mitigación (RBA / GAFI / ISO 31000)
     El sistema asigna automáticamente acciones proporcionales al nivel de alerta:

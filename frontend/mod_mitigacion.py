@@ -141,10 +141,10 @@ def mostrar(df, casos):
     for col, (titulo, subtitulo, desc, color) in zip([col_n1, col_n2, col_n3], marcos):
         with col:
             st.markdown(f"""
-            <div style="background:#1b2027; border-left:4px solid {h(color)}; padding:16px; margin-bottom:8px; min-height:120px;">
-                <div style="color:{h(color)}; font-size:13px; font-weight:700; font-family:'IBM Plex Mono',monospace;">{h(titulo)}</div>
-                <div style="color:#f0f6fc; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin:6px 0 4px;">{h(subtitulo)}</div>
-                <div style="color:#b8a58e; font-size:12px; line-height:1.6;">{h(desc)}</div>
+            <div class="frame-card {h(ui_components.tone_class(color))}">
+                <div class="frame-card-title">{h(titulo)}</div>
+                <div class="frame-card-sub">{h(subtitulo)}</div>
+                <div class="frame-card-desc">{h(desc)}</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -156,8 +156,8 @@ def mostrar(df, casos):
     umbral_feic = cfg_mit.get("umbral_feic", 45000)
     if regla_feic:
         st.markdown(f"""
-        <div style="background:#1b1027; border-left:4px solid #b47cf7; padding:14px; margin-bottom:16px; font-size:12px; color:#d8c3ad;">
-            <span style="color:#b47cf7; font-weight:700; font-family:'IBM Plex Mono',monospace;">VERIFICACIÓN FEIS → FEIC ACTIVA</span>
+        <div class="feic-banner">
+            <span class="feic-banner-title">VERIFICACIÓN FEIS → FEIC ACTIVA</span>
             &nbsp;|&nbsp; Umbral configurado: <strong>{h(ui_components.fmt_moneda(umbral_feic))}</strong><br>
             Los asociados que superen este monto mensual recibirán la acción <strong>F-01</strong>:
             actualización de FEIS a FEIC (Formulario Electrónico de Información del Cliente).
@@ -170,18 +170,18 @@ def mostrar(df, casos):
         color = _COLOR_CAT[cat_nombre]
         with col:
             filas_html = "".join([
-                f"""<div style="display:flex; gap:8px; margin-bottom:8px; align-items:flex-start;">
-                    <span style="color:{h(color)}; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700; min-width:36px; padding-top:1px;">{h(i['codigo'])}</span>
+                f"""<div class="catalog-item">
+                    <span class="catalog-item-code">{h(i['codigo'])}</span>
                     <div>
-                        <div style="color:#dee2ed; font-size:12px; line-height:1.4;">{h(i['accion'])}</div>
-                        <div style="color:#a7b0bb; font-size:12px; font-family:'IBM Plex Mono',monospace;">{h(i['norma'])}</div>
+                        <div class="catalog-item-action">{h(i['accion'])}</div>
+                        <div class="catalog-item-norm">{h(i['norma'])}</div>
                     </div>
                 </div>"""
                 for i in items
             ])
             st.markdown(f"""
-            <div style="background:#171c23; border:1px solid {h(color)}; border-top:3px solid {h(color)}; padding:16px;">
-                <div style="color:{h(color)}; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:12px; font-family:'IBM Plex Mono',monospace;">{h(cat_nombre)}</div>
+            <div class="catalog-card {h(ui_components.tone_class(color))}">
+                <div class="catalog-card-title">{h(cat_nombre)}</div>
                 {filas_html}
             </div>
             """, unsafe_allow_html=True)
@@ -258,43 +258,41 @@ def mostrar(df, casos):
 
         # Encabezado cliente
         st.markdown(f"""
-        <div style="background:#171c23; border:1px solid {h(color_nivel)}; border-left:6px solid {h(color_nivel)};
-                    padding:14px 18px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-            <div style="display:flex; flex-direction:column; gap:6px; min-width:0;">
-                <div style="color:#f0f6fc; font-weight:700; font-size:15px; font-family:'Manrope',sans-serif;">{cliente_html}</div>
-                <div style="color:#b8a58e; font-size:12px; font-family:'IBM Plex Mono',monospace; line-height:1.5; word-break:break-word;">
+        <div class="client-head {h(ui_components.tone_class(color_nivel))}">
+            <div class="client-head-main">
+                <div class="client-head-name">{cliente_html}</div>
+                <div class="client-head-meta">
                     {meta_html}
                 </div>
             </div>
-            <div style="color:{h(color_nivel)}; font-weight:700; font-size:12px; font-family:'IBM Plex Mono',monospace;
-                        border:1px solid {h(color_nivel)}; padding:3px 10px; white-space:nowrap;">{nivel_html}</div>
+            <div class="client-head-level">{nivel_html}</div>
         </div>
         """, unsafe_allow_html=True)
 
         # Acciones del cliente
-        filas_acc = ""
+        filas_acc_html = ""
         for _, acc in acciones_cliente.iterrows():
             cat = acc["Categoría"]
             color_cat = _COLOR_CAT.get(cat, "#a7b0bb")
-            filas_acc += f"""
-            <tr>
-                <td style="padding:9px 14px; color:{h(color_cat)}; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700;">{_texto_seguro(acc['Código'])}</td>
-                <td style="padding:9px 14px; color:{h(color_cat)}; font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">{_texto_seguro(acc['Categoría'])}</td>
-                <td style="padding:9px 14px; color:#dee2ed; font-size:13px;">{_texto_seguro(acc['Acción'])}</td>
-                <td style="padding:9px 14px; color:#a7b0bb; font-family:'IBM Plex Mono',monospace; font-size:12px;">{_texto_seguro(acc['Norma'])}</td>
+            filas_acc_html += f"""
+            <tr class="{h(ui_components.tone_class(color_cat))}">
+                <td class="td-code">{_texto_seguro(acc['Código'])}</td>
+                <td class="td-cat">{_texto_seguro(acc['Categoría'])}</td>
+                <td class="td-action">{_texto_seguro(acc['Acción'])}</td>
+                <td class="td-norm">{_texto_seguro(acc['Norma'])}</td>
             </tr>"""
 
         st.markdown(f"""
-        <table class="aml-table" style="margin-bottom:20px;">
+        <table class="aml-table actions-table mb-20">
             <thead>
                 <tr>
-                    <th style="width:60px;">Código</th>
-                    <th style="width:130px;">Categoría</th>
+                    <th class="w-60">Código</th>
+                    <th class="w-130">Categoría</th>
                     <th>Acción de Mitigación</th>
-                    <th style="width:160px;">Referencia Normativa</th>
+                    <th class="w-160">Referencia Normativa</th>
                 </tr>
             </thead>
-            <tbody>{h(filas_acc)}</tbody>
+            <tbody>{filas_acc_html}</tbody>
         </table>
         """, unsafe_allow_html=True)
 
@@ -322,7 +320,7 @@ def mostrar(df, casos):
         yaxis=dict(autorange="reversed", gridcolor="#30353d", tickfont=dict(color="#d8c3ad")),
     ))
     st.plotly_chart(fig, use_container_width=True)
-    st.markdown("""<div class="info-box" style="margin-top:5px;">
+    st.markdown("""<div class="info-box mt-5">
         <b>Interpretación:</b> Distribución del catálogo de acciones ejecutadas en el período.
         El volumen de acciones regulatorias indica la presión de reporte hacia la SIB.
         Las estratégicas reflejan ajustes preventivos al perfil de riesgo del cliente.

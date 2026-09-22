@@ -1,0 +1,16 @@
+# Configuración del servicio cron de respaldos (T7). No sustituye a railway.toml:
+# se usa creando un SEGUNDO servicio desde el mismo repositorio y fijando en
+# Settings > Config-as-code > "Config file path" el valor "railway.respaldo.toml".
+# Ver docs/planes/INFORME_FASE2_2026-09.md, sección T7, para las variables necesarias.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# El proceso debe terminar por sí solo (Railway ejecuta startCommand en cada disparo,
+# en UTC, y omite un disparo si el anterior sigue corriendo). Sin migraciones ni supervisord.
+startCommand = "python scripts/respaldo_bd.py"
+# Diario a las 03:00 UTC (21:00 hora de Guatemala del día anterior).
+cronSchedule = "0 3 * * *"
+# Sin healthcheck: es una tarea, no un servicio HTTP.
+restartPolicyType = "NEVER"

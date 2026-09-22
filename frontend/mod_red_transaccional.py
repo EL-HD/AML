@@ -53,7 +53,7 @@ def mostrar(df, casos):
         <strong>RED TRANSACCIONAL</strong>: Grafo dirigido de flujos entre clientes.
         Nodo = Cliente · Arista = Transacción (Origen → Destino).
         Detecta rutas multi-hop y clústeres de riesgo interconectados.
-        Requiere la columna <code style="color:#f59e0b;">Cliente_Destino</code> en el Excel.
+        Requiere la columna <code class="code-accent">Cliente_Destino</code> en el Excel.
     </div>
     """, unsafe_allow_html=True)
 
@@ -89,7 +89,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
 
     # ── Filtros de visualización ───────────────────────────────────────────
     st.markdown("""
-    <div class="info-box" style="border-left-color: #3b82f6;">
+    <div class="info-box tone-info">
         <strong>GUÍA SENCILLA DE NAVEGACIÓN:</strong><br>
         • <b>Enfoque (Cliente Foco):</b> Elige a una persona específica para ver solo sus movimientos y contactos directos.<br>
         • <b>Niveles (Hops/Saltos):</b> Controla qué tan lejos quieres ver en la red (1 = contactos directos, 2 o más = conocidos de sus conocidos).<br>
@@ -113,7 +113,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
         )
     with col_f3:
         monto_min = st.number_input(
-            "Monto mínimo de arista (Q)",
+            ui_components.etiqueta_monto("Monto mínimo de arista"),
             min_value=0, value=0, step=1000,
             help="Solo mostrar transacciones ≥ este monto."
         )
@@ -225,7 +225,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
     else:
         foco_html = "Para una trazabilidad más exacta, conviene enfocar un cliente y bajar la profundidad a 1 o 2 hops."
     st.markdown(f"""
-    <div class="info-box" style="margin-top:0;">
+    <div class="info-box mt-0">
         <b>Vista aplicada:</b> se muestran hasta <b>{h(G.number_of_edges())}</b> relaciones agregadas por par origen-destino.
         {foco_html}
     </div>
@@ -360,12 +360,12 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
 
     # Leyenda de colores
     st.markdown("""
-    <div class="info-box" style="margin-top:5px;">
+    <div class="info-box mt-5">
         <b>Leyenda:</b>
-        <span style="color:#ef4444; font-weight:700;">● Crítico</span> &nbsp;
-        <span style="color:#f97316; font-weight:700;">● Alto</span> &nbsp;
-        <span style="color:#eab308; font-weight:700;">● Medio</span> &nbsp;
-        <span style="color:#22c55e; font-weight:700;">● Bajo</span> &nbsp;: &nbsp;
+        <span class="tx fw-700 tone-danger">● Crítico</span> &nbsp;
+        <span class="tx fw-700 tone-warn">● Alto</span> &nbsp;
+        <span class="tx fw-700 tone-yellow">● Medio</span> &nbsp;
+        <span class="tx fw-700 tone-ok">● Bajo</span> &nbsp;: &nbsp;
         El <b>tamaño del nodo</b> refleja el score. El <b>grosor de la arista</b> representa el monto transado.
         Las <b>flechas</b> indican la dirección del flujo (Origen → Destino).
         Las <b>etiquetas de arista</b> se ocultan automáticamente cuando la red tiene demasiadas relaciones para evitar saturación visual.
@@ -376,7 +376,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
     st.markdown("---")
     ui_components.section_title("Rutas Multi-Hop Detectadas")
     st.markdown("""
-    <div class="info-box" style="border-left-color: #ef4444;">
+    <div class="info-box tone-danger">
         <strong>Análisis de encadenamiento:</strong> Rutas donde el dinero pasa por ≥2 clientes intermedios.
         Patrón típico de <em>layering</em> (estratificación) en esquemas de LD/FT/FPADM.
     </div>
@@ -415,7 +415,7 @@ Las filas sin destino (transferencias propias o sin contraparte) pueden dejarse 
             df_rutas = pd.DataFrame(rutas).drop_duplicates(subset=["Ruta"]).sort_values(["Saltos", "Score máx. en ruta"], ascending=[False, False])
             st.markdown(render_html_table(df_rutas, max_height=420), unsafe_allow_html=True)
         else:
-            st.markdown('<div style="color:#a7b0bb; font-size:13px; padding:8px 0;">No se detectaron rutas multi-hop con los filtros actuales.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="note-muted">No se detectaron rutas multi-hop con los filtros actuales.</div>', unsafe_allow_html=True)
 
     # ── CENTRALIDAD DE NODOS ───────────────────────────────────────────────
     st.markdown("---")

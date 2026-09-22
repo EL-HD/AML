@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Date, DateTime, Boolean, text
+from sqlalchemy import Column, Integer, BigInteger, String, Date, DateTime, Boolean, Float, Text, text
+from sqlalchemy import CheckConstraint, Index, UniqueConstraint, event
 from sqlalchemy import Uuid as UUID  # tipo genérico: UUID nativo en PostgreSQL, CHAR(32) en SQLite (pruebas)
 from .database import Base
 import uuid
@@ -37,7 +38,10 @@ class BitacoraSesions(Base):
 class BitacoraAuditoria(Base):
     """Auditoría de accesos a módulos sensibles: Art. 19 Ley 6593."""
     __tablename__ = "BitacoraAuditoria"
-    __table_args__ = {"schema": "public"}
+    __table_args__ = (
+        UniqueConstraint("licenciaid", "seq", name="uq_bitacora_licencia_seq"),
+        {"schema": "public"},
+    )
 
     id              = Column("id",              UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     licenciaid      = Column("licenciaid",      UUID(as_uuid=True), nullable=False)
@@ -45,6 +49,12 @@ class BitacoraAuditoria(Base):
     timestamp       = Column("timestamp",       DateTime,           nullable=False, default=ahora_utc)
     modulo_accedido = Column("modulo_accedido", String(100),        nullable=False)
     accion          = Column("accion",          String(100),        nullable=False, default="VISUALIZACION")
+    # Cadena de integridad (T4, migración 006). NULL en registros pre-cadena.
+    # El cálculo del hash vive únicamente en backend/auditoria.py.
+    seq             = Column("seq",             BigInteger,         nullable=True)
+    hash_prev       = Column("hash_prev",       String(64),         nullable=True)
+    hash            = Column("hash",            String(64),         nullable=True)
+    hash_alg        = Column("hash_alg",        String(16),         nullable=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -258,3 +268,248 @@ class CatTipoReporte(CatalogoActivoMixin, Base):
     nombre         = Column("nombre",         String(150), nullable=False)
     es_regulatorio = Column("es_regulatorio", Boolean, nullable=False, default=False)
     articulo_legal = Column("articulo_legal", String(100), nullable=True)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CASOS DE ALERTA PERSISTENTES (ciclo Inusual -> Sospechosa)
+# Base legal: Art. 29 (examen y fundamento), Art. 30 (RTS) y Art. 34
+# (conservación de registros, mínimo 5 años) Ley 6593. Segmentación por
+# licenciaid (multi-tenant). La clave estable del caso se documenta en
+# backend/casos_alerta.py (clave_caso = SHA-256 de licencia|lote|cliente).
+# ═══════════════════════════════════════════════════════════════════════════
+
+ESTADOS_CASO = (
+    "Inusual_Pendiente",       # Detectado por IMPERATOR, sin examinar
+    "Inusual_Examinada",       # Examinada por analista, no escalada
+    "Sospechosa_Propuesta",    # Analista propone RTS: pendiente de aprobación (cuatro ojos)
+    "Sospechosa_Confirmada",   # Aprobada por oficial/admin distinto del proponente: requiere RTS (Art. 30)
+    "Descartada",              # Falso positivo documentado
+)
+
+
+class CasoAlerta(Base):
+    """Estado vigente de un caso de alerta (cliente dentro de un lote analizado)."""
+    __tablename__ = "CasosAlerta"
+    __table_args__ = (
+        UniqueConstraint("licenciaid", "clave_caso", name="uq_casosalerta_licencia_clave"),
+        Index("idx_casosalerta_licencia_lote", "licenciaid", "hash_lote"),
+        CheckConstraint(
+            "estado IN ('Inusual_Pendiente','Inusual_Examinada','Sospechosa_Propuesta',"
+            "'Sospechosa_Confirmada','Descartada')",
+            name="casosalerta_estado_check",
+        ),
+        {"schema": "public"},
+    )
+
+    id              = Column("id",              UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    licenciaid      = Column("licenciaid",      UUID(as_uuid=True), nullable=False, index=True)
+    clave_caso      = Column("clave_caso",      String(64),  nullable=False)
+    hash_lote       = Column("hash_lote",       String(64),  nullable=False)
+    cliente         = Column("cliente",         String(200), nullable=False)
+    nombre_archivo  = Column("nombre_archivo",  String(255), nullable=True)
+    estado          = Column("estado",          String(40),  nullable=False, default="Inusual_Pendiente")
+    fundamento      = Column("fundamento",      String(4000), nullable=False, default="")
+    score_max       = Column("score_max",       Float, nullable=True)
+    nivel_riesgo    = Column("nivel_riesgo",    String(30),  nullable=True)
+    propuesto_por   = Column("propuesto_por",   String(100), nullable=True)
+    propuesto_en    = Column("propuesto_en",    DateTime, nullable=True)
+    aprobado_por    = Column("aprobado_por",    String(100), nullable=True)
+    aprobado_en     = Column("aprobado_en",     DateTime, nullable=True)
+    fecha_clasificacion_sospechosa = Column("fecha_clasificacion_sospechosa", Date, nullable=True)
+    creado_por      = Column("creado_por",      String(100), nullable=False)
+    creado_en       = Column("creado_en",       DateTime, nullable=False, default=ahora_utc)
+    actualizado_por = Column("actualizado_por", String(100), nullable=False)
+    actualizado_en  = Column("actualizado_en",  DateTime, nullable=False, default=ahora_utc, onupdate=ahora_utc)
+
+
+class CasoAlertaHistorial(Base):
+    """Historial append-only de cambios de estado (nunca se actualiza ni se borra)."""
+    __tablename__ = "CasosAlertaHistorial"
+    __table_args__ = (
+        Index("idx_casosalertahist_licencia_caso", "licenciaid", "caso_id"),
+        {"schema": "public"},
+    )
+
+    id              = Column("id",              UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    licenciaid      = Column("licenciaid",      UUID(as_uuid=True), nullable=False, index=True)
+    caso_id         = Column("caso_id",         UUID(as_uuid=True), nullable=False, index=True)
+    estado_anterior = Column("estado_anterior", String(40),  nullable=True)
+    estado_nuevo    = Column("estado_nuevo",    String(40),  nullable=False)
+    accion          = Column("accion",          String(40),  nullable=False)
+    fundamento      = Column("fundamento",      String(4000), nullable=False, default="")
+    usuario         = Column("usuario",         String(100), nullable=False)
+    rol             = Column("rol",             String(20),  nullable=False)
+    registrado_en   = Column("registrado_en",   DateTime, nullable=False, default=ahora_utc)
+
+
+class HistorialInmutableError(RuntimeError):
+    """Se lanza al intentar modificar o borrar registros protegidos por retención."""
+
+
+@event.listens_for(CasoAlertaHistorial, "before_update")
+def _historial_sin_update(mapper, connection, target):  # noqa: ARG001
+    raise HistorialInmutableError("CasosAlertaHistorial es append-only: no se permite actualizar.")
+
+
+@event.listens_for(CasoAlertaHistorial, "before_delete")
+def _historial_sin_delete(mapper, connection, target):  # noqa: ARG001
+    raise HistorialInmutableError("CasosAlertaHistorial es append-only: no se permite borrar.")
+
+
+@event.listens_for(CasoAlerta, "before_delete")
+def _caso_sin_delete(mapper, connection, target):  # noqa: ARG001
+    raise HistorialInmutableError("CasosAlerta tiene retención mínima de 5 años (Art. 34 Ley 6593): no se permite borrar.")
+
+
+@event.listens_for(BitacoraAuditoria, "before_update")
+def _bitacora_sin_update(mapper, connection, target):  # noqa: ARG001
+    raise HistorialInmutableError("BitacoraAuditoria es append-only (Art. 19 Ley 6593): no se permite actualizar.")
+
+
+@event.listens_for(BitacoraAuditoria, "before_delete")
+def _bitacora_sin_delete(mapper, connection, target):  # noqa: ARG001
+    raise HistorialInmutableError("BitacoraAuditoria es append-only (Art. 19 Ley 6593): no se permite borrar.")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SCREENING DE LISTAS DE SANCIONES (GAFI R.6 / R.7)
+# Las listas y sus entradas son globales (sin licenciaid): OFAC SDN y ONU
+# consolidada son públicas y comunes a todas las licencias. Las coincidencias
+# y sus decisiones sí se segmentan por licenciaid (multi-tenant).
+# ═══════════════════════════════════════════════════════════════════════════
+
+ESTADOS_COINCIDENCIA = ("Pendiente", "Descartada", "Confirmada")
+
+
+class ListaSancion(Base):
+    """Versión cargada de una lista de sanciones (una activa por fuente)."""
+    __tablename__ = "ListasSancion"
+    __table_args__ = (
+        Index("idx_listassancion_fuente_activa", "fuente", "activa"),
+        CheckConstraint("fuente IN ('OFAC_SDN','ONU')", name="listassancion_fuente_check"),
+        {"schema": "public"},
+    )
+
+    id                = Column("id",                UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    fuente            = Column("fuente",            String(20),  nullable=False)
+    version           = Column("version",           String(60),  nullable=False)
+    nombre_archivo    = Column("nombre_archivo",    String(255), nullable=False)
+    hash_sha256       = Column("hash_sha256",       String(64),  nullable=False)
+    cantidad_entradas = Column("cantidad_entradas", Integer,     nullable=False, default=0)
+    filas_rechazadas  = Column("filas_rechazadas",  Integer,     nullable=False, default=0)
+    origen            = Column("origen",            String(20),  nullable=False, default="carga_manual")
+    activa            = Column("activa",            Boolean,     nullable=False, default=True)
+    cargada_por       = Column("cargada_por",       String(100), nullable=False)
+    cargada_en        = Column("cargada_en",        DateTime,    nullable=False, default=ahora_utc)
+
+
+class ListaSancionEntrada(Base):
+    """Sujeto listado (persona, entidad, embarcación) con sus alias."""
+    __tablename__ = "ListasSancionEntradas"
+    __table_args__ = (
+        Index("idx_listasentradas_lista_ref", "lista_id", "referencia"),
+        {"schema": "public"},
+    )
+
+    id                 = Column("id",                 UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    lista_id           = Column("lista_id",           UUID(as_uuid=True), nullable=False, index=True)
+    fuente             = Column("fuente",             String(20),  nullable=False)
+    referencia         = Column("referencia",         String(60),  nullable=False)
+    nombre             = Column("nombre",             String(300), nullable=False)
+    nombre_normalizado = Column("nombre_normalizado", String(300), nullable=False)
+    tipo               = Column("tipo",               String(40),  nullable=True)
+    programa           = Column("programa",           String(200), nullable=True)
+    nacionalidad       = Column("nacionalidad",       String(100), nullable=True)
+    alias_json         = Column("alias_json",         Text,        nullable=False, default="[]")
+
+
+class ScreeningCoincidencia(Base):
+    """Coincidencia de un cliente de la licencia contra una entrada de lista, con decisión humana."""
+    __tablename__ = "ScreeningCoincidencias"
+    __table_args__ = (
+        UniqueConstraint("licenciaid", "cliente_normalizado", "entrada_id", name="uq_screening_licencia_cliente_entrada"),
+        Index("idx_screening_licencia_estado", "licenciaid", "estado"),
+        Index("idx_screening_licencia_cliente", "licenciaid", "cliente_normalizado"),
+        CheckConstraint("estado IN ('Pendiente','Descartada','Confirmada')", name="screening_estado_check"),
+        {"schema": "public"},
+    )
+
+    id                  = Column("id",                  UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    licenciaid          = Column("licenciaid",          UUID(as_uuid=True), nullable=False, index=True)
+    cliente             = Column("cliente",             String(200), nullable=False)
+    cliente_normalizado = Column("cliente_normalizado", String(300), nullable=False)
+    origen              = Column("origen",              String(30),  nullable=False, default="Cliente")
+    hash_lote           = Column("hash_lote",           String(64),  nullable=True)
+    lista_id            = Column("lista_id",            UUID(as_uuid=True), nullable=False)
+    entrada_id          = Column("entrada_id",          UUID(as_uuid=True), nullable=False)
+    fuente              = Column("fuente",              String(20),  nullable=False)
+    referencia          = Column("referencia",          String(60),  nullable=False)
+    nombre_lista        = Column("nombre_lista",        String(300), nullable=False)
+    alias_coincidente   = Column("alias_coincidente",   String(300), nullable=True)
+    puntaje             = Column("puntaje",             Float,       nullable=False)
+    motivo              = Column("motivo",              String(300), nullable=False)
+    estado              = Column("estado",              String(20),  nullable=False, default="Pendiente")
+    fundamento          = Column("fundamento",          String(4000), nullable=False, default="")
+    revisor             = Column("revisor",             String(100), nullable=True)
+    revisado_en         = Column("revisado_en",         DateTime,    nullable=True)
+    caso_id             = Column("caso_id",             UUID(as_uuid=True), nullable=True)
+    detectado_por       = Column("detectado_por",       String(100), nullable=False)
+    detectado_en        = Column("detectado_en",        DateTime,    nullable=False, default=ahora_utc)
+    actualizado_en      = Column("actualizado_en",      DateTime,    nullable=False, default=ahora_utc, onupdate=ahora_utc)
+
+
+class ScreeningDecision(Base):
+    """Historial append-only de decisiones sobre coincidencias (auditoría de cada decisión)."""
+    __tablename__ = "ScreeningDecisiones"
+    __table_args__ = (
+        Index("idx_screeningdec_licencia_coinc", "licenciaid", "coincidencia_id"),
+        {"schema": "public"},
+    )
+
+    id              = Column("id",              UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    licenciaid      = Column("licenciaid",      UUID(as_uuid=True), nullable=False, index=True)
+    coincidencia_id = Column("coincidencia_id", UUID(as_uuid=True), nullable=False, index=True)
+    estado_anterior = Column("estado_anterior", String(20),  nullable=False)
+    estado_nuevo    = Column("estado_nuevo",    String(20),  nullable=False)
+    fundamento      = Column("fundamento",      String(4000), nullable=False)
+    revisor         = Column("revisor",         String(100), nullable=False)
+    rol             = Column("rol",             String(20),  nullable=False)
+    registrado_en   = Column("registrado_en",   DateTime,    nullable=False, default=ahora_utc)
+
+
+@event.listens_for(ScreeningDecision, "before_update")
+def _decision_sin_update(mapper, connection, target):  # noqa: ARG001
+    raise HistorialInmutableError("ScreeningDecisiones es append-only: no se permite actualizar.")
+
+
+@event.listens_for(ScreeningDecision, "before_delete")
+def _decision_sin_delete(mapper, connection, target):  # noqa: ARG001
+    raise HistorialInmutableError("ScreeningDecisiones es append-only: no se permite borrar.")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MFA TOTP (T6 Fase 2, OWASP A07): un registro por licencia (usuario).
+# El secreto se guarda cifrado con Fernet (MFA_ENCRYPTION_KEY); los códigos de
+# recuperación solo como hashes PBKDF2 (backend/totp.py). La lógica vive en
+# backend/mfa.py; migración: migrations/007_mfa.sql.
+# ═══════════════════════════════════════════════════════════════════════════
+
+class MfaUsuario(Base):
+    __tablename__ = "MfaUsuarios"
+    __table_args__ = (
+        UniqueConstraint("licenciaid", name="uq_mfa_licencia"),
+        {"schema": "public"},
+    )
+
+    id                   = Column("id",                   UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    licenciaid           = Column("licenciaid",           UUID(as_uuid=True), nullable=False)
+    usuario              = Column("usuario",              String(100), nullable=False)
+    secreto_cifrado      = Column("secreto_cifrado",      Text,        nullable=False)
+    activo               = Column("activo",               Boolean,     nullable=False, default=False)
+    enrolado_en          = Column("enrolado_en",          DateTime,    nullable=True)
+    ultimo_contador      = Column("ultimo_contador",      BigInteger,  nullable=False, default=0)
+    codigos_recuperacion = Column("codigos_recuperacion", Text,        nullable=False, default="[]")
+    codigos_restantes    = Column("codigos_restantes",    Integer,     nullable=False, default=0)
+    sesion_mfa           = Column("sesion_mfa",           UUID(as_uuid=True), nullable=True)
+    creado_en            = Column("creado_en",            DateTime,    nullable=False, default=ahora_utc)
+    actualizado_en       = Column("actualizado_en",       DateTime,    nullable=False, default=ahora_utc, onupdate=ahora_utc)

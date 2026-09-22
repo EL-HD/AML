@@ -38,7 +38,7 @@ from datetime import date, datetime, timedelta
 
 # --- Importaciones Modulares ---
 from backend.procesador import validar_columnas, procesar_transacciones
-from backend import auditoria, config_aml, crud, schemas, session_token
+from backend import auditoria, config_aml, crud, mfa, schemas, session_token
 from backend.database import SessionLocal
 from sqlalchemy.exc import SQLAlchemyError
 import logging
@@ -47,10 +47,10 @@ from frontend import (
     mod_cliente, mod_matrices, mod_manual,
     mod_configuracion, mod_reportes, mod_ubicaciones,
     mod_mitigacion, mod_red_transaccional,
-    mod_imperator_diagnostics, mod_sesion, mod_riesgo_ldft
+    mod_imperator_diagnostics, mod_sesion, mod_riesgo_ldft, mod_screening, mod_integridad, mod_mfa
 )
 from frontend.mod_sesion import _registrar_acceso_auditoria
-from frontend import cache_analisis, exportacion, navegacion, permisos, theme, ui_components
+from frontend import cache_analisis, casos_persistencia, exportacion, mod_anomalias, navegacion, permisos, theme, ui_components
 
 def _auditar(modulo: str, accion: str = "VISUALIZACION") -> None:
     """Registra acceso de sesión activa: Art. 19 Ley 6593."""
@@ -150,7 +150,8 @@ def _usuario_a_dict(usuario) -> dict:
 def _restaurar_desde_token(token: str):
     """
     Restaura la sesión únicamente si el token está firmado, vigente y su session_id
-    sigue siendo la sesión más reciente de la licencia (control de sesión única).
+    sigue siendo la sesión más reciente de la licencia (control de sesión única)
+    y, si el usuario tiene MFA activo, esa sesión superó el segundo factor (T6).
     Devuelve (user_data, session_id) o (None, None).
     """
     datos = session_token.verificar_restauracion(token)
@@ -162,6 +163,8 @@ def _restaurar_desde_token(token: str):
         if usuario is None or str(usuario.licence_id) != datos["lid"]:
             return None, None
         if usuario.fecha_expiracion < date.today():
+            return None, None
+        if not mfa.sesion_autorizada(db, usuario, datos["sid"]):
             return None, None
         return _usuario_a_dict(usuario), datos["sid"]
     except SQLAlchemyError:
@@ -180,7 +183,8 @@ def _logout_session(timed_out=False):
     st.session_state.last_activity_at = datetime.now()
     for key in ["data", "data_raw", "aml_config", "archivo_nombre",
                 "pep_cpe_info", "session_meta", "from_cache",
-                "analysis_cache_id"]:
+                "analysis_cache_id", "mfa_pendiente", "mfa_gate",
+                "mfa_material_enrolamiento", "mfa_codigos_recuperacion"]:
         st.session_state.pop(key, None)
     if timed_out:
         st.session_state.session_timeout_alert = True
@@ -334,47 +338,113 @@ def _cabeceras_origen() -> dict:
     return {"X-Forwarded-For": origen} if origen else {}
 
 
-def _procesar_login(user: str, pwd: str) -> None:
-    """Llama a la API de autenticación y muestra mensajes accionables por tipo de fallo."""
-    if not user or not pwd:
-        st.error("Ingrese usuario y contraseña.")
-        return
+def _llamar_api_auth(ruta: str, cuerpo: dict):
+    """POST a la API de autenticación. Devuelve el JSON de una respuesta 200 o None tras mostrar el error."""
     api_url = os.getenv("AUTH_API_URL", "http://localhost:8000")
     try:
-        response = requests.post(
-            f"{api_url}/auth/validate",
-            json={"username": user, "password": pwd},
-            headers=_cabeceras_origen(),
-            timeout=10,
-        )
+        response = requests.post(f"{api_url}{ruta}", json=cuerpo, headers=_cabeceras_origen(), timeout=10)
     except requests.Timeout:
         st.error("El servidor de autenticación tardó demasiado en responder. Intente nuevamente en unos segundos.")
-        return
+        return None
     except requests.RequestException:
         st.error("No se pudo conectar con el servidor de autenticación. Verifique el servicio o contacte al administrador.")
-        return
-
+        return None
+    es_json = response.headers.get("content-type", "").startswith("application/json")
     if response.status_code == 429:
-        detalle = response.json().get("detail") if response.headers.get("content-type", "").startswith("application/json") else None
+        detalle = response.json().get("detail") if es_json else None
         st.error(detalle or "Demasiados intentos. Espere unos minutos antes de volver a intentar.")
-        return
+        return None
+    if response.status_code == 401 and es_json:
+        st.error(response.json().get("detail") or "Acceso denegado.")
+        return None
     if response.status_code != 200:
         st.error(f"El servidor de autenticación devolvió un error (HTTP {response.status_code}). Contacte al administrador.")
-        return
+        return None
     try:
-        data = response.json()
+        return response.json()
     except ValueError:
         st.error("Respuesta inválida del servidor de autenticación.")
-        return
-    if not (data.get("exists") and data.get("is_active") and data.get("licencia")):
-        st.error(data.get("message", "Acceso denegado."))
-        return
+        return None
+
+
+def _iniciar_sesion_autenticada(data: dict) -> None:
+    st.session_state.pop("mfa_pendiente", None)
+    st.session_state.pop("mfa_gate", None)
     st.session_state.authenticated = True
     st.session_state.user_data = data.get("licencia")
     st.session_state.access_token = data.get("access_token")
     st.session_state.session_id = data.get("session_id")
     st.session_state.last_activity_at = datetime.now()
     st.rerun()
+
+
+def _procesar_login(user: str, pwd: str) -> None:
+    """Llama a la API de autenticación y muestra mensajes accionables por tipo de fallo."""
+    if not user or not pwd:
+        st.error("Ingrese usuario y contraseña.")
+        return
+    data = _llamar_api_auth("/auth/validate", {"username": user, "password": pwd})
+    if data is None:
+        return
+    if data.get("mfa_requerido") and data.get("mfa_token"):
+        # Primer factor correcto: la sesión sigue sin autenticar hasta validar el código (T6)
+        st.session_state["mfa_pendiente"] = {"token": data["mfa_token"], "usuario": user,
+                                             "emitido": datetime.now()}
+        st.rerun()
+    if not (data.get("exists") and data.get("is_active") and data.get("licencia")):
+        st.error(data.get("message", "Acceso denegado."))
+        return
+    _iniciar_sesion_autenticada(data)
+
+
+def _procesar_mfa(codigo: str) -> None:
+    """Canjea el token intermedio más el código TOTP o de recuperación por la sesión definitiva."""
+    pendiente = st.session_state.get("mfa_pendiente") or {}
+    if not pendiente.get("token"):
+        st.error("La verificación expiró. Inicie sesión nuevamente.")
+        return
+    if datetime.now() - pendiente.get("emitido", datetime.now()) > timedelta(minutes=5):
+        st.session_state.pop("mfa_pendiente", None)
+        st.error("El tiempo para ingresar el código expiró (5 minutos). Inicie sesión nuevamente.")
+        return
+    codigo = (codigo or "").strip()
+    if not codigo:
+        st.error("Ingrese el código de verificación.")
+        return
+    data = _llamar_api_auth("/auth/mfa/verificar", {"mfa_token": pendiente["token"], "codigo": codigo})
+    if data is None:
+        return
+    if not (data.get("is_active") and data.get("licencia")):
+        st.error(data.get("message", "Código inválido."))
+        return
+    _iniciar_sesion_autenticada(data)
+
+
+def _formulario_mfa(pendiente: dict) -> None:
+    """Segundo paso del login: código del autenticador o código de recuperación."""
+    with st.form("mfa_form", clear_on_submit=True):
+        st.markdown(f"""
+            <div class="login-brand">
+                <div class="login-title">Verificación en dos pasos</div>
+                <div class="login-kicker">Usuario: {h(pendiente.get("usuario", ""))}</div>
+            </div>
+        """, unsafe_allow_html=True)
+        codigo = st.text_input("Código del autenticador o de recuperación", max_chars=16, key="login_mfa_codigo",
+                               placeholder="000000", autocomplete="one-time-code")
+        st.markdown("<br>", unsafe_allow_html=True)
+        verificar = st.form_submit_button("Verificar", use_container_width=True)
+        cancelar = st.form_submit_button("Volver", use_container_width=True)
+        if verificar:
+            _procesar_mfa(codigo)
+        if cancelar:
+            st.session_state.pop("mfa_pendiente", None)
+            st.rerun()
+        st.markdown("""
+            <div class="login-help">
+                Ingrese el código de 6 dígitos de su aplicación autenticadora. Si perdió el dispositivo,
+                use uno de sus códigos de recuperación o contacte al administrador.
+            </div>
+        """, unsafe_allow_html=True)
 
 
 def login_flow():
@@ -399,6 +469,11 @@ def login_flow():
         """, unsafe_allow_html=True)
 
         logo_b64 = _logo_base64()
+
+        mfa_pendiente = st.session_state.get("mfa_pendiente")
+        if mfa_pendiente:
+            _formulario_mfa(mfa_pendiente)
+            st.stop()
 
         with st.form("login_form", clear_on_submit=False):
             st.markdown(f"""
@@ -452,6 +527,16 @@ session_timeout_guard()
 
 # Sistema de diseño (frontend/theme): tokens + styles.css, cargado una sola vez
 theme.cargar_estilos()
+
+# ── Política MFA (T6): admin y oficial sin enrolar solo ven la pantalla de enrolamiento
+if st.session_state.pop("mfa_solicitar_logout", False):
+    _auditar("Sesión", auditoria.LOGOUT)
+    _logout_session()
+    st.session_state.clear_browser_session = True
+    st.rerun()
+if mod_mfa.enrolamiento_obligatorio_pendiente():
+    mod_mfa.mostrar_enrolamiento_obligatorio()
+    st.stop()
 
 
 @st.cache_data(show_spinner=False, max_entries=8, ttl=SESSION_TIMEOUT_SECONDS)
@@ -577,7 +662,7 @@ if vista not in navegacion.VISTAS_SIN_DATOS:
         <div class="welcome-panel">
             <div class="welcome-kicker">Centro de análisis</div>
             <div class="welcome-rule"></div>
-            <div class="welcome-title">Bienvenido, <span style='color:#ffffff;'>{h(user_name)}</span>.</div>
+            <div class="welcome-title">Bienvenido, <span class="tx tone-white">{h(user_name)}</span>.</div>
             <div class="welcome-copy">
                 Es un gusto tenerle de vuelta. Inicie un nuevo análisis o restaure una sesión guardada
                 para continuar monitoreando transacciones, alertas y perfiles de riesgo desde un solo espacio.
@@ -591,9 +676,9 @@ if vista not in navegacion.VISTAS_SIN_DATOS:
         with tab_nuevo:
             st.markdown("""
             <div class="upload-requirements">
-                <span style='color:#f0f6fc; font-weight:600;'>Formato:</span> Excel (.xlsx) &nbsp;·&nbsp;
-                <span style='color:#f0f6fc; font-weight:600;'>Columnas requeridas:</span>
-                <span style='color:#7cc7ff;'>Fecha · Cliente · EsPEP · EsCPE · Monto · Perfil · Ubicacion · UbicacionRiesgo · TipoOperacion · Cliente_Destino</span>
+                <span class="tx-strong fw-600">Formato:</span> Excel (.xlsx) &nbsp;·&nbsp;
+                <span class="tx-strong fw-600">Columnas requeridas:</span>
+                <span class="tx-sky">Fecha · Cliente · EsPEP · EsCPE · Monto · Perfil · Ubicacion · UbicacionRiesgo · TipoOperacion · Cliente_Destino</span>
             </div>
             """, unsafe_allow_html=True)
 
@@ -640,9 +725,8 @@ if vista not in navegacion.VISTAS_SIN_DATOS:
         # ── Tab 2: Cargar sesión .saml ───────────────────────────────
         with tab_sesion:
             st.markdown("""
-            <div style="background:#171c23; border-left:3px solid #f59e0b; padding:16px;
-                        font-size:14px; color:#b8a58e; margin-bottom:18px; font-family:'IBM Plex Mono',monospace;">
-                <strong style='color:#f0f6fc;'>Formato .saml</strong>: Sovereign AML Session File.<br>
+            <div class="panel-accent saml-help">
+                <strong class="tx-strong">Formato .saml</strong>: Sovereign AML Session File.<br>
                 Contiene las transacciones originales y la configuración usada en el análisis previo.
                 Al cargarlo, el motor reprocesa todo automáticamente restaurando el estado completo.
             </div>
@@ -679,9 +763,8 @@ if vista not in navegacion.VISTAS_SIN_DATOS:
                     st.error(f"Error al cargar la sesión: {e}")
             else:
                 st.markdown("""
-                <p style='color:#a7b0bb; font-size:14px; text-align:center;
-                          font-family:"IBM Plex Mono",monospace; margin-top:24px;'>
-                    Suba un archivo <strong style='color:#f59e0b;'>.saml</strong> generado
+                <p class="saml-empty">
+                    Suba un archivo <strong class="tx tone-accent">.saml</strong> generado
                     previamente desde Sovereign AML para retomar el análisis.
                 </p>""", unsafe_allow_html=True)
 
@@ -698,9 +781,8 @@ if vista not in navegacion.VISTAS_SIN_DATOS:
                 nombre    = meta.get("nombre_archivo", st.session_state["archivo_nombre"])
                 filas     = meta.get("filas", "")
                 st.markdown(f"""
-                <div style="background:#171c23; border-left:3px solid #f59e0b; padding:12px 16px;
-                            font-family:'IBM Plex Mono',monospace; font-size:12px; color:#b8a58e;">
-                    <span style="color:#f59e0b; font-weight:700;">SESIÓN RESTAURADA</span>
+                <div class="panel-accent session-restored">
+                    <span class="tx fw-700 tone-accent">SESIÓN RESTAURADA</span>
                     &nbsp;·&nbsp; {h(nombre)}
                     &nbsp;·&nbsp; {h(filas)} registros
                     &nbsp;·&nbsp; Exportada: {h(exportado)}
@@ -712,6 +794,8 @@ if vista not in navegacion.VISTAS_SIN_DATOS:
                 clear_analysis_cache()
                 for k in ["data", "data_raw", "archivo_nombre", "pep_cpe_info", "session_meta", "from_saml", "from_cache"]:
                     st.session_state.pop(k, None)
+                casos_persistencia.olvidar_hash_lote()
+                mod_anomalias.olvidar_cache()
                 st.session_state.analysis_cache_id = str(uuid.uuid4())
                 st.rerun()
 def _sin_datos(nombre_vista: str) -> None:
@@ -727,6 +811,13 @@ def _sin_datos(nombre_vista: str) -> None:
 # ENRUTAMIENTO VISTAS
 # ============================================================
 data_ready = "data" in st.session_state
+if data_ready:
+    # Estados persistidos de casos (T1): visibles en Alertas, Resumen y Reportes
+    casos_persistencia.rehidratar_estados(st.session_state["data"][1])
+    # Señal de screening de sanciones (T3): columna Screening_Sanciones en casos
+    mod_screening.marcar_casos(st.session_state["data"][1])
+    # Señal de anomalía (T8): columnas Anomalia_Percentil / Anomalia_Nivel (no altera el Score)
+    mod_anomalias.marcar_casos(st.session_state["data"][0], st.session_state["data"][1], st.session_state["aml_config"])
 
 if vista == "Resumen Ejecutivo":
     if data_ready:
@@ -755,6 +846,10 @@ elif vista == "Matrices de Riesgo":
 elif vista == "Red Transaccional":
     if data_ready: mod_red_transaccional.mostrar(st.session_state["data"][0], st.session_state["data"][1])
     else: _sin_datos(vista)
+
+elif vista == "Listas de Sanciones":
+    _auditar("Listas de Sanciones")
+    mod_screening.mostrar()
 
 elif vista == "Acciones de Mitigación":
     _auditar("Acciones de Mitigación")
@@ -785,6 +880,14 @@ elif vista == "Informes y Reportes":
 elif vista == "Configuración":
     _auditar("Configuración")
     mod_configuracion.mostrar(_DEFAULTS)
+
+elif vista == "Integridad de Bitácora":
+    _auditar("Integridad de Bitácora")
+    mod_integridad.mostrar()
+
+elif vista == "Seguridad de la Cuenta":
+    _auditar("Seguridad de la Cuenta")
+    mod_mfa.mostrar()
 
 elif vista == "Manual de Usuario":
     mod_manual.mostrar()
