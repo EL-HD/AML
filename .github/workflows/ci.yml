@@ -60,7 +60,7 @@ jobs:
           persist-credentials: false
 
       - name: Configurar Python ${{ env.PYTHON_VERSION }} con caché de pip
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -115,7 +115,7 @@ jobs:
           persist-credentials: false
 
       - name: Configurar Python ${{ env.PYTHON_VERSION }} con caché de pip
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
