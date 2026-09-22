@@ -1,0 +1,16 @@
+# Dependencias exclusivas de pruebas y análisis estático. NO se instalan en el
+# contenedor de producción (el Dockerfile usa solo requirements.txt).
+# Instalar con: pip install -r requirements.txt -r requirements-dev.txt
+
+# httpx: requisito obligatorio de fastapi.testclient.TestClient
+# (tests/test_rate_limit.py, tests/test_mfa.py). Su ausencia rompe la carga de
+# esos módulos con ImportError; no afecta la aplicación en ejecución.
+# Versión fijada: la validada en el entorno local de desarrollo.
+httpx==0.28.1
+
+# Sin versión fijada a propósito: el pin no pudo verificarse contra el índice
+# de paquetes desde el entorno donde se editó este archivo, y un pin
+# inexistente rompe el pipeline. Fijar al aceptar la primera propuesta de
+# Dependabot.
+bandit
+pip-audit
