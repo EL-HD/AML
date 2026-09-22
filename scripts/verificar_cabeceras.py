@@ -130,12 +130,45 @@ def verificar_websocket(base: str, hallazgos: list[str]) -> None:
         conexion.close()
 
 
+ESQUEMAS_PERMITIDOS = ("http", "https")
+
+
+def url_validada(crudo: str) -> str:
+    """Valida la URL base recibida por línea de comandos antes de solicitarla.
+
+    Esta herramienta comprueba las cabeceras de seguridad del propio despliegue,
+    así que la URL solo puede ser http o https y debe traer host. Sin esta
+    comprobación, un valor como "file:///etc/passwd" o "gopher://..." llegaría a
+    urllib y convertiría la herramienta en un cliente de peticiones arbitrarias
+    (Server-Side Request Forgery, pythonsecurity:S8703).
+    """
+    texto = (crudo or "").strip()
+    if not texto:
+        raise ValueError("URL vacía.")
+    if any(ord(c) < 32 for c in texto):
+        raise ValueError("La URL contiene caracteres de control.")
+    partes = urllib.parse.urlsplit(texto)
+    if partes.scheme.lower() not in ESQUEMAS_PERMITIDOS:
+        raise ValueError(
+            f"Esquema no permitido: {partes.scheme!r}. Use {' o '.join(ESQUEMAS_PERMITIDOS)}."
+        )
+    if not partes.hostname:
+        raise ValueError("La URL no incluye host.")
+    return urllib.parse.urlunsplit(
+        (partes.scheme.lower(), partes.netloc, partes.path, partes.query, "")
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Verifica cabeceras de seguridad de Sovereign AML.")
     parser.add_argument("url", help="URL base, p. ej. http://127.0.0.1:8080")
     parser.add_argument("--websocket", action="store_true", help="Probar también el upgrade a WebSocket")
     args = parser.parse_args(argv)
-    base = args.url.rstrip("/")
+    try:
+        base = url_validada(args.url).rstrip("/")
+    except ValueError as exc:
+        print(f"URL inválida: {exc}", file=sys.stderr)
+        return 2
     hallazgos: list[str] = []
     try:
         cabeceras = verificar_pagina(base, hallazgos)

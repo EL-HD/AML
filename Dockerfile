@@ -14,8 +14,12 @@ COPY requirements.txt .
 
 # Instala dependencias de la app + supervisor en un prefijo separado
 # para que Stage 2 solo copie lo necesario
+# --only-binary :all: exige distribuciones ya compiladas (wheels) y evita que
+# pip ejecute el setup.py de un paquete durante la construcción de la imagen
+# (docker:S8541). Verificado: los 71 paquetes del árbol completo de
+# dependencias publican wheel para linux x86_64 / CPython 3.11.
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir --prefix=/install \
+    && pip install --no-cache-dir --only-binary :all: --prefix=/install \
         -r requirements.txt \
         supervisor
 
@@ -36,7 +40,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
          arm64) SUMA="$CADDY_SHA512_ARM64" ;; \
          *) echo "Arquitectura no soportada para Caddy: $ARCH" && exit 1 ;; \
        esac \
-    && curl -fsSL --retry 3 -o /tmp/caddy.tar.gz \
+    && curl -fsSL --proto "=https" --tlsv1.2 --retry 3 -o /tmp/caddy.tar.gz \
         "https://github.com/caddyserver/caddy/releases/download/v${CADDY_VERSION}/caddy_${CADDY_VERSION}_linux_${ARCH}.tar.gz" \
     && echo "${SUMA}  /tmp/caddy.tar.gz" | sha512sum -c - \
     && tar -xzf /tmp/caddy.tar.gz -C /usr/local/bin caddy \

@@ -34,7 +34,7 @@ def mostrar(casos, matriz_alertas):
             tabla_casos[col] = tabla_casos[col].map(lambda v: f"{v:.4f}")
     if "Anomalia_Percentil" in tabla_casos.columns:
         tabla_casos["Anomalia_Percentil"] = tabla_casos["Anomalia_Percentil"].map(
-            lambda v: "--" if v is None or v != v else f"{float(v):.1f}")
+            ui_components.fmt_decimal_o_guion)
     tabla_casos = tabla_casos.rename(columns={
         "Total_Mensual": ui_components.etiqueta_monto("Total Mensual"),
         "Score_Max": "Score Máx.",

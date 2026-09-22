@@ -198,6 +198,118 @@ class FiltroSinSecretos(logging.Filter):
         return True
 
 
+# ---------------------------------------------------------------------------
+# Saneamiento de entradas externas (rutas, registros y argumentos de proceso)
+# ---------------------------------------------------------------------------
+# Este módulo lo usan herramientas de línea de comandos que reciben rutas del
+# operador y leen manifiestos JSON de origen externo. Aunque quien ejecuta los
+# scripts ya posee acceso al sistema, las tres funciones siguientes aplican
+# defensa en profundidad y dejan la validación explícita y auditable:
+#   - ruta_segura: normaliza y confina rutas (Path Traversal, pythonsecurity:S2083)
+#   - texto_para_log: neutraliza saltos de línea y control (Log Injection, S5145)
+#   - _validar_argv: confina el ejecutable y los argumentos (Command Argument
+#     Injection, S6350)
+# Un manifiesto manipulado no debe poder falsificar líneas en la bitácora de
+# una restauración: en un expediente de cumplimiento el registro es evidencia.
+
+EJECUTABLES_PERMITIDOS = ("pg_dump", "pg_restore", "psql")
+VARIABLE_RUTAS_PERMITIDAS = "BACKUP_RUTAS_PERMITIDAS"
+LIMITE_TEXTO_LOG = 200
+
+
+def bases_permitidas() -> list:
+    """Directorios bajo los cuales se aceptan rutas de respaldo.
+
+    Por defecto: el directorio de trabajo, el temporal del sistema y el
+    directorio `backups` del proyecto. Se amplía con la variable de entorno
+    BACKUP_RUTAS_PERMITIDAS (rutas absolutas separadas por comas) para
+    despliegues que guardan los respaldos en un volumen propio.
+    """
+    crudo = os.environ.get(VARIABLE_RUTAS_PERMITIDAS, "")
+    extra = [Path(x.strip()) for x in crudo.split(",") if x.strip()]
+    base_proyecto = Path(__file__).resolve().parent.parent
+    candidatas = [Path.cwd(), Path(tempfile.gettempdir()), base_proyecto / "backups", *extra]
+    resueltas = []
+    for c in candidatas:
+        try:
+            resueltas.append(c.resolve())
+        except OSError:
+            continue
+    return resueltas
+
+
+def ruta_segura(ruta, *, debe_existir: bool = False, para_escritura: bool = False) -> Path:
+    """Normaliza una ruta recibida del exterior y verifica que no escape.
+
+    Rechaza cadenas vacías, caracteres nulos o de control, y toda ruta que tras
+    resolver enlaces simbólicos y componentes ".." quede fuera de los
+    directorios de bases_permitidas(). Devuelve siempre la ruta ya resuelta,
+    que es la que debe usarse para abrir el archivo: validar una ruta y abrir
+    otra distinta anularía la comprobación.
+    """
+    if ruta is None:
+        raise RespaldoError("Ruta de archivo no proporcionada.")
+    texto = str(ruta)
+    if not texto.strip():
+        raise RespaldoError("Ruta de archivo vacía.")
+    if "\x00" in texto or any(ord(c) < 32 for c in texto):
+        raise RespaldoError("La ruta contiene caracteres no permitidos.")
+    try:
+        resuelta = Path(texto).expanduser().resolve()
+    except (OSError, RuntimeError) as exc:
+        raise RespaldoError(f"Ruta de archivo inválida: {texto!r}.") from exc
+    permitidas = bases_permitidas()
+    dentro = False
+    for base in permitidas:
+        try:
+            resuelta.relative_to(base)
+            dentro = True
+            break
+        except ValueError:
+            continue
+    if not dentro:
+        raise RespaldoError(
+            f"La ruta {resuelta} queda fuera de los directorios permitidos. "
+            f"Amplíelos con {VARIABLE_RUTAS_PERMITIDAS} si es intencional."
+        )
+    if debe_existir and not resuelta.is_file():
+        raise RespaldoError(f"No existe el archivo {resuelta}.")
+    if para_escritura and not resuelta.parent.is_dir():
+        raise RespaldoError(f"El directorio destino {resuelta.parent} no existe.")
+    return resuelta
+
+
+def texto_para_log(valor, limite: int = LIMITE_TEXTO_LOG) -> str:
+    """Devuelve el valor apto para una línea de registro.
+
+    Sustituye saltos de línea, retornos de carro, tabuladores y cualquier
+    carácter de control por espacio, y trunca. Así un dato de origen externo
+    (por ejemplo un campo del manifiesto) no puede insertar líneas falsas en la
+    bitácora ni secuencias de escape de terminal.
+    """
+    texto = "" if valor is None else str(valor)
+    limpio = "".join(c if (c.isprintable() and c != "\x7f") else " " for c in texto)
+    limpio = " ".join(limpio.split())
+    if len(limpio) > limite:
+        limpio = limpio[: limite - 3] + "..."
+    return limpio
+
+
+def _validar_argv(argv: list) -> None:
+    """Confina la invocación de procesos hijo a los binarios esperados."""
+    if not argv or not isinstance(argv, list):
+        raise RespaldoError("Invocación de proceso sin argumentos.")
+    if argv[0] not in EJECUTABLES_PERMITIDOS:
+        raise RespaldoError(
+            f"Ejecutable no permitido: {argv[0]!r}. Permitidos: {', '.join(EJECUTABLES_PERMITIDOS)}."
+        )
+    for elemento in argv:
+        if not isinstance(elemento, str):
+            raise RespaldoError("Todos los argumentos del proceso deben ser cadenas.")
+        if "\x00" in elemento:
+            raise RespaldoError("Un argumento del proceso contiene un carácter nulo.")
+
+
 _manejador_propio: Optional[logging.Handler] = None
 
 
@@ -299,6 +411,8 @@ def cifrar_archivo(origen: Path, destino: Path, clave_maestra: bytes) -> tuple[s
 
 def descifrar_archivo(origen: Path, destino: Path, clave_maestra: bytes) -> tuple[str, int]:
     """Descifra y autentica bloque a bloque. Devuelve (sha256_plano, bytes_plano)."""
+    origen = ruta_segura(origen, debe_existir=True)
+    destino = ruta_segura(destino, para_escritura=True)
     aes = AESGCM(clave_cifrado(clave_maestra))
     h_plano = hashlib.sha256()
     total = 0
@@ -337,6 +451,7 @@ def descifrar_archivo(origen: Path, destino: Path, clave_maestra: bytes) -> tupl
 
 
 def sha256_archivo(ruta: Path) -> str:
+    ruta = ruta_segura(ruta, debe_existir=True)
     h = hashlib.sha256()
     with open(ruta, "rb") as f:
         for trozo in iter(lambda: f.read(1024 * 1024), b""):
@@ -425,6 +540,7 @@ def cargar_manifiesto(texto: str) -> dict:
 # Consultas auxiliares con psql (sin driver Python)
 # ---------------------------------------------------------------------------
 def _ejecutar(argv: list, env_pg: dict, entrada: Optional[str] = None, timeout: int = 3600) -> subprocess.CompletedProcess:
+    _validar_argv(argv)
     entorno = {k: v for k, v in os.environ.items() if not k.startswith("PG")}
     entorno.update(env_pg)
     try:
@@ -510,7 +626,9 @@ def ejecutar_pg_restore(conexion: Conexion, volcado: Path, limpiar: bool, timeou
     argv = ["pg_restore", "--no-owner", "--no-privileges", "--exit-on-error", "--dbname", conexion.base]
     if limpiar:
         argv += ["--clean", "--if-exists"]
-    argv.append(str(volcado))
+    # "--" cierra la lista de opciones: una ruta que comenzara por "-" no puede
+    # interpretarse como bandera de pg_restore (Command Argument Injection).
+    argv += ["--", str(ruta_segura(volcado, debe_existir=True))]
     resultado = _ejecutar(argv, conexion.entorno_pg(), timeout=timeout)
     if resultado.returncode != 0:
         raise RespaldoError(f"pg_restore falló: {_salida_segura(resultado.stderr, [conexion.password])}")

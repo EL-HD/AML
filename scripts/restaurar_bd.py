@@ -56,7 +56,7 @@ def _argumentos(argv=None) -> argparse.Namespace:
 def _obtener_respaldo(args, tmp_dir: Path):
     """Devuelve (ruta_cifrado, manifiesto) desde el almacén o desde un archivo local."""
     if args.archivo:
-        cifrado = Path(args.archivo)
+        cifrado = respaldos.ruta_segura(args.archivo)
         if not cifrado.is_file() or not cifrado.name.endswith(respaldos.SUFIJO_CIFRADO):
             raise respaldos.RespaldoError(f"No existe el archivo cifrado o no termina en {respaldos.SUFIJO_CIFRADO}.")
         nombre = cifrado.name[: -len(respaldos.SUFIJO_CIFRADO)]
@@ -107,9 +107,17 @@ def main(argv=None) -> int:
             tmp_dir = Path(tmp)
             os.chmod(tmp_dir, 0o700)
             cifrado, manifiesto = _obtener_respaldo(args, tmp_dir)
-            log.info("Respaldo %s del %s (última migración %s, %d anclas de auditoría)", manifiesto["nombre"],
-                     manifiesto["fecha_utc"], manifiesto["ultima_migracion"], len(manifiesto["anclas_auditoria"]))
-            volcado = Path(args.solo_descifrar) if args.solo_descifrar else tmp_dir / (manifiesto["nombre"] + ".dump")
+            log.info("Respaldo %s del %s (última migración %s, %d anclas de auditoría)",
+                     respaldos.texto_para_log(manifiesto["nombre"]),
+                     respaldos.texto_para_log(manifiesto["fecha_utc"]),
+                     respaldos.texto_para_log(manifiesto["ultima_migracion"]),
+                     len(manifiesto["anclas_auditoria"]))
+            if args.solo_descifrar:
+                volcado = respaldos.ruta_segura(args.solo_descifrar, para_escritura=True)
+            else:
+                # manifiesto["nombre"] ya fue validado contra PATRON_NOMBRE por
+                # validar_estructura_manifiesto, así que no puede contener separadores.
+                volcado = tmp_dir / (manifiesto["nombre"] + ".dump")
             if args.solo_descifrar and volcado.exists():
                 raise respaldos.RespaldoError(f"La ruta {volcado} ya existe; no se sobrescribe.")
             volcado.touch(mode=0o600)
@@ -131,10 +139,13 @@ def main(argv=None) -> int:
             coincide, detalle = respaldos.comparar_migraciones(destino, manifiesto)
             if not coincide:
                 raise respaldos.IntegridadError(f"Las migraciones restauradas no coinciden con el manifiesto: {detalle}.")
-            log.info("Restauración completada en %s: %s.", destino.descripcion(), detalle)
+            log.info("Restauración completada en %s: %s.", destino.descripcion(),
+                     respaldos.texto_para_log(detalle))
             for ancla in manifiesto["anclas_auditoria"]:
-                log.info("Ancla de auditoría restaurada: licencia %s seq %s hash %s", ancla["licenciaid"],
-                         ancla["ultimo_seq"], ancla["ultimo_hash"])
+                log.info("Ancla de auditoría restaurada: licencia %s seq %s hash %s",
+                         respaldos.texto_para_log(ancla["licenciaid"]),
+                         respaldos.texto_para_log(ancla["ultimo_seq"]),
+                         respaldos.texto_para_log(ancla["ultimo_hash"]))
             return 0
     except respaldos.RespaldoError as exc:
         log.error("Restauración fallida: %s", exc)

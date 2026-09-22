@@ -948,7 +948,7 @@ div[data-testid="stFileUploader"] section button {
 .preview-body { font-size: var(--sv-font-minima); color: var(--sv-texto-secundario); margin-top: 6px; font-family: var(--sv-font-mono); line-height: 1.8; }
 
 /* Tablas HTML: marco, celdas centradas y celdas de acciones */
-.table-frame { overflow-x: auto; border: 1px solid var(--sv-borde); border-radius: var(--sv-radius-none); overflow: hidden; }
+.table-frame { overflow-x: auto; overflow-y: hidden; border: 1px solid var(--sv-borde); border-radius: var(--sv-radius-none); }
 .td-center { text-align: center; }
 .aml-table.actions-table td { padding: 9px 14px; }
 .td-code { color: var(--sv-tone); font-family: var(--sv-font-mono); font-size: var(--sv-font-minima); font-weight: 700; }

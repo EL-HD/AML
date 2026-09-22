@@ -51,9 +51,23 @@ def main() -> int:
     parser.add_argument("--ventana", type=int, default=6)
     parser.add_argument("--umbral", type=float, default=10.0)
     args = parser.parse_args()
+    raiz = Path(__file__).resolve().parent.parent
     archivos = []
     for r in args.rutas:
-        p = Path(r)
+        # La medición solo tiene sentido sobre el código del propio repositorio:
+        # se resuelve la ruta y se exige que quede dentro de la raíz del
+        # proyecto (Path Traversal, pythonsecurity:S8707).
+        p = Path(r).expanduser()
+        p = p if p.is_absolute() else (raiz / p)
+        try:
+            p = p.resolve()
+            p.relative_to(raiz)
+        except (OSError, ValueError):
+            print(f"Ruta fuera del proyecto, se omite: {r}", file=sys.stderr)
+            continue
+        if not p.exists():
+            print(f"Ruta inexistente, se omite: {r}", file=sys.stderr)
+            continue
         archivos += sorted(p.rglob("*.py")) if p.is_dir() else [p]
     total, dup, detalle = medir(archivos, args.ventana)
     porcentaje = (dup / total * 100) if total else 0.0

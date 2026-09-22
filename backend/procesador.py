@@ -123,7 +123,9 @@ def _calcular_sn(df, casos):
         
         # Volumen de red por cliente (suma de montos enviados/recibidos)
         vol_enviado  = df.groupby("Cliente")["Monto"].sum()
-        vol_recibido = df.groupby("Cliente_Destino")["Monto"].sum() if has_destino else pd.Series(dtype=float)
+        # Dentro de este bloque has_destino ya es True: la condición redundante se
+        # retira (python:S2583, condición siempre verdadera).
+        vol_recibido = df.groupby("Cliente_Destino")["Monto"].sum()
         vol_red = (vol_enviado.add(vol_recibido, fill_value=0)).reindex(df["Cliente"]).values
         vol_max = max(vol_red.max() if len(vol_red) > 0 else 1, 1)
         

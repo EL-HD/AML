@@ -2,6 +2,7 @@
 Componentes de interfaz reutilizables (U-01). Todos escapan sus valores con
 ui_safe.h, por lo que pueden recibir texto proveniente del usuario o del Excel.
 """
+import math
 from typing import Optional
 
 import streamlit as st
@@ -164,6 +165,26 @@ def fmt_moneda(valor, decimales: int = 0, moneda: Optional[str] = None) -> str:
     except (TypeError, ValueError):
         return f"{simbolo}0"
     return f"{simbolo}{numero:,.{decimales}f}"
+
+
+def fmt_decimal_o_guion(valor, decimales: int = 1, vacio: str = "--") -> str:
+    """Formatea un número con N decimales, devolviendo `vacio` si no hay dato.
+
+    Centraliza la detección de ausencia de valor (None, NaN o no convertible) que
+    antes se repetía en los módulos de alertas y matrices con el modismo
+    "v != v". Ese modismo es correcto para NaN pero implícito, y las
+    herramientas de análisis estático lo señalan como subexpresiones idénticas
+    a ambos lados de "!=" (python:S1764). La validación aquí es explícita.
+    """
+    if valor is None:
+        return vacio
+    try:
+        numero = float(valor)
+    except (TypeError, ValueError):
+        return vacio
+    if math.isnan(numero):
+        return vacio
+    return f"{numero:.{decimales}f}"
 
 
 def regla_titulo(nombre: str, activa: bool) -> None:
