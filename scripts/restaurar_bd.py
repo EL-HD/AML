@@ -115,9 +115,13 @@ def main(argv=None) -> int:
             if args.solo_descifrar:
                 volcado = respaldos.ruta_segura(args.solo_descifrar, para_escritura=True)
             else:
-                # manifiesto["nombre"] ya fue validado contra PATRON_NOMBRE por
-                # validar_estructura_manifiesto, así que no puede contener separadores.
-                volcado = tmp_dir / (manifiesto["nombre"] + ".dump")
+                # Revalidación explícita e inline en el punto de uso (además de la ya
+                # realizada en validar_estructura_manifiesto): el nombre del manifiesto
+                # no puede contener separadores de ruta ni componentes "..".
+                nombre_volcado = str(manifiesto["nombre"])
+                if not respaldos.PATRON_NOMBRE.match(nombre_volcado):
+                    raise respaldos.RespaldoError("Nombre de respaldo en el manifiesto no válido.")
+                volcado = tmp_dir / (nombre_volcado + ".dump")
             if args.solo_descifrar and volcado.exists():
                 raise respaldos.RespaldoError(f"La ruta {volcado} ya existe; no se sobrescribe.")
             volcado.touch(mode=0o600)
