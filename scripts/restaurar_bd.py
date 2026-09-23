@@ -22,6 +22,7 @@ Sale con 0 si todo se completó; 1 ante error controlado; 2 si se bloqueó por p
 """
 import argparse
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -119,7 +120,7 @@ def main(argv=None) -> int:
                 # realizada en validar_estructura_manifiesto): el nombre del manifiesto
                 # no puede contener separadores de ruta ni componentes "..".
                 nombre_volcado = str(manifiesto["nombre"])
-                if not respaldos.PATRON_NOMBRE.match(nombre_volcado):
+                if not re.fullmatch(respaldos.PATRON_NOMBRE.pattern, nombre_volcado):
                     raise respaldos.RespaldoError("Nombre de respaldo en el manifiesto no válido.")
                 volcado = tmp_dir / (nombre_volcado + ".dump")
             if args.solo_descifrar and volcado.exists():
